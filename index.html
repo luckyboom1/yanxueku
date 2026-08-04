@@ -637,6 +637,11 @@ async function load(){
   await save();
   _loadResolve(db);
   setupRealtimeSync();
+  // 数据库加载完成后手动隐藏加载屏
+  setTimeout(function(){
+    var s = document.getElementById('loading-screen');
+    if(s) s.classList.add('done');
+  }, 100);
 }
 async function save(){
   if(sb && _currentUser){
@@ -2048,6 +2053,9 @@ function toggleStar(kwId, ev){ if(ev)ev.stopPropagation(); if(_starred.has(kwId)
 var ___origKC = kwCard;
 kwCard = function(k){ var sid = JSON.stringify(k.id); return ___origKC(k).replace('<div class="kw-card"', '<div class="kw-card"><button class="kw-star' + (_starred.has(k.id)?' on':'') + '" onclick="toggleStar('+sid+',event)">' + (_starred.has(k.id)?'⭐':'☆') + '</button>'); };
 
+
+// 安全兜底：3秒后强制隐藏加载屏
+setTimeout(function(){var s=document.getElementById("loading-screen");if(s&&!s.classList.contains("done"))s.classList.add("done");},3000);
 </script>
 </body>
 </html>
