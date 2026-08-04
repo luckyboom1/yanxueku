@@ -328,15 +328,7 @@ canvas#chart-days{width:100%;height:260px}
   canvas#chart-days{height:200px}
   .modal{width:96vw;padding:18px; border-radius:16px}
 }
-
-.celebrate{position:fixed;inset:0;z-index:300;pointer-events:none}
-.celebrate .particle{position:absolute;animation:cf 2.2s cubic-bezier(.2,.8,.3,1) forwards;font-size:24px}
-@keyframes cf{0%{opacity:1;transform:translateY(-60px) rotate(0deg) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(.3)}}
-.btn-ai{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;box-shadow:0 4px 14px rgba(124,58,237,.35)}
-.btn-ai:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 22px rgba(124,58,237,.45)}
-.kbd{display:inline-block;padding:2px 7px;border-radius:5px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;font-weight:600;min-width:18px;text-align:center}
-.hint-bar{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);padding:8px 0}
-.hint-bar .item{display:flex;align-items:center;gap:5px}
+80%{opacity:1}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(.3)}}
 
 </style>
 </head>
@@ -352,7 +344,12 @@ canvas#chart-days{width:100%;height:260px}
     <div class="nav-item" data-view="stats" onclick="switchView('stats')"><span class="ico">📊</span>学习统计</div>
     <div class="side-label">专业科目</div>
     <div id="subj-list"></div>
-    <div class="side-foot">
+    
+  <div class="side-label">⏱ 学习计时</div>
+  <div id="sidebar-timer" style="text-align:center;font-size:22px;font-weight:800;letter-spacing:1px;padding:6px 0;color:var(--primary);font-variant-numeric:tabular-nums" title="今日学习时长">00:00</div>
+  <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:-6px">累计 <span id="sidebar-total">0时0分</span></div>
+
+  <div class="side-foot">
       <button class="foot-btn" onclick="exportData()" title="导出全部数据">⬇ 导出</button>
       <button class="foot-btn" onclick="document.getElementById('import-file').click()" title="导入数据">⬆ 导入</button>
       <button class="foot-btn" id="theme-btn" onclick="cycleTheme()" title="切换主题">🌓 主题</button>
@@ -383,14 +380,6 @@ canvas#chart-days{width:100%;height:260px}
       <section id="view-stats" class="view"></section>
     </div>
   </main>
-  <div class="hint-bar" id="hint-bar">
-    <span class="item"><span class="kbd">1</span>-<span class="kbd">6</span> 切换视图</span>
-    <span class="item"><span class="kbd">N</span> 记知识点</span>
-    <span class="item"><span class="kbd">←</span> 忘记 <span class="kbd">↓</span> 模糊 <span class="kbd">→</span> 记得</span>
-    <span class="item"><span class="kbd">↑</span> 撤销评分</span>
-    <span class="item">📱 右滑记得 / 左滑忘记</span>
-  </div>
-
 </div>
 <div id="modal-root"></div>
 <div id="toast-root"></div>
@@ -1466,7 +1455,7 @@ function resetStats(){
 }
 function doResetStats(){
   const t = todayStr();
-  db.studyLog = [{date: t, minutes: 0}];
+  db.studyLog = [{date: t, minutes: 0}]; _activeSeconds = 0;
   db.quizRecords = [];
   db.knowledge.forEach(k => { k.stage = 0; k.nextReview = t; k.lastReview = null; });
   save(); closeModal(); render();
@@ -1518,19 +1507,10 @@ function toast(msg, type){
   setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 300); }, 2600);
 }
 document.addEventListener('keydown', e=>{
-  if(e.target.matches('input,textarea,select,button')) return;
-  if(e.key==='Escape'){ closeModal(); return; }
-  if(e.ctrlKey||e.metaKey){ if(e.key==='k'){ e.preventDefault(); toggleSidebar(); return; } return; }
-  const n=parseInt(e.key); const views=['dashboard','library','review','quiz','wrong','stats'];
-  if(n>=1&&n<=6){ e.preventDefault(); switchView(views[n-1]); return; }
-  if(e.key==='n'||e.key==='N'){ e.preventDefault(); openKwModal(); return; }
-  if(e.key==='f'||e.key==='F'){ e.preventDefault(); const el=document.querySelector('.search-box input'); if(el) el.focus(); return; }
-  if(curView==='review'&&reviewQueue.length&&reviewIdx<reviewQueue.length){
-    if(e.key===' '){ e.preventDefault(); document.getElementById('fcard')?.classList.toggle('flipped'); return; }
-    if(e.key==='ArrowLeft'){ e.preventDefault(); grade(0,new Event('key')); return; }
-    if(e.key==='ArrowDown'){ e.preventDefault(); grade(1,new Event('key')); return; }
-    if(e.key==='ArrowRight'){ e.preventDefault(); grade(2,new Event('key')); return; }
-    if(e.key==='ArrowUp'||e.key==='z'){ e.preventDefault(); undoGrade(); return; }
+  if(e.key==='Escape') closeModal();
+  if(e.key===' ' && curView==='review' && reviewQueue.length && !e.target.matches('input,textarea')){
+    const fc = document.getElementById('fcard');
+    if(fc){ e.preventDefault(); fc.classList.toggle('flipped'); }
   }
 });
 
@@ -1538,207 +1518,56 @@ document.addEventListener('keydown', e=>{
 applyTheme(themeMode);
 load();
 render();
+
+/* ====== 学习计时器 ====== */
+let _timerInterval = null;
+function updateSidebarTimer(){
+  const t = todayStr();
+  const todayRec = db.studyLog.find(r=>r.date===t);
+  const m = todayRec ? todayRec.minutes : 0;
+  const el = document.getElementById('sidebar-timer');
+  if(el) el.textContent = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  const totalMin = db.studyLog.reduce((s,r)=>s+r.minutes,0);
+  const totalEl = document.getElementById('sidebar-total');
+  if(totalEl) totalEl.textContent = Math.floor(totalMin/60)+'时'+totalMin%60+'分';
+}
+function startTimer(){
+  if(_timerInterval) clearInterval(_timerInterval);
+  _timerInterval = setInterval(updateSidebarTimer, 1000);
+  updateSidebarTimer();
+}
+// 每次数据变更后刷新计时器
+const _origSave = save;
+save = function(){ _origSave(); updateSidebarTimer(); };
+
+// 学习时自动 +1 分钟（每 60 秒检测活跃状态）
+let _activeSeconds = 0;
+let _activeTimer = null;
+function startActivityTracking(){
+  if(_activeTimer) return;
+  _activeTimer = setInterval(()=>{
+    if(document.visibilityState === 'visible'){
+      _activeSeconds++;
+      if(_activeSeconds >= 60){
+        _activeSeconds = 0;
+        const t = todayStr();
+        let rec = db.studyLog.find(r=>r.date===t);
+        if(!rec){ rec = {date:t, minutes:0}; db.studyLog.push(rec); }
+        rec.minutes++;
+        save();
+        updateSidebarTimer();
+      }
+    }
+  }, 1000);
+}
+
+startTimer();
+startActivityTracking();
+
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 
-/* ====== v2: 交互升级 + 智能出题 ====== */
-let lastGradeUndo = null;
-let undoing = false;
-
-// 闪卡滑动绑定
-function bindFlashcardSwipe(){
-  const fc = document.getElementById('fcard');
-  if(!fc) return;
-  let sx=0, sy=0;
-  fc.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
-  fc.addEventListener('touchend', e=>{
-    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)>50 && Math.abs(dx)>Math.abs(dy)) grade(dx>0?2:0, e);
-  }, {passive:true});
-}
-
-// 重写 grade（包装原有逻辑）
-const _origGrade = grade;
-grade = function(g, ev){
-  if(ev) ev.stopPropagation();
-  if(undoing){ undoing=false; return; }
-  const k = reviewQueue[reviewIdx];
-  lastGradeUndo = { id: k.id, prevStage: k.stage, prevNextReview: k.nextReview, prevLastReview: k.lastReview };
-  _origGrade(g, ev);
-};
-// 重写 renderFlashcard 追加滑动绑定
-const _origRenderFlashcard = renderFlashcard;
-renderFlashcard = function(){
-  _origRenderFlashcard();
-  setTimeout(bindFlashcardSwipe, 50);
-};
-// 重写 renderReviewHome 中复习完成时加庆祝
-const _origRenderReviewHome = renderReviewHome;
-renderReviewHome = function(){
-  if(reviewQueue.length && reviewIdx >= reviewQueue.length){
-    celebrate();
-    return _origRenderReviewHome();
-  }
-  return _origRenderReviewHome();
-};
-
-function undoGrade(){
-  if(!lastGradeUndo) return;
-  const k = db.knowledge.find(x=>x.id===lastGradeUndo.id);
-  if(!k) return;
-  undoing = true;
-  k.stage = lastGradeUndo.prevStage;
-  k.nextReview = lastGradeUndo.prevNextReview;
-  k.lastReview = lastGradeUndo.prevLastReview;
-  lastGradeUndo = null;
-  reviewIdx--; reviewDone--;
-  if(reviewIdx<0) reviewIdx=0;
-  if(reviewDone<0) reviewDone=0;
-  save(); renderFlashcard();
-  toast('已撤销上一次评分 \\u21a9','info');
-}
-function celebrate(){
-  const root = document.createElement('div'); root.className = 'celebrate';
-  const emojis = ['🎉','⭐','✨','🏆','💪','🔥','📚','🎓'];
-  for(let i=0;i<40;i++){
-    const p = document.createElement('span'); p.className='particle';
-    p.textContent = emojis[Math.floor(Math.random()*emojis.length)];
-    p.style.left = Math.random()*100+'%';
-    p.style.animationDelay = Math.random()*0.5+'s';
-    p.style.fontSize = (18+Math.random()*20)+'px';
-    p.style.animationDuration = (1.8+Math.random()*1.2)+'s';
-    root.appendChild(p);
-  }
-  document.body.appendChild(root);
-  setTimeout(()=>root.remove(), 2500);
-}
-
-// 智能出题引擎
-function autoGenQuestions(text, subjectId, chapter){
-  let result=[], seen={};
-  if(!text) return result;
-  const defSec = (text.match(/【定义】[\s\S]*?(?=【[^定]|【$|$)/)||[])[0]||text.slice(0,800);
-  const sentences = defSec.split(/[。；]/g);
-  for(let i=0;i<sentences.length;i++){
-    const s = sentences[i].trim(); if(s.length<15) continue;
-    const m = s.match(/(.{2,18}?)(是|指|指的是|即为|即|为)(.{4,45}?)$/);
-    if(!m) continue;
-    const term = m[1].trim().replace(/[\\""《》]/g,''), def = m[3].trim().replace(/[\\""]/g,'');
-    if(term.length<2||def.length<6||seen[term]) continue;
-    seen[term]=true;
-    const pool = db.knowledge.filter(k=>k.subjectId===subjectId&&k.title!==term).sort(()=>Math.random()-.5).slice(0,3);
-    let opts = [def].concat(pool.map(k=>k.title)).slice(0,4);
-    const correct = opts[0];
-    for(let j=opts.length-1;j>0;j--){const ri=Math.floor(Math.random()*(j+1));[opts[j],opts[ri]]=[opts[ri],opts[j]];}
-    const answer = opts.indexOf(correct);
-    result.push({type:'single',question:term+' 是指？',options:opts,answer:answer,explanation:s});
-    if(result.length>=5) break;
-  }
-  const numMatch = text.match(/[（(]?(\d+[+-]?\d*)\s*(年|天|个|份|位|册|期|人|页|层|种)/g);
-  if(numMatch&&result.length<7){
-    const nm=numMatch[0], nv=nm.match(/\d+/)[0];
-    const ctx = text.slice(Math.max(0,text.indexOf(nm)-25), text.indexOf(nm)+nm.length+30).replace(/\d+/,'___');
-    if(!seen[ctx]) result.push({type:'single',question:'根据记忆填空：'+ctx,
-      options:[nv, String(Number(nv)+1), String(Math.max(1,Number(nv)-1)), String(Number(nv)+2)],answer:0,explanation:'正确数字是 '+nv});
-  }
-  return result.slice(0,8);
-}
-function openAutoGenModal(kwId){
-  const k = db.knowledge.find(x=>x.id===kwId);
-  if(!k) return;
-  const questions = autoGenQuestions(k.content, k.subjectId, k.chapter);
-  if(!questions.length){ toast('未检测到可出题的考点','info'); return; }
-  window._agPending = {subjectId:k.subjectId, chapter:k.chapter, questions};
-  openModal(
-    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
-    '<h3>🔮 智能出题 · 「'+esc(k.title)+'」</h3>'+
-    '<div class="review-info"><span>🤖 自动生成 <b>'+questions.length+'</b> 道题目</span><span>📋 「'+esc(k.chapter)+'」</span></div>'+
-    '<div class="detail-content" style="max-height:320px;overflow-y:auto">'+
-      questions.map((q,i)=>{
-        const labs='ABCDEFGH';
-        return '<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px dashed var(--border)">'+
-          '<div style="font-weight:700;margin-bottom:6px">'+(i+1)+'. '+esc(q.question)+'</div>'+
-          q.options.map((o,j)=>'<div class="q-opt" style="cursor:default;font-size:12px"><span class="key">'+labs[j]+'</span><span>'+(j===q.answer?'<b>✅ '+esc(o)+'</b>':'<span style="opacity:.7">'+esc(o)+'</span>')+'</span></div>').join('')+
-        '</div>';
-      }).join('')+
-    '</div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-ai" onclick="confirmAutoGen()">✅ 全部导入题库</button></div>');
-}
-function confirmAutoGen(){
-  const p = window._agPending; if(!p) return;
-  let added=0;
-  p.questions.forEach(q=>{
-    db.questions.push({id:'aq'+uid(), subjectId:p.subjectId, chapter:p.chapter, type:q.type, question:q.question, options:q.options, answer:q.answer, explanation:q.explanation});
-    added++;
-  });
-  window._agPending=null; save(); closeModal();
-  toast('已导入 '+added+' 道智能题目 🎓','ok');
-  renderBadges();
-}
-function openBatchAutoGenModal(sid){
-  const s = getSubject(sid); if(!s) return;
-  const ks = db.knowledge.filter(k=>k.subjectId===sid&&k.content.length>100);
-  if(!ks.length){ toast('该科目暂无足够长的知识点','info'); return; }
-  openModal(
-    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
-    '<h3>🔮 批量智能出题 · '+esc(s.name)+'</h3>'+
-    '<p style="color:var(--text-2);line-height:1.8">将从 <b>'+ks.length+'</b> 个知识点中提取考点，生成选择题。</p>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-ai" onclick="doBatchAutoGen(&#39;'+sid+'&#39;)">🚀 开始生成</button></div>');
-}
-function doBatchAutoGen(sid){
-  closeModal();
-  const ks = db.knowledge.filter(k=>k.subjectId===sid&&k.content.length>100);
-  let total=0;
-  ks.forEach(k=>{
-    const qs = autoGenQuestions(k.content, sid, k.chapter);
-    const existSet = new Set(db.questions.filter(q=>q.subjectId===sid&&q.chapter===k.chapter).map(q=>q.question));
-    qs.forEach(q=>{
-      if(existSet.has(q.question)) return;
-      db.questions.push({id:'bq'+uid(), subjectId:sid, chapter:k.chapter, type:q.type, question:q.question, options:q.options, answer:q.answer, explanation:q.explanation});
-      total++;
-    });
-  });
-  save(); renderBadges();
-  toast('批量出题完成：新增 '+total+' 道题目 📝','ok');
-}
-
-// 在知识库详情弹窗和工具栏注入按钮（渲染后动态加）
-const _origOpenKwDetail = openKwDetail;
-openKwDetail = function(id){
-  _origOpenKwDetail(id);
-  setTimeout(()=>{
-    const actions = document.querySelector('.modal .modal-actions');
-    if(actions && !actions.querySelector('.btn-ai')){
-      const btn = document.createElement('button');
-      btn.className='btn btn-ai'; btn.textContent='🔮 智能出题'; btn.style.marginRight='8px';
-      btn.onclick = ()=>{ closeModal(); openAutoGenModal(id); };
-      const delBtn = actions.querySelector('button');
-      if(delBtn) delBtn.before(btn);
-    }
-  }, 30);
-};
-const _origRenderLibrary = renderLibrary;
-renderLibrary = function(){
-  _origRenderLibrary();
-  setTimeout(()=>{
-    const bar = document.querySelector('.filter-bar');
-    if(bar && libFilter.subject!=='all' && !bar.querySelector('.btn-ai')){
-      const btn = document.createElement('button');
-      btn.className='btn btn-ai'; btn.textContent='🔮 批量出题';
-      btn.onclick = ()=>openBatchAutoGenModal(libFilter.subject);
-      const importBtn = bar.querySelector('[onclick*=\"import-cards-file\"]');
-      if(importBtn) importBtn.before(btn);
-    }
-  }, 30);
-};
-const __origRenderFlash = renderFlashcard;
-renderFlashcard = function(){
-  __origRenderFlash();
-  document.querySelector('.fc-hint')?.setAttribute('data-v2','1');
-};
-
-console.log('v2 features loaded: shortcuts, swipe, undo, celebrate, auto-gen questions');
 
 </script>
 </body>
