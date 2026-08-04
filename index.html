@@ -619,7 +619,8 @@ let _loadResolve = null;
 const _dbReady = new Promise(r => { _loadResolve = r; });
 async function load(){
   if(sb){
-    const { data, error } = await sb.from('app_state').select('data').eq('id', 1).maybeSingle();
+    const uid = _currentUser ? _currentUser.id : null;
+    const { data } = uid ? await sb.from('app_state').select('data').eq('user_id', uid).maybeSingle() : {data: null};
     if(data && data.data && data.data.subjects){
       db = data.data;
       _loadResolve(db);
@@ -638,8 +639,8 @@ async function load(){
   setupRealtimeSync();
 }
 async function save(){
-  if(sb){
-    try{ await sb.from('app_state').upsert({ id: 1, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
+  if(sb && _currentUser){
+    try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
   }
   localStorage.setItem('yanxueku_v1', JSON.stringify(db)); // always mirror to localStorage as backup
 }
@@ -1768,6 +1769,10 @@ _dbReady.then(function(){
     setTimeout(showFirstGuide, 800);
   }
 });
+setTimeout(function(){
+  var s = document.getElementById('loading-screen');
+  if(s && !s.classList.contains('done')) s.classList.add('done');
+}, 4000);
 
 
 /* ====== v3.1: 挖空模式 + 倒计时 + 每日目标 ====== */
