@@ -607,18 +607,14 @@ function setupRealtimeSync(){
             db = payload.new.data;
             try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
             if(curView) render();
-            updateSidebarTimer();
-            updateDashboardHeader();
+            setTimeout(function(){ updateSidebarTimer(); }, 50);
+            setTimeout(function(){ updateDashboardHeader(); }, 80);
           }
         }
       }
     ).subscribe();
 }
-// 启动时等待 db 就绪
-_windowOnLoad = async function(){
-  await _dbReady;
-  render();
-};
+
 
 function getSubject(id){ return db.subjects.find(s=>s.id===id); }
 function addStudy(min){
@@ -1622,6 +1618,7 @@ render();
 /* ====== 学习计时器 ====== */
 let _timerInterval = null;
 function updateSidebarTimer(){
+  if(!db||!db.studyLog) return;
   const t = todayStr();
   const todayRec = db.studyLog.find(r=>r.date===t);
   const m = todayRec ? todayRec.minutes : 0;
@@ -1636,9 +1633,13 @@ function startTimer(){
   _timerInterval = setInterval(updateSidebarTimer, 1000);
   updateSidebarTimer();
 }
-// 每次数据变更后刷新计时器
-const _origSave = save;
-save = function(){ _origSave(); updateSidebarTimer(); };
+// save hook: 每次保存后刷新 UI
+const _origSaveFunc = save;
+save = function(){
+  const r = _origSaveFunc.apply(this, arguments);
+  if(r && r.then) r.then(updateSidebarTimer); else updateSidebarTimer();
+  return r;
+};
 
 // 学习时自动 +1 分钟（每 60 秒检测活跃状态）
 let _activeSeconds = 0;
@@ -1648,6 +1649,7 @@ function startActivityTracking(){
   _activeTimer = setInterval(()=>{
     if(document.visibilityState === 'visible'){
       _activeSeconds++;
+      if(!db||!db.studyLog){ _activeSeconds=0; return; }
       if(_activeSeconds >= 60){
         _activeSeconds = 0;
         const t = todayStr();
@@ -1661,8 +1663,11 @@ function startActivityTracking(){
   }, 1000);
 }
 
-startTimer();
-startActivityTracking();
+// Deferred start after DB loads
+_dbReady.then(function(){
+  startTimer();
+  startActivityTracking();
+});
 
 
 /* ====== v3.1: 挖空模式 + 倒计时 + 每日目标 ====== */
