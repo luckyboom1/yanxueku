@@ -655,7 +655,7 @@ async function save(){
   if(sb && _currentUser){
     try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
   }
-  localStorage.setItem('yanxueku_v1', JSON.stringify(db)); // always mirror to localStorage as backup
+  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){ console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
 }
 function setupRealtimeSync(){
   if(!sb) return;
@@ -765,7 +765,9 @@ function render(){
   ({dashboard:renderDashboard, library:renderLibrary, review:renderReviewHome, quiz:renderQuizHome, wrong:renderWrong, stats:renderStats})[curView]();
 }
 function renderSidebar(){
+  if(!db||!db.subjects) return;
   const el = document.getElementById('subj-list');
+  if(!el) return;
   el.innerHTML = db.subjects.map(s=>{
     const cnt = db.knowledge.filter(k=>k.subjectId===s.id).length;
     const due = db.knowledge.filter(k=>k.subjectId===s.id && isDue(k)).length;
@@ -776,6 +778,7 @@ function renderSidebar(){
   }).join('');
 }
 function renderBadges(){
+  if(!db||!db.knowledge) return;
   const due = dueList().length;
   const b1 = document.getElementById('badge-due');
   b1.style.display = due? 'flex':'none'; b1.textContent = due;
@@ -786,6 +789,7 @@ function renderBadges(){
 
 /* ================= 仪表盘 ================= */
 function renderDashboard(){
+  if(!db||!db.studyLog) return;
   const el = document.getElementById('view-dashboard');
   const t = todayStr();
   const due = dueList();
@@ -895,6 +899,7 @@ function renderDashboard(){
 /* ================= 知识库 ================= */
 function setLibSubject(id){ libFilter.subject = id; renderLibrary(); }
 function renderLibrary(){
+  if(!db||!db.knowledge) return;
   const el = document.getElementById('view-library');
   const tags = [...new Set(db.knowledge.flatMap(k=>k.tags))];
   let list = db.knowledge.slice();
@@ -1036,6 +1041,7 @@ function startReview(focusId){
   switchView('review');
 }
 function renderReviewHome(){
+  if(!db||!db.knowledge) return;
   const el = document.getElementById('view-review');
   if(!reviewQueue.length || reviewIdx>=reviewQueue.length){
     const due = dueList();
@@ -1115,6 +1121,7 @@ function grade(g, ev){
 let quiz = null; // {list, idx, right, answered}
 let quizCfg = {subject:'all', count:10};
 function renderQuizHome(){
+  if(!db||!db.questions) return;
   const el = document.getElementById('view-quiz');
   if(quiz && quiz.idx < quiz.list.length){ renderQuestion(); return; }
   el.innerHTML = `
@@ -1227,6 +1234,7 @@ function renderQuizResult(){
 
 /* ================= 错题本 ================= */
 function renderWrong(){
+  if(!db||!db.questions) return;
   const el = document.getElementById('view-wrong');
   const list = wrongList();
   if(!list.length){
@@ -1281,6 +1289,7 @@ function redoWrong(qid, i){
 
 /* ================= 数据统计 ================= */
 function renderStats(){
+  if(!db||!db.studyLog) return;
   const el = document.getElementById('view-stats');
   const t = todayStr();
   // 近14天
@@ -1897,6 +1906,7 @@ function setDailyGoal(n){
   updateDashboardHeader();
 }
 function updateDashboardHeader(){
+  if(!db||!db.knowledge) return;
   const el = document.getElementById('dash-header-right');
   if(!el) return;
   const examDate = getCountdownDate();
@@ -1989,26 +1999,32 @@ async function doLogin(){
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
   if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
-  var r = await sb.auth.signInWithPassword({email:e, password:p});
-  if(r.error){ toast(r.error.message,'err'); return; }
-  closeModal(); toast('登录成功 ✅','ok');
+  try{
+    var r = await sb.auth.signInWithPassword({email:e, password:p});
+    if(r.error){ toast(r.error.message,'err'); return; }
+    closeModal(); toast('登录成功 ✅','ok');
+  }catch(e){ toast('网络错误，请重试','err'); }
 }
 async function doSignUp(){
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
   var n=document.getElementById('auth-name'); n=n?n.value.trim()||e.split('@')[0]:e.split('@')[0];
   if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
-  var r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
-  if(r.error){ toast(r.error.message,'err'); return; }
-  closeModal(); toast(r.data.session?'注册成功 ✅':'请检查邮箱确认 📧','ok');
+  try{
+    var r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
+    if(r.error){ toast(r.error.message,'err'); return; }
+    closeModal(); toast(r.data.session?'注册成功 ✅':'请检查邮箱确认 📧','ok');
+  }catch(e){ toast('网络错误，请重试','err'); }
 }
 async function signOut(){
   if(!sb) return;
-  _currentUser=null; _profile=null; await sb.auth.signOut();
+  _currentUser=null; _profile=null;
+  try{ await sb.auth.signOut(); }catch(e){}
   db=seedData(); ensureNewsSubject(); localStorage.removeItem('yanxueku_v1');
   renderSidebarUser(); switchView('dashboard'); toast('已退出','info');
 }
 function openProfileModal(){
+  if(!_profile){ toast('请先登录','err'); return; }
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 个人资料</h3>'+
     '<div class="form-row"><label>显示名称</label><input id="pf-name" value="'+esc(_profile.display_name||'')+'"></div>'+
     '<div class="form-row"><label>头像颜色</label><div class="color-picker" id="pf-colors"></div><input type="hidden" id="pf-color" value="'+(_profile.avatar_color||'#6366f1')+'"></div>'+
@@ -2023,8 +2039,10 @@ async function saveProfile(){
   if(!sb||!_currentUser){ toast('未登录','err'); return; }
   var n=document.getElementById('pf-name').value.trim()||'考研人';
   var c=document.getElementById('pf-color').value||'#6366f1';
-  await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
-  _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
+  try{
+    await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
+    _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
+  }catch(e){ toast('保存失败，请重试','err'); }
 }
 if(sb){sb.auth.onAuthStateChange(async function(ev,session){
   if(session && session.user){
@@ -2033,7 +2051,7 @@ if(sb){sb.auth.onAuthStateChange(async function(ev,session){
     _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
     var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
     if(rd && rd.data && rd.data.data && rd.data.data.subjects){ db = rd.data.data; }
-    localStorage.setItem('yanxueku_v1', JSON.stringify(db));
+    try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
   }else{ _currentUser=null; _profile=null; }
   renderSidebarUser();
   if(curView) render();

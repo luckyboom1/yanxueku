@@ -1,0 +1,194 @@
+{
+  "issues": [
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: Blob",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: Date",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: Error",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: FileReader",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: O",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: Promise",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: Set",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: String",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: ___origKC",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: __orig_rs",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: _loadResolve",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: _origRB",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: _origRD",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: _origRF",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: bezier",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: clearInterval",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: gradient",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: minmax",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: parseInt",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: rgba",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: setInterval",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: setTimeout",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: translateX",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: url",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "函数引用",
+      "desc": "未定义函数: var",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "事件绑定",
+      "desc": "addEventListener keydown → e 未定义",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "事件绑定",
+      "desc": "addEventListener click → function 未定义",
+      "line": ""
+    },
+    {
+      "severity": "P1",
+      "category": "事件绑定",
+      "desc": "addEventListener click → function 未定义",
+      "line": ""
+    },
+    {
+      "severity": "P2",
+      "category": "资源泄漏",
+      "desc": "setInterval(2) > clearInterval(1)，可能内存泄漏",
+      "line": ""
+    }
+  ],
+  "passes": [
+    "JS 语法检查通过 (node --check)",
+    "无重复函数定义",
+    "CSS 大括号匹配",
+    "CSS 变量完整性: 23 个",
+    "HTML 标签闭合正常",
+    "DOM id 引用一致性: 30 个"
+  ],
+  "stats": {
+    "total_lines": 2082,
+    "js_lines": 1624,
+    "css_lines": 372,
+    "js_functions": 93,
+    "css_rules": 288,
+    "file_size_kb": 278.5
+  }
+}
