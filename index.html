@@ -381,6 +381,9 @@ canvas#chart-days{width:100%;height:260px}
 .leader-row .ld-name{flex:1;font-weight:600}.leader-row .ld-time{color:var(--primary);font-weight:700;font-size:12px}
 .kw-star{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:8px;border:none;background:transparent;color:var(--text-3);font-size:16px;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center}
 .kw-star.on{color:#f59e0b}.kw-star:hover{color:#f59e0b;transform:scale(1.2)}
+.wq-feedback{margin-top:10px;padding:8px 12px;border-radius:8px;background:var(--surface-2);font-size:12px;color:var(--text-2);line-height:1.6}
+.blanks-toggle{display:inline-block;padding:4px 12px;border-radius:8px;font-size:12px;color:var(--primary);font-weight:600;cursor:pointer;margin-bottom:8px;background:rgba(99,102,241,.08)}
+.blanks-toggle:hover{background:rgba(99,102,241,.15)}
 </style>
 <meta name="description" content="研学库 - 考研专业课高效学习系统。艾宾浩斯遗忘曲线智能复习、刷题自测、错题本、学习统计。支持多人实时同步，永久免费。">
 <meta name="keywords" content="考研,专业课,艾宾浩斯,记忆复习,闪卡,刷题,学习系统">
@@ -617,30 +620,36 @@ let db;
 let _loadResolve = null;
 const _dbReady = new Promise(r => { _loadResolve = r; });
 async function load(){
+  // Supabase 查询包在 try/catch 里：任何异常都不影响本地回退
   if(sb){
-    const uid = _currentUser ? _currentUser.id : null;
-    const { data } = uid ? await sb.from('app_state').select('data').eq('user_id', uid).maybeSingle() : {data: null};
-    if(data && data.data && data.data.subjects){
-      db = data.data;
-      _loadResolve(db);
-      setupRealtimeSync();
-      return;
-    }
+    try{
+      const uid = _currentUser ? _currentUser.id : null;
+      const { data } = uid ? await sb.from('app_state').select('data').eq('user_id', uid).maybeSingle() : {data: null};
+      if(data && data.data && data.data.subjects){
+        db = data.data;
+        _loadResolve(db);
+        setupRealtimeSync();
+        hideLoading();
+        return;
+      }
+    }catch(e){ console.warn('Supabase load failed, using local:', e.message); }
   }
   // Fallback: localStorage or seed
   try{
     const raw = localStorage.getItem('yanxueku_v1');
-    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); return; }
+    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); hideLoading(); return; }
   }catch(e){}
   db = seedData(); ensureNewsSubject();
-  await save();
+  try{ await save(); }catch(e){ console.warn('save failed:', e.message); }
   _loadResolve(db);
   setupRealtimeSync();
-  // 数据库加载完成后手动隐藏加载屏
+  hideLoading();
+}
+function hideLoading(){
   setTimeout(function(){
     var s = document.getElementById('loading-screen');
-    if(s) s.classList.add('done');
-  }, 100);
+    if(s && !s.classList.contains('done')) s.classList.add('done');
+  }, 120);
 }
 async function save(){
   if(sb && _currentUser){
@@ -651,7 +660,7 @@ async function save(){
 function setupRealtimeSync(){
   if(!sb) return;
   sb.channel('app_state_changes')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.1' },
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'user_id=eq.'+(_currentUser?_currentUser.id:'') },
       payload => {
         if(payload.new && payload.new.data && payload.new.data.subjects){
           const oldUpdated = new Date(db.updated_at||0).getTime();
@@ -1701,6 +1710,7 @@ function nextGuide(){
   setTimeout(function(){
     var b2 = document.createElement('div');
     b2.className = 'guide-bubble';
+    b2.id = 'guide-bubble';
     b2.innerHTML = '<b>📖 从新建知识点开始</b><br>点击右上角「＋ 记知识点」或点击任意卡片查看详情。<br>已内置 104 张中国新闻史卡片，可随时删除。<br><button class="guide-next" onclick="closeGuide()">明白了</button>';
     b2.style.top = '130px';
     b2.style.left = '280px';
@@ -1763,20 +1773,13 @@ function startActivityTracking(){
 
 // Deferred start after DB loads
 _dbReady.then(function(){
-  startTimer();
-  startActivityTracking();
-  // 隐藏加载屏
-  var shield = document.getElementById('loading-screen');
-  if(shield){ setTimeout(function(){ shield.classList.add('done'); }, 300); }
+  try{ startTimer(); }catch(e){}
+  try{ startActivityTracking(); }catch(e){}
   // 首次使用引导
   if(!localStorage.getItem('yanxueku_guided')){
     setTimeout(showFirstGuide, 800);
   }
 });
-setTimeout(function(){
-  var s = document.getElementById('loading-screen');
-  if(s && !s.classList.contains('done')) s.classList.add('done');
-}, 4000);
 
 
 /* ====== v3.1: 挖空模式 + 倒计时 + 每日目标 ====== */
@@ -1929,11 +1932,20 @@ function openGoalSetter(){
 }
 // 在 renderDashboard 和 renderBadges 后更新头部
 const _origRD = renderDashboard;
+const _origRB = renderBadges;
 renderDashboard = function(){
   _origRD();
   requestAnimationFrame(updateDashboardHeader);
+  // 排行榜面板注入（合并进同一包装，避免二次包装）
+  setTimeout(function(){
+    var el = document.getElementById('view-dashboard');
+    if(el && !el.querySelector('#leaderboard-panel')){
+      var div = document.createElement('div');
+      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub" onclick="renderLeaderboard()" style="cursor:pointer;color:var(--primary)">刷新</span></div><div id="leaderboard-panel"></div></div>';
+      el.appendChild(div); renderLeaderboard();
+    }
+  }, 60);
 };
-const _origRB = renderBadges;
 renderBadges = function(){
   _origRB();
   requestAnimationFrame(updateDashboardHeader);
@@ -1974,6 +1986,7 @@ function openAuthModal(){
   ra();
 }
 async function doLogin(){
+  if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
   if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
   var r = await sb.auth.signInWithPassword({email:e, password:p});
@@ -1981,6 +1994,7 @@ async function doLogin(){
   closeModal(); toast('登录成功 ✅','ok');
 }
 async function doSignUp(){
+  if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
   var n=document.getElementById('auth-name'); n=n?n.value.trim()||e.split('@')[0]:e.split('@')[0];
   if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
@@ -1989,6 +2003,7 @@ async function doSignUp(){
   closeModal(); toast(r.data.session?'注册成功 ✅':'请检查邮箱确认 📧','ok');
 }
 async function signOut(){
+  if(!sb) return;
   _currentUser=null; _profile=null; await sb.auth.signOut();
   db=seedData(); ensureNewsSubject(); localStorage.removeItem('yanxueku_v1');
   renderSidebarUser(); switchView('dashboard'); toast('已退出','info');
@@ -2005,6 +2020,7 @@ function openProfileModal(){
   },10);
 }
 async function saveProfile(){
+  if(!sb||!_currentUser){ toast('未登录','err'); return; }
   var n=document.getElementById('pf-name').value.trim()||'考研人';
   var c=document.getElementById('pf-color').value||'#6366f1';
   await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
@@ -2036,18 +2052,6 @@ async function renderLeaderboard(){
     panel.innerHTML=rows||'<div style="text-align:center;padding:20px;color:var(--text-3)">暂无数据</div>';
   }catch(e){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>'; }
 }
-var ___origRD = renderDashboard;
-renderDashboard = function(){
-  ___origRD();
-  setTimeout(function(){
-    var el=document.getElementById('view-dashboard');
-    if(el&&!el.querySelector('#leaderboard-panel')){
-      var div=document.createElement('div');
-      div.innerHTML='<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub" onclick="renderLeaderboard()" style="cursor:pointer;color:var(--primary)">刷新</span></div><div id="leaderboard-panel"></div></div>';
-      el.appendChild(div); renderLeaderboard();
-    }
-  },60);
-};
 function toggleStar(kwId, ev){ if(ev)ev.stopPropagation(); if(_starred.has(kwId))_starred.delete(kwId); else _starred.add(kwId); localStorage.setItem('yanxueku_stars', JSON.stringify([..._starred])); renderLibrary(); }
 var ___origKC = kwCard;
 kwCard = function(k){ var sid = JSON.stringify(k.id); return ___origKC(k).replace('<div class="kw-card"', '<div class="kw-card"><button class="kw-star' + (_starred.has(k.id)?' on':'') + '" onclick="toggleStar('+sid+',event)">' + (_starred.has(k.id)?'⭐':'☆') + '</button>'); };
