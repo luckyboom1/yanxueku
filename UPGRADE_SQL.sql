@@ -5,8 +5,8 @@
 -- 1. 改造 app_state 支持多用户
 ALTER TABLE app_state DROP CONSTRAINT IF EXISTS app_state_pkey;
 ALTER TABLE app_state ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) DEFAULT NULL;
--- 将现有的公共数据迁移给第一个用户（如果有的话）
-UPDATE app_state SET user_id = (SELECT id FROM auth.users ORDER BY created_at LIMIT 1) WHERE user_id IS NULL;
+-- 删除旧的无主公共数据（新用户登录后会自动生成）
+DELETE FROM app_state WHERE user_id IS NULL;
 ALTER TABLE app_state ADD PRIMARY KEY (user_id);
 
 -- 2. 用户资料表
