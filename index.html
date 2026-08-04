@@ -330,6 +330,20 @@ canvas#chart-days{width:100%;height:260px}
 }
 80%{opacity:1}100%{opacity:0;transform:translateY(100vh) rotate(720deg) scale(.3)}}
 
+
+/* 挖空模式 */
+.blanks-mode .fc-content b,.blanks-mode .fc-content code{display:none}
+.blanks-mode .blank-reveal{background:var(--surface-2);border:2px dashed var(--primary);border-radius:8px;padding:3px 10px;color:transparent;cursor:pointer;font-weight:600;transition:all .3s;display:inline-block;margin:0 2px;min-width:30px;text-align:center}
+.blanks-mode .blank-reveal:hover{background:rgba(99,102,241,.1)}
+.blanks-mode .blank-reveal.revealed{color:var(--primary);border-style:solid;background:rgba(99,102,241,.08)}
+.blanks-mode .blank-reveal.revealed::after{content:''}
+.blanks-mode .blank-count{font-size:12px;color:var(--text-3);text-align:center;margin:8px 0}
+/* 倒计时 & 目标 */
+.countdown-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(239,68,68,.12),rgba(249,115,22,.1));border:1.5px solid rgba(239,68,68,.25);border-radius:14px;padding:8px 16px;font-weight:700;font-size:15px}
+.countdown-badge .num{font-size:24px;color:var(--danger);line-height:1}
+.countdown-badge .unit{font-size:11px;color:var(--text-3)}
+.goal-bar{height:12px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin-top:6px}
+.goal-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--primary),var(--primary-2));transition:width .5s cubic-bezier(.16,1,.3,1)}
 </style>
 </head>
 <body>
@@ -696,9 +710,13 @@ function renderDashboard(){
   const maxPlan = Math.max(1, ...plan.map(p=>p.n));
 
   el.innerHTML = `
-    <div style="margin-bottom:20px">
-      <h2 style="font-size:22px;font-weight:800">${greet}，考研人 💪</h2>
-      <div style="color:var(--text-3);font-size:13px">${dateStr} · 今天的每一点积累，都是上岸的底气</div>
+    
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+      <div>
+        <h2 style="font-size:22px;font-weight:800">${greet}，考研人 💪</h2>
+        <div style="color:var(--text-3);font-size:13px">${dateStr} · 今天的每一点积累，都是上岸的底气</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="dash-header-right"></div>
     </div>
     <div class="grid-stats">
       <div class="stat-card" style="--sc:linear-gradient(90deg,#ef4444,#f87171)">
@@ -1563,6 +1581,171 @@ function startActivityTracking(){
 
 startTimer();
 startActivityTracking();
+
+
+/* ====== v3.1: 挖空模式 + 倒计时 + 每日目标 ====== */
+
+// --- 挖空模式 ---
+let blanksMode = false;
+let blankAnswers = [];
+function toggleBlanksMode(){
+  blanksMode = !blanksMode;
+  const el = document.querySelector('.fc-back');
+  if(!el) return;
+  if(blanksMode){
+    el.classList.add('blanks-mode');
+    // 解析当前背面内容，隐藏 <b> 和 <code> 标签，替换为可点击的填空
+    const original = el.innerHTML;
+    if(!el.dataset.blanksOriginal) el.dataset.blanksOriginal = original;
+    const bolds = el.querySelectorAll('b');
+    const codes = el.querySelectorAll('code');
+    blankAnswers = [];
+    bolds.forEach(b => {
+      const txt = b.textContent.trim();
+      if(txt.length < 2 || txt.length > 25) return;
+      const span = document.createElement('span');
+      span.className = 'blank-reveal'; span.textContent = txt;
+      span.dataset.answer = txt;
+      span.onclick = function(){ this.classList.add('revealed'); this.textContent = this.dataset.answer; };
+      b.replaceWith(span);
+      blankAnswers.push({el: span, txt: txt});
+    });
+    codes.forEach(c => {
+      const txt = c.textContent.trim();
+      if(txt.length < 2 || txt.length > 20) return;
+      const span = document.createElement('span');
+      span.className = 'blank-reveal'; span.textContent = txt;
+      span.dataset.answer = txt;
+      span.onclick = function(){ this.classList.add('revealed'); this.textContent = this.dataset.answer; };
+      c.replaceWith(span);
+      blankAnswers.push({el: span, txt: txt});
+    });
+    // 添加计数提示
+    if(blankAnswers.length > 0){
+      const hint = document.createElement('div');
+      hint.className = 'blank-count';
+      hint.id = 'blank-hint';
+      hint.textContent = '🔍 '+blankAnswers.length+' 个挖空 · 点击依次揭示';
+      el.appendChild(hint);
+    }
+  }else{
+    el.classList.remove('blanks-mode');
+    el.innerHTML = el.dataset.blanksOriginal || el.innerHTML;
+    el.dataset.blanksOriginal = '';
+    blankAnswers = [];
+  }
+}
+
+// 翻卡后默认开启挖空模式
+const _origRF = renderFlashcard;
+renderFlashcard = function(){
+  _origRF();
+  blanksMode = false;
+  blankAnswers = [];
+  setTimeout(() => {
+    const fc = document.getElementById('fcard');
+    if(fc) fc.addEventListener('click', function autoBlanks(){
+      if(fc.classList.contains('flipped')){
+        toggleBlanksMode();
+        fc.removeEventListener('click', autoBlanks);
+      }
+    }, {once: false});
+  }, 30);
+};
+
+// 闪卡背面加挖空切换按钮
+const _origRF2 = renderFlashcard;
+renderFlashcard = function(){
+  _origRF2();
+  setTimeout(() => {
+    const back = document.querySelector('.fc-back');
+    if(back && !back.querySelector('.blanks-toggle')){
+      const btn = document.createElement('div');
+      btn.className = 'blank-count';
+      btn.style.cssText = 'cursor:pointer;color:var(--primary);font-weight:600;margin-bottom:8px';
+      btn.textContent = '🔍 挖空模式（关闭）';
+      btn.onclick = function(e){
+        e.stopPropagation();
+        toggleBlanksMode();
+        this.textContent = blanksMode ? '🔍 挖空模式（开启中）' : '🔍 挖空模式（关闭）';
+      };
+      back.insertBefore(btn, back.firstChild);
+    }
+  }, 30);
+};
+
+// --- 考研倒计时 ---
+function getCountdownDate(){
+  const saved = localStorage.getItem('yanxueku_exam_date');
+  if(saved) return new Date(saved);
+  // 默认：当前年份12月第三个周末的周六
+  const now = new Date();
+  const y = now.getFullYear();
+  const dec = new Date(y, 11, 20); // 12月20日附近
+  while(dec.getDay() !== 6) dec.setDate(dec.getDate() + 1); // 调到周六
+  // 如果已经过了今年12月，用明年
+  if(now > dec){ dec.setFullYear(y + 1); dec.setMonth(11); dec.setDate(20); while(dec.getDay() !== 6) dec.setDate(dec.getDate() + 1); }
+  return dec;
+}
+function setExamDate(d){
+  localStorage.setItem('yanxueku_exam_date', d.toISOString().slice(0,10));
+  if(localStorage.getItem('yanxueku_exam_date_set') !== '1'){
+    localStorage.setItem('yanxueku_exam_date_set', '1');
+  }
+  updateDashboardHeader();
+}
+let _dailyGoal = parseInt(localStorage.getItem('yanxueku_daily_goal') || '20');
+function setDailyGoal(n){
+  _dailyGoal = n;
+  localStorage.setItem('yanxueku_daily_goal', n);
+  updateDashboardHeader();
+}
+function updateDashboardHeader(){
+  const el = document.getElementById('dash-header-right');
+  if(!el) return;
+  const examDate = getCountdownDate();
+  const now = new Date();
+  const diff = Math.ceil((examDate - now) / 86400000);
+  const dueList = db.knowledge.filter(k => k.nextReview <= todayStr());
+  const todayDone = db.knowledge.filter(k => k.lastReview === todayStr()).length;
+  el.innerHTML = `
+    <div class="countdown-badge" onclick="openExamDatePicker()" title="点击设置考研日期">
+      <div style="text-align:center"><div class="num">${Math.max(0, diff)}</div><div class="unit">天</div></div>
+      <div style="line-height:1.3"><div style="font-size:12px">距考研</div><div style="font-size:10px;opacity:.7">${examDate.toLocaleDateString('zh-CN',{month:'long',day:'numeric'})}</div></div>
+    </div>
+    <div style="font-size:12px;line-height:1.5">
+      <div>📋 今日目标 <b>${todayDone}</b> / <b onclick="openGoalSetter()" style="cursor:pointer;color:var(--primary)" title="点击设置目标">${_dailyGoal}</b> 个</div>
+      <div class="goal-bar" style="width:80px"><div class="goal-fill" style="width:${Math.min(100, Math.round(todayDone/_dailyGoal*100))}%"></div></div>
+    </div>`;
+}
+function openExamDatePicker(){
+  const d = getCountdownDate();
+  openModal(
+    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<h3>📅 设定考研日期</h3>'+
+    '<div class="form-row"><label>考试日期</label><input id="exam-date-input" type="date" value="'+d.toISOString().slice(0,10)+'"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="setExamDate(new Date(document.getElementById(\'exam-date-input\').value));closeModal()">确定</button></div>');
+}
+function openGoalSetter(){
+  openModal(
+    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<h3>🎯 每日复习目标</h3>'+
+    '<div class="form-row"><label>每天想复习多少个知识点？</label><input id="goal-input" type="number" value="'+_dailyGoal+'" min="1" max="200"></div>'+
+    '<div style="font-size:12px;color:var(--text-3)">建议从 15~30 开始，根据实际节奏调整</div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="setDailyGoal(parseInt(document.getElementById(\'goal-input\').value)||20);closeModal()">确定</button></div>');
+}
+// 在 renderDashboard 和 renderBadges 后更新头部
+const _origRD = renderDashboard;
+renderDashboard = function(){
+  _origRD();
+  setTimeout(updateDashboardHeader, 20);
+};
+const _origRB = renderBadges;
+renderBadges = function(){
+  _origRB();
+  setTimeout(updateDashboardHeader, 20);
+};
+
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
