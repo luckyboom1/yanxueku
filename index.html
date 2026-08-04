@@ -345,6 +345,7 @@ canvas#chart-days{width:100%;height:260px}
 .goal-bar{height:12px;border-radius:7px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;margin-top:6px}
 .goal-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--primary),var(--primary-2));transition:width .5s cubic-bezier(.16,1,.3,1)}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div id="app">
@@ -399,8 +400,11 @@ canvas#chart-days{width:100%;height:260px}
 <div id="toast-root"></div>
 
 <script>
-/* ================= 数据层 ================= */
-const STORE_KEY = 'yanxueku_v1';
+/* ================= 数据层（Supabase 共享数据库） ================= */
+const SUPABASE_URL = 'https://gwihiemggugzwhutsfea.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4';
+let sb = null;
+try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase init failed, falling back to localStorage'); }
 const THEME_KEY = 'yanxueku_theme';
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
@@ -559,15 +563,58 @@ function ensureNewsSubject(){
 
 
 let db;
-function load(){
+let _loadResolve = null;
+const _dbReady = new Promise(r => { _loadResolve = r; });
+async function load(){
+  if(sb){
+    const { data, error } = await sb.from('app_state').select('data').eq('id', 1).maybeSingle();
+    if(data && data.data && data.data.subjects){
+      db = data.data;
+      _loadResolve(db);
+      setupRealtimeSync();
+      return;
+    }
+  }
+  // Fallback: localStorage or seed
   try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(raw){ db = JSON.parse(raw); return; }
-  }catch(e){ console.warn('数据读取失败，重置为示例数据', e); }
+    const raw = localStorage.getItem('yanxueku_v1');
+    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); return; }
+  }catch(e){}
   db = seedData(); ensureNewsSubject();
-  save();
+  await save();
+  _loadResolve(db);
+  setupRealtimeSync();
 }
-function save(){ localStorage.setItem(STORE_KEY, JSON.stringify(db)); }
+async function save(){
+  if(sb){
+    try{ await sb.from('app_state').upsert({ id: 1, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
+  }
+  localStorage.setItem('yanxueku_v1', JSON.stringify(db)); // always mirror to localStorage as backup
+}
+function setupRealtimeSync(){
+  if(!sb) return;
+  sb.channel('app_state_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'id=eq.1' },
+      payload => {
+        if(payload.new && payload.new.data && payload.new.data.subjects){
+          const oldUpdated = new Date(db.updated_at||0).getTime();
+          const newUpdated = new Date(payload.new.data.updated_at||0).getTime();
+          if(newUpdated > oldUpdated){
+            db = payload.new.data;
+            try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
+            if(curView) render();
+            updateSidebarTimer();
+            updateDashboardHeader();
+          }
+        }
+      }
+    ).subscribe();
+}
+// 启动时等待 db 就绪
+_windowOnLoad = async function(){
+  await _dbReady;
+  render();
+};
 
 function getSubject(id){ return db.subjects.find(s=>s.id===id); }
 function addStudy(min){
