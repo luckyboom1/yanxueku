@@ -3,7 +3,7 @@ const fs = require('fs');
 const src = fs.readFileSync('C:/Users/53296/WorkBuddy/2026-08-04-20-21-15/kaoyan-study/index.html', 'utf-8');
 
 // Extract JS
-const m = src.match(/<script[^>]*>([\s\S]*?)<\/script>/);
+const m = src.match(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/);
 const js = m ? m[1] : '';
 
 const localStorage = {

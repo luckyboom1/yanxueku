@@ -12,6 +12,8 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>研学库 · 考研专业课高效学习</title>
+<!-- Supabase SDK（云同步/登录依赖；加载失败自动回退本地模式） -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
 <style>
 :root{
   --bg:#f4f5fb; --bg-grad:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.08), transparent 60%), #f4f5fb;
@@ -462,7 +464,23 @@ canvas#chart-days{width:100%;height:260px}
 const SUPABASE_URL = 'https://gwihiemggugzwhutsfea.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4';
 let sb = null;
-try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase init failed, falling back to localStorage'); }
+let _supabaseTried = false;
+function tryInitSupabase(){
+  if(sb || _supabaseTried) return !!sb;
+  _supabaseTried = true;
+  if(window.supabase && window.supabase.createClient){
+    try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase init failed:', e && e.message); }
+  }
+  return !!sb;
+}
+tryInitSupabase();
+if(!sb){
+  // 兜底：jsdelivr 不可用时动态加载 unpkg
+  var _s = document.createElement('script');
+  _s.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  _s.onload = function(){ tryInitSupabase(); setupAuthListener(); };
+  document.head.appendChild(_s);
+}
 const THEME_KEY = 'yanxueku_theme';
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
@@ -622,6 +640,7 @@ function ensureNewsSubject(){
 
 let db;
 let _loadResolve = null;
+let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中访问触发 TDZ
 const _dbReady = new Promise(r => { _loadResolve = r; });
 async function load(){
   // Supabase 查询包在 try/catch 里：任何异常都不影响本地回退
@@ -1974,7 +1993,6 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
 
 
 /* ====== v5: 用户系统 + 排行榜 + 收藏 ====== */
-let _currentUser = null, _profile = null;
 let _starred = new Set(JSON.parse(localStorage.getItem('yanxueku_stars')||'[]'));
 
 function renderSidebarUser(){
@@ -2089,22 +2107,28 @@ async function saveProfile(){
     _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
   }catch(e){ toast('保存失败，请重试','err'); }
 }
-if(sb){sb.auth.onAuthStateChange(async function(ev,session){
-  if(session && session.user){
-    _currentUser = session.user;
-    var r=await sb.from('profiles').select('*').eq('user_id', _currentUser.id).single();
-    _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
-    var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
-    if(rd && rd.data && rd.data.data && rd.data.data.subjects){
-      db = rd.data.data;                                  // 云端有数据 → 用云端
-    }else if(db && db.subjects && db.subjects.length){
-      try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){} // 云端无数据 → 上传本地（首次同步）
-    }
-    try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
-  }else{ _currentUser=null; _profile=null; }
-  renderSidebarUser();
-  if(curView) render();
-});}
+let _authListenerReady = false;
+function setupAuthListener(){
+  if(!sb || _authListenerReady) return;
+  _authListenerReady = true;
+  sb.auth.onAuthStateChange(async function(ev,session){
+    if(session && session.user){
+      _currentUser = session.user;
+      var r=await sb.from('profiles').select('*').eq('user_id', _currentUser.id).single();
+      _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
+      var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
+      if(rd && rd.data && rd.data.data && rd.data.data.subjects){
+        db = rd.data.data;                                  // 云端有数据 → 用云端
+      }else if(db && db.subjects && db.subjects.length){
+        try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){} // 云端无数据 → 上传本地（首次同步）
+      }
+      try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
+    }else{ _currentUser=null; _profile=null; }
+    renderSidebarUser();
+    if(curView) render();
+  });
+}
+setupAuthListener();
 async function renderLeaderboard(){
   var panel=document.getElementById('leaderboard-panel'); if(!panel) return;
   panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载中…</div>';
