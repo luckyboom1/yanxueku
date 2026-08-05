@@ -18,7 +18,7 @@
   --bg:#f4f5fb; --bg-grad:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.08), transparent 60%), #f4f5fb;
   --surface:#ffffff; --surface-2:#f8f9fd; --surface-glass:rgba(255,255,255,.72);
   --border:#e6e8f2; --border-strong:#d5d9e8;
-  --text:#1b1e2e; --text-2:#5a5f7a; --text-3:#9aa0bd;
+  --text:#1b1e2e; --text-2:#5a5f7a; --text-3:#6f7594;
   --primary:#6366f1; --primary-2:#8b5cf6; --accent:#0ea5e9;
   --grad:linear-gradient(135deg,#6366f1,#8b5cf6);
   --success:#10b981; --warn:#f59e0b; --danger:#ef4444;
@@ -31,7 +31,7 @@ html[data-theme="dark"]{
   --bg:#0e1020; --bg-grad:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.16), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.10), transparent 60%), #0e1020;
   --surface:#171a2e; --surface-2:#1d2138; --surface-glass:rgba(23,26,46,.75);
   --border:#272b47; --border-strong:#343a5c;
-  --text:#eef0fb; --text-2:#a3a9c9; --text-3:#6b7194;
+  --text:#eef0fb; --text-2:#a3a9c9; --text-3:#7e84a8;
   --shadow-sm:0 1px 2px rgba(0,0,0,.3); --shadow-md:0 4px 16px rgba(0,0,0,.35); --shadow-lg:0 12px 40px rgba(0,0,0,.5);
 }
 *{margin:0;padding:0;box-sizing:border-box}
@@ -353,6 +353,23 @@ canvas#chart-days{width:100%;height:260px}
 .color-picker span{width:32px;height:32px;border-radius:10px;cursor:pointer;border:3px solid transparent;transition:all .2s}
 .color-picker span.sel{border-color:var(--text);transform:scale(1.15);box-shadow:0 2px 8px rgba(0,0,0,.2)}
 
+/* ===== UI/UX 强化：token / 可访问性 / 安全区 / 锁滚动 ===== */
+:root{
+  --fs-2xs:11px; --fs-xs:12px; --fs-sm:12.5px; --fs-base:14px; --fs-md:15px; --fs-lg:17px; --fs-xl:22px; --fs-2xl:30px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:20px; --space-6:24px; --space-7:28px;
+  --primary-ring:rgba(99,102,241,.15); --danger-soft:rgba(239,68,68,.12);
+  --warn-soft:rgba(245,158,11,.12); --success-soft:rgba(16,185,129,.1); --mask:rgba(15,17,32,.4);
+}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:8px}
+.nav-item:focus-visible,.kw-card:focus-visible,.subj-item:focus-visible,.icon-btn:focus-visible,.btn:focus-visible,.foot-btn:focus-visible,.grade-btn:focus-visible{outline-offset:0}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+#content{padding-bottom:calc(40px + env(safe-area-inset-bottom))}
+@media(max-width:767px){#content{padding-bottom:calc(24px + env(safe-area-inset-bottom))}}
+body.modal-open #content{overflow:hidden}
+
+
 /* 加载骨架屏 */
 .loading-shield{position:fixed;inset:0;z-index:999;background:var(--bg-grad);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}
 .loading-shield.done{opacity:0;visibility:hidden;pointer-events:none}
@@ -419,11 +436,11 @@ canvas#chart-days{width:100%;height:260px}
   <aside id="sidebar">
     <div class="logo"><div class="logo-badge">研</div><span><em>研学库</em></span></div>
     <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
-    <div class="nav-item" data-view="library" onclick="switchView('library')"><span class="ico">📚</span>知识库</div>
-    <div class="nav-item" data-view="review" onclick="switchView('review')"><span class="ico">🧠</span>记忆复习</div>
-    <div class="nav-item" data-view="quiz" onclick="switchView('quiz')"><span class="ico">✍️</span>刷题自测</div>
-    <div class="nav-item" data-view="wrong" onclick="switchView('wrong')"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
-    <div class="nav-item" data-view="stats" onclick="switchView('stats')"><span class="ico">📊</span>学习统计</div>
+    <div class="nav-item" data-view="library" role="button" tabindex="0" onclick="switchView('library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library')}"><span class="ico">📚</span>知识库</div>
+    <div class="nav-item" data-view="review" role="button" tabindex="0" onclick="switchView('review')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('review')}"><span class="ico">🧠</span>记忆复习</div>
+    <div class="nav-item" data-view="quiz" role="button" tabindex="0" onclick="switchView('quiz')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('quiz')}"><span class="ico">✍️</span>刷题自测</div>
+    <div class="nav-item" data-view="wrong" role="button" tabindex="0" onclick="switchView('wrong')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('wrong')}"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
+    <div class="nav-item" data-view="stats" role="button" tabindex="0" onclick="switchView('stats')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('stats')}"><span class="ico">📊</span>学习统计</div>
     <div id="sidebar-user-area"></div>
     <div class="side-label">专业科目 <button style="display:inline-flex;width:auto;padding:1px 8px;font-size:16px;line-height:1;border:none;background:none;color:var(--primary);cursor:pointer;font-weight:800" onclick="openNewSubjectModal(event)" title="新建科目">＋</button></div>
     <div id="subj-list"></div>
@@ -730,7 +747,7 @@ function renderSidebar(){
   el.innerHTML = db.subjects.map(s=>{
     const cnt = db.knowledge.filter(k=>k.subjectId===s.id).length;
     const due = db.knowledge.filter(k=>k.subjectId===s.id && isDue(k)).length;
-    return `<div class="subj-item" onclick="switchView('library');setLibSubject('${s.id}')">
+    return `<div class="subj-item" role="button" tabindex="0" onclick="switchView('library');setLibSubject('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library');setLibSubject('${s.id}')}">
       <span class="subj-dot" style="background:${safeColor(s.color)}"></span>${esc(s.name)}
       <span class="subj-count">${due>0? due+' 待复习 · ' : ''}${cnt}</span>
       <button class="subj-del" title="删除科目" onclick="delSubject('${s.id}',event)">✕</button></div>`;
@@ -902,7 +919,7 @@ function kwCard(k){
   else if(k.nextReview===t){ dueCls='today'; dueTxt='今日待复习'; }
   else if(diffDays(k.nextReview,t)<=3){ dueCls='soon'; dueTxt=diffDays(k.nextReview,t)+' 天后复习'; }
   else { dueCls='later'; dueTxt=k.nextReview.slice(5).replace('-','/')+' 复习'; }
-  return `<div class="kw-card" style="--kc:${safeColor(s?s.color:'#6366f1')}" onclick="openKwDetail('${k.id}')">
+  return `<div class="kw-card" role="button" tabindex="0" style="--kc:${safeColor(s?s.color:'#6366f1')}" onclick="openKwDetail('${k.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openKwDetail('${k.id}')}">
     <div class="kw-head">
       <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
       <span class="kw-due ${dueCls}">${dueTxt}</span>
@@ -1661,10 +1678,12 @@ function openModal(html){
   const root = document.getElementById('modal-root');
   root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal">${html}</div>`;
   root.classList.add('open');
+  document.body.classList.add('modal-open'); // 锁背景滚动
 }
 function closeModal(){
   const root = document.getElementById('modal-root');
   root.classList.remove('open'); root.innerHTML = '';
+  document.body.classList.remove('modal-open');
 }
 function toast(msg, type){
   const root = document.getElementById('toast-root');
