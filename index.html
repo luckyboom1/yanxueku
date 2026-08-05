@@ -444,6 +444,7 @@ body.modal-open #content{overflow:hidden}
     <div class="nav-item" data-view="quiz" role="button" tabindex="0" onclick="switchView('quiz')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('quiz')}"><span class="ico">✍️</span>刷题自测</div>
     <div class="nav-item" data-view="wrong" role="button" tabindex="0" onclick="switchView('wrong')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('wrong')}"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
     <div class="nav-item" data-view="stats" role="button" tabindex="0" onclick="switchView('stats')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('stats')}"><span class="ico">📊</span>学习统计</div>
+    <div class="nav-item" data-view="mine" role="button" tabindex="0" onclick="switchView('mine')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('mine')}"><span class="ico">👤</span>我的</div>
     <div id="sidebar-user-area"></div>
     <div class="side-label" style="display:flex;align-items:center;justify-content:space-between">专业科目 <button class="add-subj-btn" onclick="openNewSubjectModal(event)" title="新建科目">＋ 新建</button></div>
     <div id="subj-list"></div>
@@ -482,6 +483,7 @@ body.modal-open #content{overflow:hidden}
       <section id="view-quiz" class="view"></section>
       <section id="view-wrong" class="view"></section>
       <section id="view-stats" class="view"></section>
+      <section id="view-mine" class="view"></section>
     </div>
   </main>
 </div>
@@ -714,6 +716,7 @@ const VIEW_META = {
   quiz:{title:'刷题自测', sub:'随机组卷 · 即时判分 · 解析回顾'},
   wrong:{title:'错题本', sub:'答错自动收录，重做正确后移除'},
   stats:{title:'学习统计', sub:'用数据看见自己的进步'},
+  mine:{title:'我的', sub:'账号信息 · 偏好设置 · 数据管理'},
 };
 let curView = 'dashboard';
 let libFilter = {subject:'all', tag:'', search:''};
@@ -754,7 +757,7 @@ function render(){
   if(!_currentUser){ renderGate(); return; }
   hideGate();
   renderSidebar(); renderBadges();
-  ({dashboard:renderDashboard, library:renderLibrary, review:renderReviewHome, quiz:renderQuizHome, wrong:renderWrong, stats:renderStats})[curView]();
+  ({dashboard:renderDashboard, library:renderLibrary, review:renderReviewHome, quiz:renderQuizHome, wrong:renderWrong, stats:renderStats, mine:renderMine})[curView]();
 }
 function renderSidebar(){
   if(!db||!db.subjects) return;
@@ -2073,7 +2076,7 @@ let _starred = new Set(JSON.parse(localStorage.getItem('yanxueku_stars')||'[]'))
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
   if(_currentUser && _profile){
-    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()" title="编辑资料">⚙</button><button onclick="openAccountModal()" title="账号安全">🔑</button><button onclick="signOut()" title="退出登录">↩</button></div></div>';
+    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()" title="编辑资料">⚙</button><button onclick="signOut()" title="退出登录">↩</button></div></div>';
   }else{
     el.innerHTML = '<div class="side-user" style="cursor:pointer;justify-content:center" onclick="openAuthModal()"><span style="color:var(--primary);font-weight:600;font-size:13px">👤 登录 / 注册</span></div>';
   }
@@ -2275,6 +2278,45 @@ async function saveProfile(){
     await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
     _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
   }catch(e){ toast('保存失败，请重试','err'); }
+}
+/* ===== 我的（账号 · 偏好 · 数据） ===== */
+function renderMine(){
+  const el = document.getElementById('view-mine');
+  if(!el) return;
+  const ac = safeColor(_profile? _profile.avatar_color : '#6366f1');
+  const nm = esc(_profile? _profile.display_name : '考研人');
+  const em = esc(_currentUser? _currentUser.email : '');
+  el.innerHTML = `
+    <div class="panel" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="avatar" style="width:56px;height:56px;font-size:22px;background:${ac}">${nm.charAt(0)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:17px;font-weight:700">${nm}</div>
+        <div style="font-size:13px;color:var(--text-3)">${em}</div>
+      </div>
+      <button class="btn btn-ghost" onclick="openProfileModal()">✏️ 编辑资料</button>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🔑 账号安全</div>
+      <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="openAccountModal()">🔒 修改密码 / 修改邮箱</button>
+    </div>
+    <div class="panel">
+      <div class="panel-title">🎛 偏好设置</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <button class="btn btn-ghost" onclick="openGoalSetter()">🎯 每日复习目标</button>
+        <button class="btn btn-ghost" onclick="openExamDatePicker()">📅 考研日期</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">💾 数据管理</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <button class="btn btn-ghost" onclick="exportData()">⬇ 导出数据</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ 恢复备份</button>
+        <button class="btn btn-ghost" onclick="cycleTheme()">🌓 切换主题</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:10px">
+      <button class="btn" style="background:rgba(239,68,68,.12);color:var(--danger)" onclick="signOut()">退出登录</button>
+    </div>`;
 }
 /* ===== 账号安全：修改密码 / 修改邮箱 ===== */
 function openAccountModal(){
