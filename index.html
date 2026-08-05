@@ -12,8 +12,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>研学库 · 考研专业课高效学习</title>
-<!-- Supabase SDK（云同步/登录依赖；加载失败自动回退本地模式） -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin="anonymous"></script>
+<!-- Supabase SDK（云同步/登录依赖）：动态异步加载，不阻塞首屏渲染；加载失败自动回退本地模式 -->
 <style>
 :root{
   --bg:#f4f5fb; --bg-grad:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.08), transparent 60%), #f4f5fb;
@@ -482,10 +481,17 @@ function tryInitSupabase(){
 }
 tryInitSupabase();
 if(!sb){
-  // 兜底：jsdelivr 不可用时动态加载 unpkg
+  // 动态异步加载 SDK（不阻塞首屏）：jsdelivr 优先，失败换 unpkg 兜底
   var _s = document.createElement('script');
-  _s.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  _s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  _s.crossOrigin = 'anonymous';
   _s.onload = function(){ tryInitSupabase(); setupAuthListener(); };
+  _s.onerror = function(){
+    var _s2 = document.createElement('script');
+    _s2.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    _s2.onload = function(){ tryInitSupabase(); setupAuthListener(); };
+    document.head.appendChild(_s2);
+  };
   document.head.appendChild(_s);
 }
 const THEME_KEY = 'yanxueku_theme';
@@ -582,12 +588,25 @@ function hideLoading(){
     if(s && !s.classList.contains('done')) s.classList.add('done');
   }, 120);
 }
-async function save(){
+// save 防抖合并：连续操作（复习/答题/编辑）只做一次持久化，避免全量 upsert 刷爆带宽与 API 配额
+let _saveTimer = null, _savePending = false;
+function doSave(){
+  _savePending = false;
   if(sb && _currentUser){
-    try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
+    try{ sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
   }
   try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){ console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
 }
+function save(){
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _savePending = true;
+  _saveTimer = setTimeout(doSave, 400); // 400ms 窗口合并连续操作
+}
+function flushSave(){
+  if(_savePending){ clearTimeout(_saveTimer); _saveTimer = null; doSave(); }
+}
+window.addEventListener('pagehide', flushSave);
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') flushSave(); });
 function setupRealtimeSync(){
   if(!sb) return;
   sb.channel('app_state_changes')
@@ -830,6 +849,11 @@ function renderDashboard(){
 }
 
 /* ================= 知识库 ================= */
+let _searchTimer = null;
+function debounceSearch(v){ // 搜索防抖：连续输入只触发一次全量渲染
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function(){ libFilter.search = v; renderLibrary(); }, 250);
+}
 function setLibSubject(id){ libFilter.subject = id; renderLibrary(); }
 function renderLibrary(){
   if(!db||!db.knowledge) return;
@@ -848,7 +872,7 @@ function renderLibrary(){
     <div class="filter-bar">
       <div class="search-box">
         <span class="s-ico">🔍</span>
-        <input placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="libFilter.search=this.value;renderLibrary()">
+        <input placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="debounceSearch(this.value)">
       </div>
       <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
       ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
