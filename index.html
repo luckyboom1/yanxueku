@@ -1939,6 +1939,22 @@ var __orig_rs = renderSidebar; renderSidebar = function(){ __orig_rs(); renderSi
 let _authMode = 'login';        // login / signup
 let _authSubmitting = false;    // 防重复提交
 function validateEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s==null?'':s).trim()); }
+function cleanEmail(s){ return String(s==null?'':s).replace(/[\u200B-\u200D\uFEFF\u00A0\u3000]/g,'').trim(); }
+// Supabase/GoTrue 错误中文化：避免用户看到英文错误码（如 invalid / rate limit exceeded）
+function authErrorMsg(err){
+  if(!err) return '操作失败，请重试';
+  const code = String(err.error_code||err.code||err.status||'');
+  if(/rate_limit|over_email|too_many/i.test(code)) return '请求过于频繁，请稍后再试（邮箱发送限额）';
+  if(code==='email_address_invalid') return '邮箱地址格式无效，请检查后重试';
+  if(code==='user_already_exists'||code==='user_exists') return '该邮箱已注册，请直接登录';
+  if(code==='invalid_credentials') return '邮箱或密码错误';
+  if(code==='weak_password'||/password/i.test(code)) return '密码强度不足，请使用至少 6 位包含字母和数字的密码';
+  const m = String(err.message||'');
+  if(/rate limit|too many requests/i.test(m)) return '请求过于频繁，请稍后再试';
+  if(/already registered|already exists/i.test(m)) return '该邮箱已注册，请直接登录';
+  if(/invalid format|invalid email/i.test(m)) return '邮箱地址格式无效，请检查后重试';
+  return m || '操作失败，请重试';
+}
 function validatePassword(p){ return String(p==null?'':p).length >= 6; }
 function renderAuthModal(){
   const isLogin = _authMode === 'login';
@@ -1975,7 +1991,7 @@ function setAuthLoading(on){
   else { b.disabled = false; b.textContent = b.dataset.orig || b.textContent; }
 }
 async function doLogin(){
-  const e = document.getElementById('auth-email').value.trim();
+  const e = cleanEmail(document.getElementById('auth-email').value);
   const p = document.getElementById('auth-password').value;
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
@@ -1984,13 +2000,13 @@ async function doLogin(){
   _authSubmitting = true; setAuthLoading(true);
   try{
     const r = await sb.auth.signInWithPassword({email:e, password:p});
-    if(r.error){ toast(r.error.message||'登录失败','err'); return; }
+    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
     closeModal(); toast('登录成功 ✅','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
 }
 async function doSignUp(){
-  const e = document.getElementById('auth-email').value.trim();
+  const e = cleanEmail(document.getElementById('auth-email').value);
   const p = document.getElementById('auth-password').value;
   const nEl = document.getElementById('auth-name');
   const n = nEl ? nEl.value.trim()||e.split('@')[0] : e.split('@')[0];
@@ -2004,7 +2020,7 @@ async function doSignUp(){
   _authSubmitting = true; setAuthLoading(true);
   try{
     const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
-    if(r.error){ toast(r.error.message||'注册失败','err'); return; }
+    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
     closeModal(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
