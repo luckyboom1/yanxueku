@@ -411,7 +411,7 @@ body.modal-open #content{overflow:hidden}
 .blanks-toggle:hover{background:rgba(99,102,241,.15)}
 
 /* ---------- 登录墙 ---------- */
-#login-gate{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:var(--bg-grad);backdrop-filter:blur(8px);padding:20px}
+#login-gate{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;background:var(--bg);padding:20px}
 #login-gate .gate-card{width:min(92vw,420px);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px 32px;text-align:center;box-shadow:var(--shadow-lg)}
 #login-gate .gate-logo{width:56px;height:56px;border-radius:16px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:26px;margin:0 auto 16px;box-shadow:0 8px 24px rgba(99,102,241,.35)}
 #login-gate h2{margin-bottom:8px;font-size:19px}
@@ -2166,7 +2166,7 @@ function renderAuthModal(){
   destroyTurnstile(); // openModal 会重建 DOM，先销毁旧 widget
   const m =
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<div style="text-align:center;margin-bottom:16px"><div class="gate-logo" style="width:48px;height:48px;font-size:22px;margin:0 auto 10px">研</div>'+
+    '<div style="text-align:center;margin-bottom:16px"><div style="width:48px;height:48px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin:0 auto 10px;box-shadow:0 6px 18px rgba(99,102,241,.3)">研</div>'+
     '<h3 style="font-size:18px;margin:0">'+(isLogin?'欢迎回来':'创建你的研学库账号')+'</h3>'+
     '<div style="font-size:12px;color:var(--text-3);margin-top:4px">'+(isLogin?'继续你的考研学习之旅':'3 分钟记录第一个知识点')+'</div></div>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
