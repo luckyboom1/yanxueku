@@ -2524,6 +2524,12 @@ async function changeEmail(){
   }catch(e){ toast('网络错误，请稍后重试','err'); }
 }
 let _authListenerReady = false;
+let _renderPending = false; // onAuthStateChange 多次事件的 render 合并防抖
+function _scheduleRender(){
+  if(_renderPending) return;
+  _renderPending = true;
+  setTimeout(function(){ _renderPending = false; renderSidebarUser(); if(curView) render(); }, 10);
+}
 function setupAuthListener(){
   if(!sb || _authListenerReady) return;
   _authListenerReady = true;
@@ -2542,8 +2548,7 @@ function setupAuthListener(){
       hideGate();
       setupRealtimeSync();
     }else{ _currentUser=null; _profile=null; renderGate(); }
-    renderSidebarUser();
-    if(curView) render();
+    _scheduleRender();
   });
 }
 setupAuthListener();
