@@ -375,7 +375,7 @@ body.modal-open #content{overflow:hidden}
 
 
 /* 加载骨架屏 */
-.loading-shield{position:fixed;inset:0;z-index:999;background:var(--bg-grad);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}
+.loading-shield{position:fixed;inset:0;z-index:1001;background:var(--bg-grad);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .4s,visibility .4s}
 .loading-shield.done{opacity:0;visibility:hidden;pointer-events:none}
 .loading-pulse{width:48px;height:48px;border-radius:14px;background:var(--grad);animation:loadPulse 1.2s cubic-bezier(.4,0,.2,1) infinite}
 @keyframes loadPulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.15);opacity:1}}
@@ -652,6 +652,9 @@ let _loadResolve = null;
 let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中访问触发 TDZ
 const _dbReady = new Promise(r => { _loadResolve = r; });
 async function load(){
+  // 立即显示登录墙（纯色背景全覆盖），防止 SDK 异步加载期间短暂露出首页。
+  // 若 session 有效 → onAuthStateChange 会 hideGate → 仪表盘；无效 → gate 保持
+  renderGate();
   // Supabase 查询包在 try/catch 里：任何异常都不影响本地回退
   if(sb){
     try{
@@ -664,7 +667,7 @@ async function load(){
         hideLoading();
         return;
       }
-    }catch(e){ console.warn('Supabase load failed, using local:', e.message); }
+    }catch(e){ console.warn('Supabase load failed, using local:', e.message); _currentUser = null; /* API 失败 = token 无效，清除会话避免 render() 误判 */ }
   }
   // Fallback: localStorage or seed
   try{
