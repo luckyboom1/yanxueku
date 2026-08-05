@@ -200,7 +200,62 @@ body{
 .q-type{font-size:11.5px;padding:3px 10px;border-radius:20px;font-weight:700}
 .q-type.single{background:rgba(14,165,233,.12);color:var(--accent)}
 .q-type.judge{background:rgba(139,92,246,.12);color:var(--primary-2)}
+.q-type.fill{background:rgba(16,185,129,.12);color:var(--success)}
+.q-type.short{background:rgba(245,158,11,.12);color:var(--warn)}
 .q-text{font-size:17px;font-weight:700;line-height:1.6;margin-bottom:20px}
+.q-input{width:100%;padding:12px 16px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:15px;font-family:inherit;transition:all .2s;margin-bottom:12px}
+.q-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+.q-input.locked{border-color:var(--success);background:rgba(16,185,129,.06);pointer-events:none}
+.q-input.wrong-locked{border-color:var(--danger);background:rgba(239,68,68,.06);pointer-events:none}
+.q-submit-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 24px;border-radius:22px;border:none;background:var(--grad);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .25s cubic-bezier(.16,1,.3,1);margin-top:4px;box-shadow:0 4px 14px rgba(99,102,241,.35)}
+.q-submit-btn:hover{transform:translateY(-1px) scale(1.01);box-shadow:0 6px 16px rgba(99,102,241,.35)}
+.q-submit-btn:disabled{opacity:.5;pointer-events:none;transform:none;box-shadow:none}
+/* 卡包导出/导入 */
+.pack-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:20px;margin-bottom:12px;transition:all .2s;cursor:pointer}
+.pack-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.pack-card h4{font-size:15px;margin-bottom:4px}
+.pack-meta{font-size:12px;color:var(--text-3);display:flex;gap:16px;flex-wrap:wrap}
+.textarea-input{width:100%;min-height:120px;padding:14px 16px;border-radius:12px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px;font-family:monospace;resize:vertical;line-height:1.6}
+.textarea-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.12)}
+/* 公共课程库 */
+.plib-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.plib-header h2{font-size:18px;font-weight:700;margin-right:auto}
+.plib-subject-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.plib-subject-card{background:var(--surface);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer}
+.plib-subject-card:hover{border-color:var(--primary);box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.plib-subject-card.selected{border-color:var(--primary);box-shadow:0 0 0 3px rgba(99,102,241,.15)}
+.plib-subject-header{padding:20px 20px 14px;display:flex;align-items:center;gap:12px}
+.plib-subject-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;flex-shrink:0}
+.plib-subject-stats{display:flex;gap:12px;padding:0 20px 16px;font-size:13px;color:var(--text-3)}
+.plib-subject-stats b{color:var(--text)}
+.plib-subject-footer{display:flex;gap:8px;padding:12px 20px;border-top:1px solid var(--border);background:var(--surface-2)}
+.plib-import-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:10px;border:1.5px solid var(--primary);background:rgba(99,102,241,.06);color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.plib-import-btn:hover{background:var(--primary);color:#fff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.3)}
+.plib-import-btn:disabled{opacity:.5;pointer-events:none}
+.plib-preview-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:9px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-2);font-size:13px;cursor:pointer;font-family:inherit;transition:all .2s}
+.plib-preview-btn:hover{border-color:var(--text-3);color:var(--text)}
+.plib-detail-back{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--primary);cursor:pointer;margin-bottom:12px;padding:8px 0;transition:transform .2s}
+.plib-detail-back:hover{transform:translateX(-4px)}
+.plib-chapter-group{margin-bottom:20px}
+.plib-chapter-title{font-size:14px;font-weight:700;color:var(--primary);padding:8px 0 6px;border-bottom:2px solid rgba(99,102,241,.15);margin-bottom:10px}
+.plib-kw-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.plib-kw-item{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;cursor:pointer;transition:all .2s;font-size:13px}
+.plib-kw-item:hover{border-color:var(--primary);box-shadow:var(--shadow-sm)}
+.plib-kw-item .title{font-weight:600;margin-bottom:4px;color:var(--text)}
+.plib-kw-item .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
+.plib-kw-item .tag{font-size:10.5px;padding:2px 8px}
+.plib-kw-preview{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 24px;margin-top:16px;line-height:1.8}
+.plib-kw-preview h4{font-size:16px;margin-bottom:8px}
+.plib-kw-preview .content{color:var(--text-2);margin-bottom:12px}
+.plib-kw-preview .content b{color:var(--text)}
+.plib-kw-preview .content code{background:rgba(99,102,241,.08);padding:2px 6px;border-radius:4px;font-size:12.5px}
+.plib-import-progress{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 20px;margin-top:12px}
+.plib-import-progress .bar{height:8px;background:var(--border);border-radius:8px;overflow:hidden;margin-top:8px}
+.plib-import-progress .fill{height:100%;background:var(--grad);border-radius:8px;transition:width .4s cubic-bezier(.16,1,.3,1)}
+@media(max-width:768px){
+  .plib-subject-grid{grid-template-columns:1fr}
+  .plib-kw-list{grid-template-columns:1fr}
+}
 .q-opt{display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1.5px solid var(--border);margin-bottom:10px;cursor:pointer;transition:all .2s;background:var(--surface-2)}
 .q-opt:hover:not(.locked){border-color:var(--primary);transform:translateX(4px)}
 .q-opt .key{width:26px;height:26px;border-radius:8px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12.5px;flex-shrink:0}
@@ -443,6 +498,7 @@ body.modal-open #content{overflow:hidden}
     <div class="nav-item active" data-view="dashboard" role="button" tabindex="0" onclick="switchView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('dashboard')}"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
     <div class="nav-item" data-view="library" role="button" tabindex="0" onclick="switchView('library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library')}"><span class="ico">📚</span>知识库</div>
     <div class="nav-item" data-view="review" role="button" tabindex="0" onclick="switchView('review')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('review')}"><span class="ico">🧠</span>记忆复习</div>
+    <div class="nav-item" data-view="public-library" role="button" tabindex="0" onclick="switchView('public-library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('public-library')}"><span class="ico">🏛️</span>公共课程库</div>
     <div class="nav-item" data-view="quiz" role="button" tabindex="0" onclick="switchView('quiz')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('quiz')}"><span class="ico">✍️</span>刷题自测</div>
     <div class="nav-item" data-view="wrong" role="button" tabindex="0" onclick="switchView('wrong')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('wrong')}"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
     <div class="nav-item" data-view="stats" role="button" tabindex="0" onclick="switchView('stats')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('stats')}"><span class="ico">📊</span>学习统计</div>
@@ -462,6 +518,7 @@ body.modal-open #content{overflow:hidden}
       <button class="foot-btn" id="theme-btn" onclick="cycleTheme()" title="切换主题">🌓 主题</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
       <input type="file" id="import-cards-file" accept=".txt,.md" style="display:none" onchange="importCardsFile(event)">
+      <input type="file" id="import-pack-file" accept=".json" style="display:none" onchange="importCardPackFile(event)">
     </div>
   </aside>
 
@@ -486,6 +543,7 @@ body.modal-open #content{overflow:hidden}
       <section id="view-wrong" class="view"></section>
       <section id="view-stats" class="view"></section>
       <section id="view-mine" class="view"></section>
+      <section id="view-public-library" class="view"></section>
     </div>
   </main>
 </div>
@@ -493,6 +551,55 @@ body.modal-open #content{overflow:hidden}
 <div id="toast-root"></div>
 
 <script>
+/* ================= 分析埋点框架 ================= */
+// 轻量级事件追踪框架，可对接 Umami/Plausible/自建后端
+// 默认输出到 console，生产环境配置端点后自动上报
+var _analytics = (function(){
+  var _endpoint = null; // 设置为 'https://your-analytics.example/api/event' 开启上报
+  var _enabled = true;
+
+  function track(eventName, props){
+    if (!_enabled) return;
+    props = props || {};
+    props._ts = Date.now();
+    props._page = (typeof _currentView !== 'undefined' && _currentView) ? _currentView : 'unknown';
+
+    // 开发环境：console 输出
+    if (typeof console !== 'undefined' && console.debug) {
+      console.debug('[Analytics]', eventName, props);
+    }
+
+    // 生产环境：上报到分析端点
+    if (_endpoint && typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      var payload = JSON.stringify({event: eventName, props: props, ua: navigator.userAgent.slice(0,200)});
+      try { navigator.sendBeacon(_endpoint, new Blob([payload], {type:'application/json'})); } catch(e){}
+    }
+  }
+
+  return {
+    enable: function(){ _enabled = true; },
+    disable: function(){ _enabled = false; },
+    setEndpoint: function(url){ _endpoint = url; },
+
+    // 页面浏览
+    page: function(viewName){ track('page_view', {view: viewName}); },
+
+    // 核心事件
+    quizStart: function(subject, count){ track('quiz_start', {subject: subject, count: count}); },
+    quizComplete: function(right, total, pct){ track('quiz_complete', {right: right, total: total, pct: pct}); },
+    reviewStart: function(count){ track('review_start', {count: count}); },
+    reviewComplete: function(done){ track('review_complete', {done: done}); },
+    kwCreated: function(subjectId, hasTags){ track('kw_created', {subjectId: subjectId, hasTags: !!hasTags}); },
+    kwImported: function(count){ track('kw_imported', {count: count}); },
+    packExported: function(kwCount, qCount){ track('pack_exported', {kwCount: kwCount, qCount: qCount}); },
+    packImported: function(kwCount, qCount){ track('pack_imported', {kwCount: kwCount, qCount: qCount}); },
+    login: function(){ track('login', {}); },
+    register: function(){ track('register', {}); },
+    dataExport: function(kwCount){ track('data_export', {kwCount: kwCount}); },
+    dataImport: function(kwCount){ track('data_import', {kwCount: kwCount}); }
+  };
+})();
+
 /* ================= 数据层（Supabase 共享数据库） ================= */
 // 从外部配置读取 Supabase 凭据；config.js 被 .gitignore 忽略，避免敏感信息进入版本控制
 /* ========================================
@@ -569,6 +676,8 @@ if(!sb){
 
 // === 数据模型（EBB 遗忘曲线、主题、日期工具） ===
 const THEME_KEY = 'yanxueku_theme';
+const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
+const DATA_VERSION = 2;
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -610,40 +719,148 @@ function md(s){
 /* ---------- 内置示例数据 ---------- */
 function seedData(){
   const t = todayStr();
-  const subjects = [
-    {id:'demo', name:'数据结构 · 测试', color:'#6366f1', exam:'考研 408'},
-  ];
   const K = (id, subjectId, chapter, title, content, tags, stage, dueIn) => ({
     id, subjectId, chapter, title, content, tags,
     stage, nextReview: addDays(t, dueIn), lastReview: stage>0 ? addDays(t, dueIn-EBB[Math.min(stage,6)]) : null,
     createdAt: addDays(t, -20)
   });
-  const knowledge = [
-    K('demo1','demo','绪论','时间复杂度与渐进记号',
-      '**大O记号**：表示算法运行时间的上界。\n常见复杂度排序：O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ)。\n**易错点**：最好/最坏/平均时间复杂度要分清，考研常考"最坏情况"。',
-      ['复杂度','测试'], 0, 0),
-    K('demo2','demo','线性表','栈与队列的区别',
-      '**栈**：后进先出（LIFO），仅允许在栈顶插入删除。\n应用：函数调用、表达式求值、括号匹配。\n**队列**：先进先出（FIFO），队尾入、队头出。\n应用：层次遍历、缓冲区、BFS。',
-      ['栈','队列','测试'], 0, 1),
-    K('demo3','demo','树与二叉树','二叉树的三种遍历',
-      '前序：**根 → 左 → 右**；中序：左 → 根 → 右；后序：左 → 右 → 根。\n**考点**：已知前序+中序 或 后序+中序 可唯一重建二叉树；前序+后序 **不能**唯一确定。',
-      ['二叉树','测试'], 0, 2),
+
+  const subjects = [
+    {id:'xwcbx', name:'新闻传播学', color:'#6366f1', exam:'新闻传播学考研'},
+    {id:'jyx', name:'教育学', color:'#10b981', exam:'教育学311/333'},
+    {id:'ds', name:'数据结构', color:'#f59e0b', exam:'考研 408'},
   ];
+
   const Q = (id, subjectId, chapter, type, q, options, answer, explain) => ({id, subjectId, chapter, type, q, options, answer, explain});
+
+  /* ======== 新闻传播学 卡片 ======== */
+  const knowledge = [
+    K('xw1','xwcbx','传播学基础','传播的5W模式',
+      '拉斯韦尔1948年提出传播过程五要素：\n**Who（谁）→ Says What（说什么）→ In Which Channel（渠道）→ To Whom（对谁）→ With What Effect（效果）**\n对应五大研究领域：控制分析、内容分析、媒介分析、受众分析、效果分析。\n**局限**：线性单向，忽略了反馈和噪音。',
+      ['传播模式','拉斯韦尔'], 0, 0),
+    K('xw2','xwcbx','传播学基础','把关人理论',
+      '**卢因（Lewin）1947年**提出"把关人"概念，怀特（White）1950年引入新闻传播。\n核心观点：信息在传播渠道中流动时，存在"把关人"对信息进行筛选。\n把关标准：个人因素（价值观、经验）、组织因素（媒介方针、截稿时间）、社会因素（法律、文化）。\n**新媒体时代**：把关权力从专业媒体扩散到平台算法和用户个体。',
+      ['把关人','卢因','怀特'], 0, 1),
+    K('xw3','xwcbx','传播效果','议程设置理论',
+      '**麦库姆斯和肖（McCombs & Shaw）1972年**通过教堂山镇研究提出。\n核心：大众媒介也许不能决定人们**怎么想**，但可以决定人们**想什么**。\n三个层面：①议题议程设置 ②属性议程设置 ③网络议程设置。\n**新媒体环境**：传统媒体的议程设置能力被社交媒体碎片化，但出现了反向议程设置（公众议题→媒介议题）。',
+      ['议程设置','麦库姆斯','效果研究'], 0, 2),
+    K('xw4','xwcbx','传播效果','沉默的螺旋',
+      '**诺依曼（Noelle-Neumann）1974年**提出。\n核心假说：个人因害怕孤立，在感知到自己的意见属于少数时会保持沉默，导致优势意见大声疾呼而劣势意见沉默的螺旋过程。\n成立条件：①议题具有道德负载 ②媒体的共鸣性和累积性报道 ③个体有孤立恐惧。\n**互联网时代适用性**：匿名性是否削弱了孤立恐惧？存在争议。',
+      ['沉默的螺旋','诺依曼'], 0, 3),
+    K('xw5','xwcbx','新闻学理论','新闻价值要素',
+      '判断事实能否成为新闻的五要素：\n**①时新性**：时间近、内容新\n**②重要性**：对受众影响程度\n**③显著性**：人物/地点/事件的知名度\n**④接近性**：地理/心理/利益接近\n**⑤趣味性**：人情味、反常性、冲突性\n**记忆口诀**：时重显接趣（时钟显接趣）',
+      ['新闻价值','新闻学'], 0, 0),
+    K('xw6','xwcbx','新闻学理论','新闻真实性原则',
+      '**核心**：新闻必须是对客观事实的如实反映。\n三层含义：①具体真实（报道要素准确）②总体真实（全面反映，不片面）③本质真实（揭示事物内在联系）。\n**与真实相关概念**：客观性（态度中立）、平衡报道（多方呈现）、核实（信源交叉验证）。\n**假新闻类型**：捏造、歪曲、策划事件、AI 深度伪造。',
+      ['新闻真实','客观性'], 0, 1),
+
+    /* ======== 教育学 卡片 ======== */
+    K('jy1','jyx','教育学原理','教育的本质',
+      '教育的本质是有目的地**培养人的社会活动**。\n广义教育：一切增进人的知识技能、影响思想品德的活动（社会教育、家庭教育）。\n狭义教育：主要指**学校教育**，即教育者根据社会要求，有目的、有计划、有组织地对受教育者施加影响。\n**教育的三要素**：教育者、受教育者（学习者）、教育影响（教育内容和手段）。',
+      ['教育本质','教育学原理'], 0, 0),
+    K('jy2','jyx','教育学原理','个体身心发展规律',
+      '个体身心发展的五大规律：\n①**顺序性**：由低级到高级、由量变到质变 → 循序渐进\n②**阶段性**：不同年龄阶段有不同特征 → 有针对性\n③**不平衡性**：同一方面在不同年龄发展速度不同 → 抓关键期\n④**互补性**：某方面受损可由其他方面补偿 → 长善救失\n⑤**个别差异性**：个体间发展有差异 → 因材施教',
+      ['身心发展','规律'], 0, 1),
+    K('jy3','jyx','课程与教学','课程类型',
+      '**学科课程**：以学科为中心，逻辑性强（如语数外）。\n**活动课程**：以儿童经验和兴趣为中心（杜威倡导）。\n**综合课程**：打破学科界限整合内容（如科学=物+化+生）。\n**分科课程**：各科独立设置（当前主流）。\n**显性课程与隐性课程**：隐性课程指校园文化、师生关系等非计划的潜移默化影响。\n**必修课程与选修课程**。',
+      ['课程类型','课程论'], 0, 2),
+    K('jy4','jyx','课程与教学','教学原则',
+      '中小学八大教学原则（记忆口诀：**"冯巩找阴凉，寻思理直发"**）：\n①科学性与思想性统一 ②理论联系实际 ③直观性\n④启发性 ⑤循序渐进（系统性） ⑥巩固性\n⑦量力性（可接受性） ⑧因材施教\n**启发性原则**是核心：孔子"不愤不启，不悱不发"；苏格拉底"产婆术"。',
+      ['教学原则','启发性'], 0, 3),
+    K('jy5','jyx','教育心理学','皮亚杰认知发展阶段',
+      '皮亚杰将认知发展分为四个阶段：\n①**感知运动阶段**（0-2岁）：客体永久性\n②**前运算阶段**（2-7岁）：自我中心、泛灵论、不可逆\n③**具体运算阶段**（7-11岁）：守恒、可逆、去自我中心\n④**形式运算阶段**（11岁+）：抽象逻辑思维、假设推理\n**教育启示**：教学内容要符合认知发展阶段。',
+      ['皮亚杰','认知发展'], 0, 0),
+    K('jy6','jyx','教育心理学','维果茨基最近发展区',
+      '**最近发展区（ZPD）**：学生独立解决问题的实际发展水平与在成人指导或同伴合作下解决问题的潜在发展水平之间的差距。\n**教学启示**：教学应走在发展前面，设置"跳一跳够得着"的目标。\n**支架式教学**：提供暂时性支持，能力增强后逐步撤除。\n与皮亚杰的差异：皮强调"成熟准备"，维强调"教学引领发展"。',
+      ['维果茨基','最近发展区'], 0, 1),
+
+    /* ======== 数据结构 卡片 ======== */
+    K('ds1','ds','绪论','时间复杂度与渐进记号',
+      '**大O记号**：表示算法运行时间的上界。\n常见复杂度排序：O(1) < O(log n) < O(n) < O(n log n) < O(n²) < O(2ⁿ)。\n**易错点**：最好/最坏/平均时间复杂度要分清，考研常考"最坏情况"。',
+      ['复杂度','408'], 0, 0),
+    K('ds2','ds','线性表','栈与队列的区别',
+      '**栈**：后进先出（LIFO），仅允许在栈顶插入删除。\n应用：函数调用、表达式求值、括号匹配。\n**队列**：先进先出（FIFO），队尾入、队头出。\n应用：层次遍历、缓冲区、BFS。',
+      ['栈','队列'], 0, 1),
+    K('ds3','ds','树与二叉树','二叉树的三种遍历',
+      '前序：**根 → 左 → 右**；中序：左 → 根 → 右；后序：左 → 右 → 根。\n**考点**：已知前序+中序 或 后序+中序 可唯一重建二叉树；前序+后序 **不能**唯一确定。',
+      ['二叉树'], 0, 2),
+    K('ds4','ds','查找','哈希表与冲突解决',
+      '**哈希表**：通过哈希函数将键映射到表位置，平均查找 O(1)。\n**冲突解决方法**：\n①开放定址法（线性探测、平方探测、双散列）\n②链地址法（拉链法，桶内用链表）\n③再哈希法\n**装填因子 α** = 记录数/表长，α越大冲突越多。考研常考**散列查找的平均查找长度(ASL)**计算。',
+      ['哈希','查找'], 0, 0),
+    K('ds5','ds','排序','各类排序算法对比',
+      '**稳定的排序**：冒泡、插入、归并、基数。\n**不稳定**：选择、快速、希尔、堆（口诀"快选希堆"）。\n**时间复杂度**：O(n²)：冒泡/插入/选择；O(n log n)：快排/归并/堆排。\n**空间复杂度**：归并 O(n)，快排 O(log n)，其余 O(1)。\n**快排最坏 O(n²)**（序列有序时），但平均最优。',
+      ['排序','算法对比'], 0, 1),
+    K('ds6','ds','图','图的两种遍历',
+      '**深度优先搜索（DFS）**：类似树的先序，用栈（递归）。\n**广度优先搜索（BFS）**：类似层次遍历，用队列。\n**时间复杂度**：邻接矩阵 O(n²)；邻接表 O(n+e)。\nDFS 应用：拓扑排序、强连通分量。\nBFS 应用：最短路径（无权图）**记忆**：DFS 一条路走到黑，BFS 层层扩散。',
+      ['图','DFS','BFS'], 0, 2),
+  ];
+
+  /* ======== 题目库 ======== */
   const questions = [
-    Q('q_demo1','demo','绪论','single','下列排序算法中，属于不稳定排序的是（ ）',
+    // --- 新闻传播学 ---
+    Q('q_xw1','xwcbx','传播学基础','single','拉斯韦尔 5W 模式中，"In Which Channel"对应哪个研究领域？',
+      ['控制分析','内容分析','媒介分析','受众分析'], 2,
+      'In Which Channel（通过什么渠道）对应**媒介分析**。Who→控制分析，Says What→内容分析，To Whom→受众分析，With What Effect→效果分析。'),
+    Q('q_xw2','xwcbx','传播效果','single','议程设置理论的提出者是？',
+      ['拉斯韦尔','拉扎斯菲尔德','麦库姆斯和肖','诺依曼'], 2,
+      '议程设置理论由**麦库姆斯和肖（McCombs & Shaw）**于1972年通过教堂山镇研究提出。拉扎斯菲尔德提出二级传播，诺依曼提出沉默的螺旋。'),
+    Q('q_xw3','xwcbx','传播学基础','judge','把关人理论最初由卢因在1947年提出，研究的是家庭食物购买决策中的把关行为。',
+      null, 1,
+      '正确。卢因1947年在《群体生活的渠道》中研究家庭主妇购买食物时首次提出"把关人"概念，怀特1950年将其引入传播学。'),
+    Q('q_xw4','xwcbx','新闻学理论','fill','判断新闻价值的五要素是时新性、重要性、显著性、接近性和_____。',
+      null, '趣味性',
+      '新闻价值五要素：时新性、重要性、显著性、接近性、趣味性（记忆口诀：时重显接趣）。'),
+    Q('q_xw5','xwcbx','传播效果','short','简述沉默的螺旋理论的三个核心假说。',
+      null, '孤立恐惧;优势意见;劣势沉默;准感官统计',
+      '三个核心假说：①社会运用孤立恐惧威胁偏离社会共识的个人；②个人能通过**准感官统计**感知意见气候；③个人因害怕孤立，在感知自己的意见属少数时保持沉默，形成螺旋效应。'),
+    Q('q_xw6','xwcbx','新闻学理论','single','新闻真实性不包含以下哪个层面？',
+      ['具体真实','总体真实','本质真实','艺术真实'], 3,
+      '新闻真实包含具体真实、总体真实和本质真实三个层面。**艺术真实**是文学艺术领域的范畴，不属于新闻真实性。'),
+
+    // --- 教育学 ---
+    Q('q_jy1','jyx','教育学原理','single','教育区别于其他社会活动的根本特征是？',
+      ['传递知识','培养人的社会活动','有教师参与','发生在学校中'], 1,
+      '教育的本质是有目的地**培养人的社会活动**，这是教育区别于政治、经济、文化等其他社会活动的根本特征。'),
+    Q('q_jy2','jyx','教育学原理','single','"拔苗助长"违背了个体身心发展的哪一规律？',
+      ['顺序性','阶段性','不平衡性','互补性'], 0,
+      '"拔苗助长"违背了**顺序性**规律——身心发展由低级到高级、由量变到质变，要循序渐进，不能跨越发展阶段。'),
+    Q('q_jy3','jyx','课程与教学','single','孔子"不愤不启，不悱不发"体现的教学原则是？',
+      ['直观性原则','启发性原则','巩固性原则','循序渐进原则'], 1,
+      '"不愤不启，不悱不发"是孔子关于**启发性教学**的经典论述：不到学生努力想却想不通时不引导，不到学生想说却说不出时不启发。'),
+    Q('q_jy4','jyx','教育心理学','judge','皮亚杰认为，处于具体运算阶段（7-11岁）的儿童已经可以进行抽象逻辑推理。',
+      null, 0,
+      '错误。**形式运算阶段**（11岁以后）的儿童才具备抽象逻辑推理能力。具体运算阶段的儿童思维需要具体事物的支持，但已发展了守恒和可逆性。'),
+    Q('q_jy5','jyx','教育心理学','fill','维果茨基提出的_____是指学生独立解决问题的水平与在成人指导下能达到的水平之间的差距。',
+      null, '最近发展区',
+      '最近发展区（ZPD）是维果茨基的核心概念，强调教学应走在发展前面，为学生设置"跳一跳够得着"的学习目标。'),
+    Q('q_jy6','jyx','教育学原理','short','简述启发性教学原则的基本要求。',
+      null, '主动性;独立思考;动手能力;民主氛围',
+      '启发性原则的基本要求：①调动学生学习的**主动性**；②启发学生**独立思考**，发展逻辑思维；③让学生**动手**，培养独立解决问题的能力；④发扬教学**民主**，建立良好的师生关系。'),
+
+    // --- 数据结构 ---
+    Q('q_ds1','ds','绪论','single','下列排序算法中，属于不稳定排序的是（ ）',
       ['冒泡排序','直接插入排序','快速排序','归并排序'], 2,
       '口诀"快选希堆"不稳定：快速排序、简单选择、希尔排序、堆排序均为不稳定排序。'),
-    Q('q_demo2','demo','线性表','single','栈的操作特点是（ ）',
+    Q('q_ds2','ds','线性表','single','栈的操作特点是（ ）',
       ['先进先出','后进先出','随机存取','只能插入不能删除'], 1,
       '栈是限定仅在栈顶进行插入和删除的线性表，特点是后进先出（LIFO）。'),
-    Q('q_demo3','demo','树与二叉树','judge','已知前序和中序序列可唯一确定一棵二叉树。',
+    Q('q_ds3','ds','树与二叉树','judge','已知前序和中序序列可唯一确定一棵二叉树。',
       null, 1,
-      '正确。前序+中序、后序+中序都可唯一确定一棵二叉树。'),
+      '正确。前序+中序、后序+中序都可唯一确定一棵二叉树。但前序+后序不能唯一确定。'),
+    Q('q_ds4','ds','查找','single','哈希表查找的平均时间复杂度是（ ）',
+      ['O(n)','O(n log n)','O(1)','O(log n)'], 2,
+      '哈希表通过哈希函数直接定位，平均查找时间复杂度为**O(1)**。但在最坏情况下（全部冲突）为O(n)。'),
+    Q('q_ds5','ds','排序','fill','快速排序在序列初始_____时退化为 O(n²)，此时可通过随机选取枢轴优化。',
+      null, '有序',
+      '当序列已经有序（正序或逆序）时，若枢轴选在端点，每次划分极不平衡，快排退化至O(n²)。优化方法：随机选取枢轴或三数取中。'),
+    Q('q_ds6','ds','图','short','简述图的深度优先遍历（DFS）和广度优先遍历（BFS）的核心区别。',
+      null, '递归;栈;队列;一条路;层层扩散',
+      '核心区别：①DFS用**栈**（递归实现），沿一条路径走到底再回溯；②BFS用**队列**，按距离层层扩散访问；③时间复杂度相同（O(n+e)邻接表），但应用场景不同：DFS用于拓扑排序/连通分量，BFS用于无权图最短路径。'),
   ];
+
   const studyLog = [];
   const quizRecords = [];
-  return {subjects, knowledge, questions, quizRecords, studyLog};
+  return {_schemaVersion: DATA_VERSION, subjects, knowledge, questions, quizRecords, studyLog};
 }
 
 
@@ -651,6 +868,42 @@ let db;
 let _loadResolve = null;
 let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中访问触发 TDZ
 const _dbReady = new Promise(r => { _loadResolve = r; });
+
+/* 数据迁移：确保数据格式与当前版本兼容 */
+function migrateData(data) {
+  const ver = data._schemaVersion || 0;
+  if (ver >= DATA_VERSION) return data;
+
+  // v0 → v1：确保基础结构存在
+  if (!Array.isArray(data.quizRecords)) data.quizRecords = [];
+  if (!Array.isArray(data.studyLog)) data.studyLog = [];
+  if (!Array.isArray(data.questions)) data.questions = [];
+  if (!Array.isArray(data.knowledge)) data.knowledge = [];
+  if (!Array.isArray(data.subjects)) data.subjects = [];
+
+  // v1 → v2：确保题目有 explain 字段、类型字段标准化
+  if (ver < 2) {
+    data.questions.forEach(function(q) {
+      if (!q.explanation) q.explanation = '';
+      if (!q.type || ['single','judge','fill','short'].indexOf(q.type) === -1) {
+        q.type = q.options === null ? 'judge' : 'single';
+      }
+      // fill/short 类型将 answer 转为字符串
+      if (q.type === 'fill' || q.type === 'short') {
+        if (typeof q.answer !== 'string') q.answer = String(q.answer || '');
+      }
+    });
+    data.knowledge.forEach(function(k) {
+      if (!k.tags) k.tags = [];
+      if (!k.lastReview) k.lastReview = null;
+      if (!k.createdAt) k.createdAt = todayStr();
+    });
+  }
+
+  data._schemaVersion = DATA_VERSION;
+  return data;
+}
+
 async function load(){
   // SDK 就绪前用登录墙预覆盖，防止旧 DOM 短暂可见。Loading 屏在上层遮挡，
   // hideLoading() 由 onAuthStateChange 确认 session 后统一触发，避免 SDK 未就绪
@@ -661,16 +914,18 @@ async function load(){
       const uid = _currentUser ? _currentUser.id : null;
       const { data } = uid ? await sb.from('app_state').select('data').eq('user_id', uid).maybeSingle() : {data: null};
       if(data && data.data && data.data.subjects){
-        db = data.data;
+        db = migrateData(data.data);
         _loadResolve(db);
         setupRealtimeSync();
         return;
       }
     }catch(e){ console.warn('Supabase load failed, using local:', e.message); _currentUser = null; }
   }
+  // 尝试加载本地数据：先检查 v2 key，再回退 v1 key 并自动迁移
   try{
-    const raw = localStorage.getItem('yanxueku_v1');
-    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); return; }
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) raw = localStorage.getItem('yanxueku_v1'); // 旧版兼容
+    if(raw){ db = migrateData(JSON.parse(raw)); _loadResolve(db); setupRealtimeSync(); return; }
   }catch(e){}
   db = seedData();
   try{ await save(); }catch(e){ console.warn('save failed:', e.message); }
@@ -693,7 +948,8 @@ function _setSync(t, warn){
 function doSave(){
   _savePending = false;
   let localOk = true;
-  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){ localOk = false; console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
+  db._schemaVersion = DATA_VERSION;
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){ localOk = false; console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
   if(sb && _currentUser){
     _setSync('同步中…');
     try{
@@ -725,7 +981,7 @@ function setupRealtimeSync(){
           const newUpdated = new Date(payload.new.data.updated_at||0).getTime();
           if(newUpdated > oldUpdated){
             db = payload.new.data;
-            try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
+            try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
             if(curView) render();
             _defer(function(){ updateSidebarTimer(); }, 50);
             _defer(function(){ updateDashboardHeader(); }, 80);
@@ -783,6 +1039,7 @@ const VIEW_META = {
   wrong:{title:'错题本', sub:'答错自动收录，重做正确后移除'},
   stats:{title:'学习统计', sub:'用数据看见自己的进步'},
   mine:{title:'我的', sub:'账号信息 · 偏好设置 · 数据管理'},
+  'public-library':{title:'公共课程库', sub:'十大热门考研专业课 · 一键导入到个人科目'},
 };
 
 // === 视图状态管理 ===
@@ -799,6 +1056,7 @@ function switchView(name){
   document.getElementById('page-sub').textContent = meta.sub;
   render();
   document.getElementById('content').scrollTop = 0;
+  _analytics.page(name);
 }
 function toggleSidebar(){
   if(window.innerWidth<=767){
@@ -826,7 +1084,7 @@ function render(){
   if(!_currentUser){ renderGate(); return; }
   hideGate();
   renderSidebar(); renderBadges();
-  ({dashboard:renderDashboard, library:renderLibrary, review:renderReviewHome, quiz:renderQuizHome, wrong:renderWrong, stats:renderStats, mine:renderMine})[curView]();
+  ({dashboard:renderDashboard, library:renderLibrary, review:renderReviewHome, quiz:renderQuizHome, wrong:renderWrong, stats:renderStats, mine:renderMine, 'public-library':renderPublicLibrary})[curView]();
 }
 function renderSidebar(){
   if(!db||!db.subjects) return;
@@ -1011,7 +1269,9 @@ function renderLibrary(){
       </div>
       <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
       ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
-      <button class="btn btn-ghost" style="margin-left:auto" onclick="document.getElementById('import-cards-file').click()">📥 导入卡片</button>
+      <button class="btn btn-ghost" style="padding:9px 14px" onclick="document.getElementById('import-cards-file').click()">📥 导入卡片</button>
+      <button class="btn btn-ghost" style="padding:9px 14px" onclick="exportCardPack()">📦 导出卡包</button>
+      <button class="btn btn-ghost" style="padding:9px 14px" onclick="document.getElementById('import-pack-file').click()">📥 导入卡包</button>
       <button class="btn btn-primary" onclick="openKwModal()">＋ 新建知识点</button>
     </div>
     ${tags.length?`<div class="filter-bar" style="margin-top:-6px">
@@ -1099,6 +1359,7 @@ function saveKw(id){
     toast('知识点已更新','ok');
   }else{
     db.knowledge.push({id:uid(), subjectId, chapter, title, content, tags, stage:0, nextReview:todayStr(), lastReview:null, createdAt:todayStr()});
+    _analytics.kwCreated(subjectId, tags.length > 0);
     toast('已创建并加入今日复习 🎉','ok');
   }
   save(); closeModal(); render();
@@ -1134,6 +1395,7 @@ function startReview(focusId){
   const total = q.length;
   if(!focusId && q.length > 10) q = q.slice(0,10); // 逾期积压分批：先复习最旧的 10 张，完成后自动继续
   reviewQueue = q; reviewIdx = 0; reviewDone = 0;
+  _analytics.reviewStart(q.length);
   switchView('review');
   if(focusId){ toast('开始复习该知识点','info'); }
   else if(total > q.length){ toast(`今日待复习 ${total} 张，先复习最旧的 ${q.length} 张，完成后自动继续`,'info'); }
@@ -1208,6 +1470,7 @@ function grade(g, ev){
         <button class="btn btn-primary" onclick="switchView('quiz')">去刷几道题巩固一下</button>
       </div></div>`;
     reviewQueue = [];
+    _analytics.reviewComplete(reviewDone);
     renderBadges();
     toast(`本轮复习完成，记忆进度已更新 ✅`,'ok');
   }else{
@@ -1221,6 +1484,17 @@ function grade(g, ev){
 // === 测验状态 ===
 let quiz = null; // {list, idx, right, answered}
 let quizCfg = {subject:'all', count:10};
+
+// 题型显示辅助
+function typeLabel(q){
+  var map = {single:'单选题', judge:'判断题', fill:'填空题', short:'简答题'};
+  return map[q.type] || '单选题';
+}
+function typeIcon(q){
+  var map = {single:'📝', judge:'⚖️', fill:'✏️', short:'💬'};
+  return map[q.type] || '📝';
+}
+
 function renderQuizHome(){
   if(!db||!db.questions) return;
   const el = document.getElementById('view-quiz');
@@ -1247,13 +1521,38 @@ function startQuiz(){
   if(!pool.length){ toast('该科目暂无题目','err'); return; }
   pool = pool.sort(()=>Math.random()-.5).slice(0, Math.min(quizCfg.count, pool.length));
   quiz = {list:pool, idx:0, right:0};
+  _analytics.quizStart(quizCfg.subject, pool.length);
   renderQuestion();
 }
 function renderQuestion(){
   const el = document.getElementById('view-quiz');
   const q = quiz.list[quiz.idx];
   const s = getSubject(q.subjectId);
-  const opts = q.type==='judge' ? ['正确','错误'] : q.options;
+  var typeLabelText = typeLabel(q);
+  var typeIconText = typeIcon(q);
+  const isInput = q.type === 'fill' || q.type === 'short';
+
+  var answerArea = '';
+  if (q.type === 'single' || q.type === 'judge') {
+    const opts = q.type==='judge' ? ['正确','错误'] : q.options;
+    answerArea = `<div id="q-opts">
+      ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('')}
+    </div>`;
+  } else if (q.type === 'fill') {
+    answerArea = `
+      <div id="q-opts">
+        <input type="text" class="q-input" id="q-fill-input" placeholder="请输入答案…" autocomplete="off" onkeydown="if(event.key==='Enter')answerInputQ()">
+        <button class="q-submit-btn" onclick="answerInputQ()">✓ 提交答案</button>
+      </div>`;
+  } else if (q.type === 'short') {
+    answerArea = `
+      <div id="q-opts">
+        <textarea class="q-input" id="q-short-input" style="min-height:80px;resize:vertical" placeholder="请输入你的回答…" onkeydown="if(event.key==='Enter'&&event.ctrlKey)answerInputQ()"></textarea>
+        <button class="q-submit-btn" onclick="answerInputQ()">✓ 提交答案</button>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px">Ctrl+Enter 提交</div>
+      </div>`;
+  }
+
   el.innerHTML = `
     <div class="review-wrap" style="max-width:720px">
       <div class="review-progress">
@@ -1263,13 +1562,11 @@ function renderQuestion(){
       </div>
       <div class="q-card">
         <div class="q-meta">
-          <span class="q-type ${q.type}">${q.type==='judge'?'判断题':'单选题'}</span>
+          <span class="q-type ${q.type}">${typeIconText} ${typeLabelText}</span>
           <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(q.chapter)}</span>
         </div>
         <div class="q-text">${esc(q.question)}</div>
-        <div id="q-opts">
-          ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('')}
-        </div>
+        ${answerArea}
         <div id="q-feedback"></div>
       </div>
     </div>`;
@@ -1297,6 +1594,64 @@ function answerQ(i){
     </div>`;
   renderBadges();
 }
+
+/* 填空/简答题：输入文本后提交判分 */
+function answerInputQ(){
+  const q = quiz.list[quiz.idx];
+  const inputId = q.type === 'fill' ? 'q-fill-input' : 'q-short-input';
+  const inputEl = document.getElementById(inputId);
+  const btnEl = document.querySelector('#q-opts .q-submit-btn');
+  if (!inputEl || inputEl.classList.contains('locked')) return;
+
+  var userAnswer = inputEl.value.trim();
+  if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
+
+  var correct = false;
+  var stdAnswer = String(q.answer || '');
+
+  if (q.type === 'fill') {
+    // 填空题：去除空格后忽略大小写精确匹配
+    correct = userAnswer.replace(/\s+/g,'').toLowerCase() === stdAnswer.replace(/\s+/g,'').toLowerCase();
+  } else {
+    // 简答题：关键词匹配——答案中的分号分隔的关键词，匹配率 ≥ 50% 判对
+    var keywords = stdAnswer.split(';').filter(function(k){ return k.trim(); });
+    if (keywords.length === 0) {
+      correct = userAnswer.length >= 5; // 无关键词时只要写了至少5个字就判对
+    } else {
+      var matched = 0;
+      var lowerUser = userAnswer.toLowerCase();
+      keywords.forEach(function(kw){
+        if (lowerUser.indexOf(kw.trim().toLowerCase()) !== -1) matched++;
+      });
+      correct = matched / keywords.length >= 0.5;
+    }
+  }
+
+  // 锁定输入
+  inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
+  if(btnEl) btnEl.disabled = true;
+
+  db.quizRecords.push({qid:q.id, correct, date:todayStr()});
+  addStudy(2);
+  save();
+  if(correct) quiz.right++;
+  var isLast = quiz.idx+1 >= quiz.list.length;
+
+  var feedbackHtml = '<div class="q-explain"><b>📖 解析：</b>' + md(q.explanation) + '</div>';
+  if (q.type === 'short') {
+    feedbackHtml += '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 参考答案：</b>' + esc(stdAnswer.replace(/;/g,'；')) + '</div>';
+  } else if (q.type === 'fill') {
+    feedbackHtml += '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 正确答案：</b>' + esc(stdAnswer) + '</div>';
+  }
+
+  document.getElementById('q-feedback').innerHTML = feedbackHtml +
+    '<div class="q-foot">' +
+      '<span class="q-result-badge ' + (correct?'ok':'no') + '">' + (correct?'✅ 回答正确':'❌ 回答错误，已加入错题本') + '</span>' +
+      '<button class="btn btn-primary" onclick="nextQ()">'+(isLast?'查看成绩 🏁':'下一题 →')+'</button>' +
+    '</div>';
+  renderBadges();
+}
+
 function nextQ(){
   quiz.idx++;
   if(quiz.idx >= quiz.list.length){ renderQuizResult(); return; }
@@ -1305,6 +1660,7 @@ function nextQ(){
 function renderQuizResult(){
   const total = quiz.list.length, right = quiz.right;
   const pct = Math.round(right/total*100);
+  _analytics.quizComplete(right, total, pct);
   const wrongs = quiz.list.filter(q=>{
     const recs = db.quizRecords.filter(r=>r.qid===q.id);
     return recs.length && !recs[recs.length-1].correct;
@@ -1351,14 +1707,23 @@ function renderWrong(){
     </div>
     ${list.map(q=>{
       const s = getSubject(q.subjectId);
-      const opts = q.type==='judge'? ['正确','错误'] : q.options;
+      var answerArea = '';
+      if (q.type === 'single' || q.type === 'judge') {
+        const opts = q.type==='judge'? ['正确','错误'] : q.options;
+        answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('');
+      } else {
+        answerArea = `<div style="display:flex;gap:8px;align-items:stretch">
+          <input type="text" class="q-input" id="wq-input-${q.id}" placeholder="${q.type==='fill'?'请输入答案…':'请输入你的回答…'}" style="flex:1;margin-bottom:0">
+          <button class="q-submit-btn" onclick="redoWrongInput('${q.id}')" style="margin-top:0;white-space:nowrap">✓ 提交</button>
+        </div>`;
+      }
       return `<div class="row-item" id="wq-${q.id}">
         <div class="q-meta">
-          <span class="q-type ${q.type}">${q.type==='judge'?'判断题':'单选题'}</span>
+          <span class="q-type ${q.type}">${typeIcon(q)} ${typeLabel(q)}</span>
           <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(q.chapter)}</span>
         </div>
         <div class="q-text">${esc(q.question)}</div>
-        <div>${opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('')}</div>
+        <div>${answerArea}</div>
         <div class="wq-feedback"></div>
       </div>`;
     }).join('')}`;
@@ -1385,6 +1750,60 @@ function redoWrong(qid, i){
       _defer(()=>renderWrong(), 400); }, 1200);
   }else{
     fb.innerHTML = `<div class="q-explain"><b>💪 再想想！</b>仍留在错题本中。<br><b>📖 解析：</b>${md(q.explanation)}</div>`;
+  }
+  renderBadges();
+}
+
+/* 错题本中填空/简答题的输入提交判分 */
+function redoWrongInput(qid) {
+  const q = db.questions.find(function(x){ return x.id === qid; });
+  const box = document.getElementById('wq-' + qid);
+  const inputEl = document.getElementById('wq-input-' + qid);
+  if (!inputEl || inputEl.classList.contains('locked')) return;
+  var userAnswer = inputEl.value.trim();
+  if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
+
+  var correct = false;
+  var stdAnswer = String(q.answer || '');
+  if (q.type === 'fill') {
+    correct = userAnswer.replace(/\s+/g,'').toLowerCase() === stdAnswer.replace(/\s+/g,'').toLowerCase();
+  } else {
+    var keywords = stdAnswer.split(';').filter(function(k){ return k.trim(); });
+    if (keywords.length === 0) {
+      correct = userAnswer.length >= 5;
+    } else {
+      var matched = 0;
+      var lowerUser = userAnswer.toLowerCase();
+      keywords.forEach(function(kw){
+        if (lowerUser.indexOf(kw.trim().toLowerCase()) !== -1) matched++;
+      });
+      correct = matched / keywords.length >= 0.5;
+    }
+  }
+
+  inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
+
+  db.quizRecords.push({qid: qid, correct: correct, date: todayStr()});
+  addStudy(1);
+  save();
+
+  var fb = box.querySelector('.wq-feedback');
+  var extraHtml = '';
+  if (q.type === 'short') {
+    extraHtml = '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 参考答案：</b>' + esc(stdAnswer.replace(/;/g,'；')) + '</div>';
+  } else if (q.type === 'fill') {
+    extraHtml = '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 正确答案：</b>' + esc(stdAnswer) + '</div>';
+  }
+
+  if (correct) {
+    fb.innerHTML = '<div class="q-explain" style="border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06)"><b>🎉 答对了！</b>本题已移出错题本。<br><b>📖 解析：</b>' + md(q.explanation) + '</div>' + extraHtml;
+    toast('错题攻克成功，已移出 🎉','ok');
+    _defer(function(){
+      box.style.transition = 'all .4s'; box.style.opacity = '0'; box.style.transform = 'translateX(30px)';
+      _defer(function(){ renderWrong(); }, 400);
+    }, 1200);
+  } else {
+    fb.innerHTML = '<div class="q-explain"><b>💪 再想想！</b>仍留在错题本中。<br><b>📖 解析：</b>' + md(q.explanation) + '</div>' + extraHtml;
   }
   renderBadges();
 }
@@ -1750,6 +2169,7 @@ function exportData(){
   a.download = '研学库备份_'+todayStr()+'.json';
   a.click();
   URL.revokeObjectURL(a.href);
+  _analytics.dataExport(db.knowledge.length);
   toast('数据已导出 📦','ok');
 }
 // 导入数据消毒：结构校验 + 字段限长/类型清洗，防恶意 JSON（超长字段撑爆 localStorage、非法结构导致应用崩溃）
@@ -1774,11 +2194,19 @@ function sanitizeImport(d){
             createdAt:String(k&&k.createdAt||'').slice(0,10)};
   });
   out.questions = (Array.isArray(d.questions)?d.questions:[]).slice(0,10000).map(function(q){
+    var qType = q&&q.type ? q.type : (q&&q.options===null?'judge':'single');
+    if (['single','judge','fill','short'].indexOf(qType) === -1) qType = 'single';
+    var answer = q&&q.answer;
+    if (qType === 'fill' || qType === 'short') {
+      answer = String(answer != null ? answer : '');
+    } else {
+      answer = parseInt(answer) || 0;
+    }
     return {id:String(q&&q.id||'').slice(0,40), subjectId:String(q&&q.subjectId||'').slice(0,40),
-            chapter:String(q&&q.chapter||'').slice(0,100), type:(q&&q.type)==='judge'?'judge':'single',
+            chapter:String(q&&q.chapter||'').slice(0,100), type: qType,
             question:String(q&&q.question||'').slice(0,2000),
             options:(Array.isArray(q&&q.options)?q.options:[]).slice(0,10).map(function(o){return String(o||'').slice(0,1000);}),
-            answer:parseInt(q&&q.answer)||0, explanation:String(q&&q.explanation||'').slice(0,5000)};
+            answer: answer, explanation:String(q&&q.explanation||'').slice(0,5000)};
   });
   out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(0,100000).map(function(r){
     return {qid:String(r&&r.qid||'').slice(0,40), correct:!!(r&&r.correct), date:String(r&&r.date||'').slice(0,10)};
@@ -1840,7 +2268,163 @@ function confirmImportData(){
   db = _pendingImportData;
   _pendingImportData = null;
   save(); closeModal(); render();
+  _analytics.dataImport(data.knowledge.length);
   toast('导入成功，数据已恢复 ✅','ok');
+}
+
+/* ================= 卡包导出/导入（分享生态） ================= */
+/* 导出卡包：将当前筛选/选中科目的知识点与题目打包为 .json 文件 */
+function exportCardPack(){
+  var selectedSubjects = libFilter.subject !== 'all' ? [libFilter.subject] : null;
+  var packKw = db.knowledge.slice();
+  var packQ = db.questions.slice();
+
+  if (selectedSubjects) {
+    packKw = packKw.filter(function(k){ return selectedSubjects.indexOf(k.subjectId) !== -1; });
+    packQ = packQ.filter(function(q){ return selectedSubjects.indexOf(q.subjectId) !== -1; });
+  }
+
+  if (!packKw.length && !packQ.length) {
+    toast('当前没有可导出的内容，请先创建知识点或题目','err');
+    return;
+  }
+
+  var subjectMap = {};
+  db.subjects.forEach(function(s){ subjectMap[s.id] = s; });
+
+  var pack = {
+    _packVersion: 1,
+    _packName: '研学库卡包',
+    _exportedAt: todayStr(),
+    _subjectCount: Object.keys(
+      packKw.reduce(function(acc, k){ acc[k.subjectId]=1; return acc; },
+      packQ.reduce(function(acc, q){ acc[q.subjectId]=1; return acc; }, {}))
+    ).length,
+    _kwCount: packKw.length,
+    _qCount: packQ.length,
+    subjects: (selectedSubjects || Object.keys(subjectMap)).map(function(sid){
+      var s = subjectMap[sid];
+      return s ? {id: s.id, name: s.name, color: s.color, exam: s.exam} : null;
+    }).filter(Boolean),
+    knowledge: packKw,
+    questions: packQ
+  };
+
+  var blob = new Blob([JSON.stringify(pack, null, 2)], {type: 'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '研学库卡包_' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  _analytics.packExported(pack._kwCount, pack._qCount);
+  toast('卡包已导出 📦（' + pack._kwCount + ' 个知识点 + ' + pack._qCount + ' 道题目）', 'ok');
+}
+
+/* 导入卡包文件 */
+function importCardPackFile(ev){
+  var f = ev.target.files[0];
+  ev.target.value = '';
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      var pack = JSON.parse(e.target.result);
+      if (!pack.knowledge || !Array.isArray(pack.knowledge)) {
+        toast('卡包格式不正确，缺少知识点数据','err'); return;
+      }
+      _pendingPackData = pack;
+      showPackImportPreview(f.name, pack);
+    } catch(err) { toast('导入失败：文件格式不正确','err'); }
+  };
+  reader.readAsText(f);
+}
+
+var _pendingPackData = null;
+
+function showPackImportPreview(fname, pack){
+  var kwCount = (pack.knowledge || []).length;
+  var qCount = (pack.questions || []).length;
+  var subjNames = (pack.subjects || []).map(function(s){ return esc(s.name); }).join('、') || '未指定';
+  var dupCheck = 0;
+  (pack.knowledge || []).forEach(function(k){
+    if (db.knowledge.some(function(ex){ return ex.title === k.title; })) dupCheck++;
+  });
+
+  // 去掉卡包自身的 subjects 字段来匹配导入
+  openModal({
+    title: '📦 导入卡包',
+    body: '<div style="color:var(--text-2);line-height:1.8;margin-bottom:12px">' +
+      '即将从 <b>' + esc(fname) + '</b> 导入卡包数据。<br>' +
+      '新科目将自动创建，同名卡片将自动加编号区分。' +
+      '</div>' +
+      '<div class="review-info" style="margin:12px 0">' +
+        '<span>📚 科目：<b>' + subjNames + '</b></span>' +
+        '<span>🧠 <b>' + kwCount + '</b> 个知识点</span>' +
+        '<span>✍️ <b>' + qCount + '</b> 道题目</span>' +
+        (dupCheck ? '<span style="color:var(--warn)">⚠️ ' + dupCheck + ' 张同名卡片</span>' : '') +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text-3)">导入后可在知识库中筛选、编辑和删除。</div>',
+    actions: [
+      {text: '取消', class: 'btn btn-ghost', onclick: 'closeModal(); _pendingPackData=null;'},
+      {text: '确认导入', class: 'btn btn-primary', onclick: 'confirmPackImport()'}
+    ]
+  });
+}
+
+function confirmPackImport(){
+  if (!_pendingPackData) return;
+  var pack = _pendingPackData;
+  _pendingPackData = null;
+
+  // 合并科目（按名称查重，不存在则新建）
+  var subjIdMap = {};
+  (pack.subjects || []).forEach(function(s){
+    var exist = db.subjects.find(function(x){ return x.name === s.name; });
+    if (exist) { subjIdMap[s.id] = exist.id; }
+    else {
+      var palette = ['#e11d48','#7c3aed','#0891b2','#ca8a04','#16a34a','#dc2626','#2563eb','#6366f1','#10b981','#f59e0b','#ec4899','#14b8a6'];
+      var newId = uid();
+      db.subjects.push({id: newId, name: s.name, color: s.color || palette[db.subjects.length % palette.length], exam: s.exam || ''});
+      subjIdMap[s.id] = newId;
+    }
+  });
+
+  // 导入知识点
+  var addedKw = 0, addedQ = 0;
+  var titleCount = {};
+  (pack.knowledge || []).forEach(function(k){
+    titleCount[k.title] = (titleCount[k.title] || 0) + 1;
+    var newTitle = titleCount[k.title] > 1 ? k.title + ' (' + titleCount[k.title] + ')' : k.title;
+    var existsInDb = db.knowledge.some(function(ex){ return ex.title === newTitle; });
+    if (existsInDb) return;
+
+    db.knowledge.push({
+      id: uid(), subjectId: subjIdMap[k.subjectId] || db.subjects[0].id,
+      chapter: k.chapter || '导入', title: newTitle,
+      content: k.content || '', tags: (k.tags || []).slice(0,20),
+      stage: 0, nextReview: todayStr(), lastReview: null,
+      createdAt: todayStr()
+    });
+    addedKw++;
+  });
+
+  // 导入题目
+  (pack.questions || []).forEach(function(q){
+    var qType = q.type;
+    if (['single','judge','fill','short'].indexOf(qType) === -1) qType = 'single';
+    db.questions.push({
+      id: uid(), subjectId: subjIdMap[q.subjectId] || db.subjects[0].id,
+      chapter: q.chapter || '导入', type: qType,
+      question: q.question || '', options: q.options || null,
+      answer: qType === 'fill' || qType === 'short' ? String(q.answer || '') : (parseInt(q.answer) || 0),
+      explanation: q.explanation || ''
+    });
+    addedQ++;
+  });
+
+  save(); closeModal(); render();
+  _analytics.packImported(addedKw, addedQ);
+  toast('卡包导入完成 ✅（+' + addedKw + ' 知识点，+' + addedQ + ' 题）','ok');
 }
 
 /* ================= 弹窗 & 提示 ================= */
@@ -2456,6 +3040,160 @@ function renderMine(){
       <button class="btn" style="background:rgba(239,68,68,.12);color:var(--danger)" onclick="signOut()">退出登录</button>
     </div>`;
 }
+/* ================= 公共课程库 ================= */
+var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
+
+/* 加载公共课程库（缓存到内存） */
+function loadPublicLibrary(cb){
+  if(_pubLib){ cb(_pubLib); return; }
+  if(_pubLibLoading) return; // 正在加载中不重复请求
+  _pubLibLoading = true;
+  var el = document.getElementById('view-public-library');
+  el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载中…</h3><p>正在获取十大热门考研专业课数据</p></div>';
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'public-library.json', true);
+  xhr.onload = function(){
+    _pubLibLoading = false;
+    if(xhr.status >= 200 && xhr.status < 300){
+      try {
+        _pubLib = JSON.parse(xhr.responseText);
+        if(cb) cb(_pubLib);
+      } catch(e){ toast('课程库数据解析失败','err'); }
+    } else {
+      toast('课程库加载失败，请检查网络连接','err');
+    }
+  };
+  xhr.onerror = function(){ _pubLibLoading = false; toast('课程库加载失败','err'); };
+  xhr.send();
+}
+
+function renderPublicLibrary(){
+  if(_pubLibSubject){ renderPubLibDetail(_pubLibSubject); return; }
+  loadPublicLibrary(function(lib){
+    if(!lib || !lib.subjects) return;
+    var el = document.getElementById('view-public-library');
+    var html = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div>';
+    html += '<div style="font-size:13px;color:var(--text-3);margin-bottom:16px">十大热门考研专业课 · 共 <b>'+lib.subjects.length+'</b> 个科目 · 点击科目卡片查看详情并导入</div>';
+    html += '<div class="plib-subject-grid">';
+
+    lib.subjects.forEach(function(s){
+      var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
+      var importedTag = appSubj ? '<span style="font-size:11px;color:var(--success);font-weight:600">✅ 已导入</span>' : '';
+      html += '<div class="plib-subject-card" onclick="_pubLibSubject=\''+s.id+'\';renderPublicLibrary()">' +
+        '<div class="plib-subject-header">' +
+          '<div class="plib-subject-icon" style="background:'+s.color+'">'+s.icon+'</div>' +
+          '<div><h3 style="font-size:15px;margin-bottom:2px">'+esc(s.name)+'</h3>' +
+          '<div style="font-size:12px;color:var(--text-3)">'+esc(s.desc)+'</div></div>' +
+        '</div>' +
+        '<div class="plib-subject-stats">' +
+          '<span>📚 <b>'+s.chapters.length+'</b> 章</span>' +
+          '<span>🧠 <b>'+s.cardCount+'</b> 张卡片</span>' +
+          '<span>📝 '+esc(s.exam)+'</span>' +
+        '</div>' +
+        '<div class="plib-subject-footer">' +
+          '<button class="plib-preview-btn" onclick="event.stopPropagation();_pubLibSubject=\''+s.id+'\';renderPublicLibrary()">👁 预览卡片</button>' +
+          '<button class="plib-import-btn" onclick="event.stopPropagation();importPubLibSubject(\''+s.id+'\')">📥 导入我的科目</button>' +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+  });
+}
+
+function renderPubLibDetail(subjectId){
+  loadPublicLibrary(function(lib){
+    var s = (lib.subjects || []).find(function(x){ return x.id === subjectId; });
+    if(!s){ _pubLibSubject = null; renderPublicLibrary(); return; }
+    var el = document.getElementById('view-public-library');
+
+    // Group cards by chapter
+    var chapterMap = {};
+    s.cards.forEach(function(c){
+      if(!chapterMap[c.chapter]) chapterMap[c.chapter] = [];
+      chapterMap[c.chapter].push(c);
+    });
+
+    var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
+
+    var html = '<div class="plib-detail-back" onclick="_pubLibSubject=null;renderPublicLibrary()">← 返回课程列表</div>';
+    html += '<div class="plib-header">' +
+      '<div class="plib-subject-icon" style="background:'+s.color+';width:48px;height:48px;border-radius:14px;font-size:22px">'+s.icon+'</div>' +
+      '<div><h2>'+esc(s.name)+'</h2><div style="font-size:13px;color:var(--text-3)">'+esc(s.exam)+' · '+s.cardCount+' 张卡片 · '+s.chapters.length+' 章</div></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;margin-bottom:20px">' +
+        '<button class="plib-import-btn" style="padding:12px 24px;font-size:14px" onclick="importPubLibSubject(\''+s.id+'\')">📥 一键导入到「'+esc(s.name)+'」</button>' +
+        (appSubj ? '<span class="btn btn-ghost" style="cursor:default">✅ 科目已存在（导入将新增不重复卡片）</span>' : '') +
+      '</div>';
+
+    // Render chapters
+    var chapterNames = s.chapters;
+    chapterNames.forEach(function(ch){
+      var cards = chapterMap[ch] || [];
+      html += '<div class="plib-chapter-group"><div class="plib-chapter-title">📖 '+esc(ch)+' <span style="font-weight:400;font-size:12px;color:var(--text-3)">'+cards.length+' 张</span></div>';
+      html += '<div class="plib-kw-list">';
+      cards.forEach(function(c){
+        var tagHTML = (c.tags||[]).map(function(t){ return '<span class="tag tag-blue" style="font-size:10.5px;padding:2px 8px">'+esc(t)+'</span>'; }).join('');
+        html += '<div class="plib-kw-item" onclick="showPubLibKwPreview(\''+esc(c.title)+'\',\''+esc(c.content.replace(/\n/g,'<br>').replace(/'/g,'\\\'')) +'\')">' +
+          '<div class="title">'+esc(c.title)+'</div>' +
+          '<div style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px">'+esc(c.content.slice(0,60))+'…</div>' +
+          (tagHTML ? '<div class="tags">'+tagHTML+'</div>' : '') +
+        '</div>';
+      });
+      html += '</div></div>';
+    });
+
+    el.innerHTML = html;
+    el.scrollTop = 0;
+  });
+}
+
+function showPubLibKwPreview(title, content){
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<div class="plib-kw-preview">' +
+      '<h4>'+title+'</h4>' +
+      '<div class="content">'+content+'</div>' +
+    '</div>'
+  );
+}
+
+function importPubLibSubject(subjectId){
+  loadPublicLibrary(function(lib){
+    var s = (lib.subjects || []).find(function(x){ return x.id === subjectId; });
+    if(!s){ toast('科目数据未找到','err'); return; }
+    // 查找或创建科目
+    var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
+    if(!appSubj){
+      var palette = ['#6366f1','#10b981','#ef4444','#f59e0b','#0ea5e9','#ec4899','#8b5cf6','#14b8a6','#dc2626','#ca8a04'];
+      var newId = 'pubimp_'+Date.now().toString(36);
+      appSubj = {id: newId, name: s.name, color: palette[db.subjects.length % palette.length], exam: s.exam};
+      db.subjects.push(appSubj);
+    }
+
+    var addedKw = 0, skippedKw = 0;
+    var titleCount = {};
+    s.cards.forEach(function(c){
+      titleCount[c.title] = (titleCount[c.title] || 0) + 1;
+      var finalTitle = titleCount[c.title] > 1 ? c.title + ' (' + titleCount[c.title] + ')' : c.title;
+      var exists = db.knowledge.some(function(k){ return k.title === finalTitle; });
+      if(exists){ skippedKw++; return; }
+      db.knowledge.push({
+        id: uid(), subjectId: appSubj.id,
+        chapter: c.chapter, title: finalTitle,
+        content: c.content, tags: (c.tags || []).slice(0,20),
+        stage: 0, nextReview: todayStr(), lastReview: null, createdAt: todayStr()
+      });
+      addedKw++;
+    });
+
+    save(); render();
+    _analytics.packImported(addedKw, 0);
+    toast('导入完成 ✅ 新增 '+addedKw+' 张卡片'+(skippedKw?'，跳过 '+skippedKw+' 张重复':'')+'，已加入今日复习队列','ok');
+  });
+}
+
 /* ===== 账号安全：修改密码 / 修改邮箱 ===== */
 function openAccountModal(){
   if(!sb||!_currentUser){ toast('请先登录','err'); return; }
