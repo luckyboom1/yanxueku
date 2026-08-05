@@ -181,14 +181,14 @@
     "CSS 大括号匹配",
     "CSS 变量完整性: 23 个",
     "HTML 标签闭合正常",
-    "DOM id 引用一致性: 30 个"
+    "DOM id 引用一致性: 31 个"
   ],
   "stats": {
-    "total_lines": 2159,
-    "js_lines": 1695,
-    "css_lines": 376,
-    "js_functions": 100,
-    "css_rules": 292,
-    "file_size_kb": 282.3
+    "total_lines": 2091,
+    "js_lines": 1620,
+    "css_lines": 383,
+    "js_functions": 101,
+    "css_rules": 297,
+    "file_size_kb": 111.7
   }
 }

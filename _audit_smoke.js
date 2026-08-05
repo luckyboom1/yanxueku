@@ -53,7 +53,7 @@ const test = `
   ok('studyLog 是数组', Array.isArray(db.studyLog));
   ok('quizRecords 是数组', Array.isArray(db.quizRecords));
   ok('settings 可缺省或为对象', db.settings === undefined || typeof db.settings === 'object');
-  ok('中国新闻史科目', db.subjects.some(s=>s.name==='中国新闻史'));
+  ok('默认仅 1 个测试科目', db.subjects.length === 1 && /测试/.test(db.subjects[0].name));
 
   console.log('\\n=== 函数完整性 ===');
   var required=['load','save','render','renderSidebar','renderBadges','renderDashboard','renderLibrary',
@@ -67,7 +67,7 @@ const test = `
     'getCountdownDate','setExamDate','setDailyGoal','updateDashboardHeader',
     'openExamDatePicker','openGoalSetter','renderSidebarUser','openAuthModal',
     'doLogin','doSignUp','signOut','openProfileModal','saveProfile','renderLeaderboard',
-    'toggleStar','hideLoading','ensureNewsSubject','showFirstGuide','nextGuide','closeGuide',
+    'toggleStar','hideLoading','renderGate','hideGate','setupAuthListener','showFirstGuide','nextGuide','closeGuide',
     'esc','uid','todayStr','addDays','seedData','getSubject','addStudy','isDue','dueList',
     'masteryLevel','wrongList'];
   var missing=required.filter(function(f){return typeof eval(f)!=='function';});
