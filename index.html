@@ -1957,17 +1957,18 @@ function authErrorMsg(err){
 }
 function validatePassword(p){ return String(p==null?'':p).length >= 6; }
 
-/* ===== Cloudflare Turnstile 人机验证（防刷注册） =====
- * 使用方法：
- * 1. Supabase Dashboard -> Authentication -> CAPTCHA -> Turnstile，生成 Site Key
- * 2. 把 Site Key 填入下方 TURNSTILE_SITE_KEY
- * 3. Supabase Auth 会自动校验 captchaToken，未通过时注册返回 403
- * 留空时自动跳过验证（优雅降级，不影响注册流程）
+/* ===== Cloudflare Turnstile 人机验证（尽力而为模式） =====
+ * 设计：Turnstile 可用时强制人机验证；不可用时（SDK 加载失败 /
+ * 渲染失败 / 10 秒未完成验证=Cloudflare 连不上）自动降级放行，
+ * 不阻塞注册 —— 面向国内用户，challenges.cloudflare.com 访问不稳定
+ * 前提：Supabase 侧 CAPTCHA 需关闭强制校验（否则无 token 请求被 400 拒）
  */
 const TURNSTILE_SITE_KEY = '0x4AAAAAAEGrawQkO7430Qen'; // Cloudflare Turnstile Site Key
 let _captchaToken = null;
 let _turnstileWidget = null;
 let _turnstileSDKLoading = false;
+let _captchaDegraded = false;      // true = Turnstile 不可用，允许跳过验证
+let _captchaDegradeTimer = null;
 function loadTurnstileSDK(cb){
   if(window.turnstile){ cb(); return; }
   if(_turnstileSDKLoading){ return; }
@@ -1976,7 +1977,7 @@ function loadTurnstileSDK(cb){
   s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
   s.async = true;
   s.onload = function(){ _turnstileSDKLoading = false; cb(); };
-  s.onerror = function(){ _turnstileSDKLoading = false; }; // 加载失败静默降级，不阻塞注册
+  s.onerror = function(){ _turnstileSDKLoading = false; _captchaDegraded = true; }; // SDK 加载失败 → 降级放行
   document.head.appendChild(s);
 }
 function renderTurnstile(){
@@ -1984,21 +1985,32 @@ function renderTurnstile(){
   var holder = document.getElementById('auth-captcha');
   if(!holder || _turnstileWidget) return;
   _captchaToken = null;
-  _turnstileWidget = window.turnstile.render(holder, {
-    sitekey: TURNSTILE_SITE_KEY,
-    theme: document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light',
-    callback: function(token){ _captchaToken = token; },
-    'expired-callback': function(){ _captchaToken = null; },
-    'error-callback': function(){ _captchaToken = null; }
-  });
+  _captchaDegraded = false;
+  try{
+    _turnstileWidget = window.turnstile.render(holder, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light',
+      callback: function(token){ _captchaToken = token; if(_captchaDegradeTimer){ clearTimeout(_captchaDegradeTimer); _captchaDegradeTimer = null; } },
+      'expired-callback': function(){ _captchaToken = null; },
+      'error-callback': function(){ _captchaToken = null; }
+    });
+    // 降级超时：10 秒内未完成验证（多半是 Cloudflare 连不上）→ 允许跳过
+    _captchaDegradeTimer = setTimeout(function(){
+      if(!_captchaToken) _captchaDegraded = true;
+    }, 10000);
+  }catch(e){
+    _captchaDegraded = true; // 渲染异常 → 降级放行
+  }
 }
 function resetTurnstile(){
   if(_turnstileWidget && window.turnstile){ try{ window.turnstile.reset(_turnstileWidget); }catch(e){} }
-  _captchaToken = null;
+  _captchaToken = null; _captchaDegraded = false;
+  if(_captchaDegradeTimer){ clearTimeout(_captchaDegradeTimer); _captchaDegradeTimer = null; }
 }
 function destroyTurnstile(){
   if(_turnstileWidget && window.turnstile){ try{ window.turnstile.remove(_turnstileWidget); }catch(e){} }
-  _turnstileWidget = null; _captchaToken = null;
+  _turnstileWidget = null; _captchaToken = null; _captchaDegraded = false;
+  if(_captchaDegradeTimer){ clearTimeout(_captchaDegradeTimer); _captchaDegradeTimer = null; }
 }
 function renderAuthModal(){
   const isLogin = _authMode === 'login';
@@ -2043,7 +2055,7 @@ async function doLogin(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  if(TURNSTILE_SITE_KEY && !_captchaToken){ toast('请先完成人机验证','err'); return; }
+  if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){ toast('请先完成人机验证','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   try{
@@ -2064,7 +2076,7 @@ async function doSignUp(){
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  if(TURNSTILE_SITE_KEY && !_captchaToken){ toast('请先完成人机验证','err'); return; }
+  if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){ toast('请先完成人机验证','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   try{
