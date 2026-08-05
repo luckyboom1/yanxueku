@@ -1,0 +1,31 @@
+security: 应用 Code Reviewer 安全修复补丁（242ddec）+ 3 处工程修正
+
+来源: 外部补丁 研学库安全修复.patch（git apply 干净应用）
+
+补丁内容（8 项）:
+- 配置外部化: Supabase/Turnstile 凭据移入 config.js（config.template.js 模板）
+- CSP connect-src 放宽为 *.supabase.co（适配动态配置）
+- 修改邮箱前验证当前密码（防会话劫持）
+- openModal 对象式安全调用（buildSafeModal 自动转义）
+- leaderboard view 移除 user_id + 数据库层预聚合 total_minutes
+- 导入数据确认弹窗 + 自动备份
+- calcStreak 连续天数 / getDecemberThirdSaturday 考研日期公式
+- SVG 分数环渐变 ID 唯一化
+
+工程修正（3 处）:
+- [部署] config.js 从 .gitignore 移除并随仓库提交: GitHub Pages 纯静态
+  托管（文件仅来自 git），忽略 config.js 会导致线上云端功能全失效；
+  anon key/Turnstile Site Key 为公开凭据（前端每次请求携带），提交
+  无安全风险，README 同步修正
+- [逻辑] changeEmail 恢复本地 email 同步: 项目为 autoconfirm（未开
+  邮件确认），改邮箱立即生效，补丁原逻辑（不更新本地）会导致显示
+  不一致；保留"验证当前密码"改进
+- [健壮] leaderboard: 前端兼容新旧 view（total_minutes 缺失时回退
+  study_log 解析，SQL 未执行期排行不归零）；SQL 的 minutes 加正则
+  校验后再 ::int（防脏数据炸视图）；补丁 SQL 补回 WITH CHECK（与
+  线上已修复 RLS 一致，防新环境重现漏洞）
+
+验证: 括号 690/690, 1875/1875; 26 项断言 PASS
+
+⚠️ 待办: 在 Supabase SQL Editor 执行新版 leaderboard view
+（UPGRADE_SQL.sql 末尾 CREATE OR REPLACE VIEW leaderboard ...）

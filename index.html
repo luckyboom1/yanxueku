@@ -12,6 +12,8 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>研学库 · 考研专业课高效学习</title>
+<!-- 运行时配置：config.js 包含 Supabase/Turnstile 等敏感配置，被 .gitignore 忽略，不提交到仓库 -->
+<script src="config.js"></script>
 <!-- Supabase SDK（云同步/登录依赖）：动态异步加载，不阻塞首屏渲染；加载失败自动回退本地模式 -->
 <style>
 :root{
@@ -427,7 +429,8 @@ body.modal-open #content{overflow:hidden}
 <meta name="twitter:card" content="summary">
 <meta name="format-detection" content="telephone=no">
 <!-- CSP 纵深防御：限制外部脚本/连接来源，XSS 发生时数据无法外传到白名单外域名 -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://gwihiemggugzwhutsfea.supabase.co wss://gwihiemggugzwhutsfea.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
+<!-- 注意：script-src 'unsafe-inline' 因当前为单文件内联脚本而保留；后续拆分模块后应移除并改用 nonce/hash -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
 </head>
 <body>
 <div class="loading-shield" id="loading-screen">
@@ -492,13 +495,20 @@ body.modal-open #content{overflow:hidden}
 
 <script>
 /* ================= 数据层（Supabase 共享数据库） ================= */
-const SUPABASE_URL = 'https://gwihiemggugzwhutsfea.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4';
+// 从外部配置读取 Supabase 凭据；config.js 被 .gitignore 忽略，避免敏感信息进入版本控制
+const _cfg = window.__YANXUEKU_CONFIG__ || {};
+const SUPABASE_URL = _cfg.SUPABASE_URL || '';
+const SUPABASE_KEY = _cfg.SUPABASE_KEY || '';
 let sb = null;
 let _supabaseFailed = false;   // SDK 加载超时/失败标记（供提示区分"连接中"与"失败"）
 function tryInitSupabase(){
   // 幂等：sb 已就绪直接返回；SDK 动态加载完成后可反复调用直到成功（不设一次性短路）
   if(sb) return true;
+  if(!SUPABASE_URL || !SUPABASE_KEY){
+    console.warn('[yanxueku] Supabase 配置缺失，将使用本地模式运行。请复制 config.template.js 为 config.js 并填入真实配置。');
+    _supabaseFailed = true;
+    return false;
+  }
   if(window.supabase && window.supabase.createClient){
     try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase init failed:', e && e.message); }
   }
@@ -526,11 +536,29 @@ const THEME_KEY = 'yanxueku_theme';
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
+// 计算连续学习天数：今天尚未学习时不计入中断，从最近一个有学习记录的日期开始向前统计
+function calcStreak(today, studyLog){
+  let startOffset = 0;
+  const todayRec = studyLog.find(r => r.date === today);
+  if(!todayRec || todayRec.minutes === 0) startOffset = 1;
+  let streak = 0;
+  const MAX_DAYS = 365;
+  for(let i = startOffset; i < MAX_DAYS; i++){
+    const d = addDays(today, -i);
+    const rec = studyLog.find(r => r.date === d);
+    if(rec && rec.minutes > 0) streak++;
+    else break;
+  }
+  return streak;
+}
+
 function todayStr(){ return dayStr(new Date()); }
 function dayStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function addDays(str, n){ const d = new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return dayStr(d); }
 function diffDays(a, b){ return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00'))/86400000); }
 function uid(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+let _svgIdCounter = 0;
+function uniqueSvgId(prefix){ return (prefix||'sg') + '-' + (++_svgIdCounter) + '-' + Date.now().toString(36); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // 安全色值校验：仅允许 #hex，防止颜色字段被注入恶意 CSS（存储型 CSS 注入防护）
 function safeColor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(String(c==null?'':c)) ? c : '#6366f1'; }
@@ -789,15 +817,7 @@ function renderDashboard(){
   const t = todayStr();
   const due = dueList();
   const todayMin = (db.studyLog.find(r=>r.date===t)||{minutes:0}).minutes;
-  // 连续学习天数（今天未学到不计入中断，当天尚未结束）
-  let streak = 0;
-  for(let i=0;;i++){
-    const d = addDays(t,-i);
-    const rec = db.studyLog.find(r=>r.date===d);
-    if(rec && rec.minutes>0) streak++;
-    else { if(i===0){ continue; } break; }
-    if(i>365) break;
-  }
+  const streak = calcStreak(t, db.studyLog);
   const mastered = db.knowledge.filter(k=>masteryLevel(k)===3).length;
   const totalQ = db.questions.length;
   const doneQ = new Set(db.quizRecords.map(r=>r.qid)).size;
@@ -1245,6 +1265,7 @@ function renderQuizResult(){
     return recs.length && !recs[recs.length-1].correct;
   });
   const C = 2*Math.PI*52;
+  const gradId = uniqueSvgId('score-grad');
   document.getElementById('view-quiz').innerHTML = `
     <div class="review-wrap" style="max-width:560px">
       <div class="q-card" style="text-align:center">
@@ -1252,9 +1273,9 @@ function renderQuizResult(){
         <div class="score-ring">
           <svg width="150" height="150" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="52" fill="none" stroke="var(--border)" stroke-width="10"/>
-            <circle cx="60" cy="60" r="52" fill="none" stroke="url(#sg)" stroke-width="10" stroke-linecap="round"
+            <circle cx="60" cy="60" r="52" fill="none" stroke="url(#${gradId})" stroke-width="10" stroke-linecap="round"
               stroke-dasharray="${C}" stroke-dashoffset="${C*(1-pct/100)}" style="transition:stroke-dashoffset 1s cubic-bezier(.16,1,.3,1)"/>
-            <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
+            <defs><linearGradient id="${gradId}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>
           </svg>
           <div class="val"><b>${pct}</b><span>正确率 %</span></div>
         </div>
@@ -1720,6 +1741,7 @@ function sanitizeImport(d){
   });
   return out;
 }
+let _pendingImportData = null;
 function importData(ev){
   const f = ev.target.files[0];
   if(!f) return;
@@ -1729,18 +1751,70 @@ function importData(ev){
       const data = JSON.parse(e.target.result);
       const clean = sanitizeImport(data);
       if(!clean) throw new Error('格式不正确');
-      db = clean; save(); render();
-      toast('导入成功，数据已恢复 ✅','ok');
+      _pendingImportData = clean;
+      showImportConfirm(f.name, clean);
     }catch(err){ toast('导入失败：文件格式不正确','err'); }
   };
   reader.readAsText(f);
   ev.target.value = '';
 }
+function showImportConfirm(fname, data){
+  // 导入前自动导出当前数据作为备份
+  try{
+    const backupBlob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(backupBlob);
+    a.download = '研学库备份_导入前_'+todayStr()+'.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }catch(e){ console.warn('自动备份失败:', e.message); }
+
+  openModal({
+    title: '⬆ 确认恢复备份',
+    body: `<div style="color:var(--text-2);line-height:1.8;margin-bottom:12px">
+      即将从 <b>${esc(fname)}</b> 恢复数据，当前数据将被覆盖。<br>
+      已自动下载当前数据备份到本地。
+    </div>
+    <div class="review-info" style="margin:12px 0">
+      <span>📚 <b>${data.subjects.length}</b> 个科目</span>
+      <span>🧠 <b>${data.knowledge.length}</b> 个知识点</span>
+      <span>✍️ <b>${data.questions.length}</b> 道题目</span>
+      <span>📝 <b>${data.quizRecords.length}</b> 条答题记录</span>
+    </div>
+    <div style="font-size:12px;color:var(--warn)">⚠️ 此操作不可恢复，请确认后继续。</div>`,
+    actions: [
+      {text: '取消', class: 'btn btn-ghost', onclick: 'closeModal(); _pendingImportData=null;'},
+      {text: '确认恢复', class: 'btn btn-primary', onclick: 'confirmImportData()'}
+    ]
+  });
+}
+function confirmImportData(){
+  if(!_pendingImportData) return;
+  db = _pendingImportData;
+  _pendingImportData = null;
+  save(); closeModal(); render();
+  toast('导入成功，数据已恢复 ✅','ok');
+}
 
 /* ================= 弹窗 & 提示 ================= */
+// 安全弹窗构建：接收对象 {title, body, actions} 时自动转义所有文本，避免 XSS
+function buildSafeModal(opts){
+  const title = opts.title ? `<h3>${esc(opts.title)}</h3>` : '';
+  const body = opts.body || '';
+  const actions = (opts.actions || []).map(a => {
+    const cls = a.class || 'btn btn-ghost';
+    if(a.onclick) return `<button class="${esc(cls)}" onclick="${a.onclick}">${esc(a.text)}</button>`;
+    return `<button class="${esc(cls)}" onclick="closeModal()">${esc(a.text)}</button>`;
+  }).join('');
+  return (opts.close !== false ? '<button class="modal-close" onclick="closeModal()">✕</button>' : '') +
+    title + body +
+    (actions ? `<div class="modal-actions">${actions}</div>` : '');
+}
 function openModal(html){
   const root = document.getElementById('modal-root');
-  root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal">${html}</div>`;
+  // 支持对象式安全调用：openModal({title, body, actions})
+  const content = typeof html === 'object' && html !== null ? buildSafeModal(html) : html;
+  root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal">${content}</div>`;
   root.classList.add('open');
   document.body.classList.add('modal-open'); // 锁背景滚动
 }
@@ -1983,17 +2057,19 @@ renderFlashcard = function(){
 };
 
 // --- 考研倒计时 ---
+function getDecemberThirdSaturday(year){
+  // 12月第三个周六：12月15日 + (6 - 12月1日星期几 + 7) % 7
+  const dec1Day = new Date(year, 11, 1).getDay();
+  return new Date(year, 11, 15 + (6 - dec1Day + 7) % 7);
+}
 function getCountdownDate(){
   const saved = localStorage.getItem('yanxueku_exam_date');
   if(saved) return new Date(saved);
-  // 默认：当前年份12月第三个周末的周六
+  // 默认：当前年份12月第三个周六；若已过则用明年
   const now = new Date();
-  const y = now.getFullYear();
-  const dec = new Date(y, 11, 20); // 12月20日附近
-  while(dec.getDay() !== 6) dec.setDate(dec.getDate() + 1); // 调到周六
-  // 如果已经过了今年12月，用明年
-  if(now > dec){ dec.setFullYear(y + 1); dec.setMonth(11); dec.setDate(20); while(dec.getDay() !== 6) dec.setDate(dec.getDate() + 1); }
-  return dec;
+  let exam = getDecemberThirdSaturday(now.getFullYear());
+  if(now > exam) exam = getDecemberThirdSaturday(now.getFullYear() + 1);
+  return exam;
 }
 function setExamDate(d){
   localStorage.setItem('yanxueku_exam_date', d.toISOString().slice(0,10));
@@ -2112,7 +2188,7 @@ function validatePassword(p){ return String(p==null?'':p).length >= 8; }
  * 不阻塞注册 —— 面向国内用户，challenges.cloudflare.com 访问不稳定
  * 前提：Supabase 侧 CAPTCHA 需关闭强制校验（否则无 token 请求被 400 拒）
  */
-const TURNSTILE_SITE_KEY = '0x4AAAAAAEGrawQkO7430Qen'; // Cloudflare Turnstile Site Key
+const TURNSTILE_SITE_KEY = _cfg.TURNSTILE_SITE_KEY || ''; // Cloudflare Turnstile Site Key（从 config.js 读取，空字符串表示关闭）
 let _captchaToken = null;
 let _turnstileWidget = null;
 let _turnstileSDKLoading = false;
@@ -2342,7 +2418,8 @@ function openAccountModal(){
     '</div>'+
     '<div class="panel" style="box-shadow:none;padding:14px">'+
       '<div class="panel-title" style="font-size:13px;margin-bottom:8px">修改邮箱</div>'+
-      '<div style="font-size:12px;color:var(--warn);margin-bottom:8px">⚠️ 当前未启用邮件验证，修改后立即生效且无法找回，请务必仔细输入</div>'+
+      '<div style="font-size:12px;color:var(--warn);margin-bottom:8px">⚠️ 为安全起见，修改邮箱前需验证当前密码。若服务端开启邮件确认，修改后需到新邮箱点击确认链接方可生效。</div>'+
+      '<div class="form-row"><label>当前密码</label><input id="ac-mail-pwd" type="password" placeholder="输入当前密码"></div>'+
       '<div class="form-row"><label>新邮箱</label><input id="ac-mail" type="email" placeholder="you@example.com"></div>'+
       '<div class="form-row"><label>确认新邮箱</label><input id="ac-mail2" type="email" placeholder="再输入一次"></div>'+
       '<button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--warn);color:var(--warn)" onclick="changeEmail()">确认修改邮箱</button>'+
@@ -2368,17 +2445,26 @@ async function changePassword(){
 }
 async function changeEmail(){
   if(!sb||!_currentUser){ toast('请先登录','err'); return; }
+  const pwd = document.getElementById('ac-mail-pwd').value;
   const e1 = document.getElementById('ac-mail').value.trim();
   const e2 = document.getElementById('ac-mail2').value.trim();
+  if(!pwd){ toast('请输入当前密码','err'); return; }
   if(!validateEmail(e1)){ toast('请输入有效的新邮箱','err'); return; }
   if(e1 !== e2){ toast('两次输入的新邮箱不一致','err'); return; }
   if(e1.toLowerCase() === _currentUser.email.toLowerCase()){ toast('新邮箱与当前相同','err'); return; }
-  if(!confirm('修改邮箱后立即生效且无法找回，确认继续？')) return;
+  if(!confirm('修改邮箱后，若服务端开启邮件确认需到新邮箱点击链接确认。确认继续？')) return;
   try{
+    // 先验证当前密码，防止会话被劫持后恶意改邮箱
+    const v = await sb.auth.signInWithPassword({email:_currentUser.email, password:pwd});
+    if(v.error){ toast('当前密码不正确','err'); return; }
     const r = await sb.auth.updateUser({email:e1});
     if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
-    _currentUser.email = e1; // 本地同步（autoconfirm 下立即生效）
-    closeModal(); renderSidebarUser(); toast('邮箱已修改 ✅','ok');
+    // 本项目为 autoconfirm（未开启邮件确认）：改邮箱立即生效，本地同步 email 保持显示一致；
+    // 若未来服务端开启邮件确认，此处应改为等待确认后再同步（依赖 onAuthStateChange）
+    _currentUser.email = e1;
+    closeModal();
+    renderSidebarUser();
+    toast('邮箱已修改 ✅','ok');
   }catch(e){ toast('网络错误，请稍后重试','err'); }
 }
 let _authListenerReady = false;
@@ -2413,7 +2499,8 @@ async function renderLeaderboard(){
     var x=await sb.from('leaderboard').select('*').limit(20);
     var data=x.data||[], rows='';
     data.forEach(function(r,i){
-      var m=0; try{ JSON.parse(r.study_log||'[]').forEach(function(x){m+=x.minutes||0}); }catch(e){}
+      // 兼容新旧 view：新 view 返回 total_minutes；SQL 未执行前旧 view 只有 study_log
+      var m = r.total_minutes != null ? (parseInt(r.total_minutes, 10) || 0) : (function(){ var n=0; try{ JSON.parse(r.study_log||'[]').forEach(function(x){n+=x.minutes||0}); }catch(e){} return n; })();
       rows+='<div class="leader-row"><div class="rank '+(i<3?'t'+(i+1):'t')+'">'+(i+1)+'</div><div class="avatar" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:'+safeColor(r.avatar_color)+'">'+(r.display_name||'?').charAt(0)+'</div><div class="ld-name">'+esc(r.display_name||'考研人')+'</div><div class="ld-time">'+Math.floor(m/60)+'h '+m%60+'m</div></div>';
     });
     panel.innerHTML=rows||'<div style="text-align:center;padding:20px;color:var(--text-3)">暂无数据</div>';
@@ -2433,7 +2520,8 @@ async function loadDashLeader(){
     wrap.style.display='';
     const medals=['🥇','🥈','🥉'];
     panel.innerHTML = data.map(function(r,i){
-      var m=0; try{ JSON.parse(r.study_log||'[]').forEach(function(v){m+=v.minutes||0}); }catch(e){}
+      // 兼容新旧 view：新 view 返回 total_minutes；SQL 未执行前旧 view 只有 study_log
+      var m = r.total_minutes != null ? (parseInt(r.total_minutes, 10) || 0) : (function(){ var n=0; try{ JSON.parse(r.study_log||'[]').forEach(function(x){n+=x.minutes||0}); }catch(e){} return n; })();
       return `<div style="padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;gap:10px">
         <span style="font-size:18px">${medals[i]||(i+1)}</span>
         <div class="avatar" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:${safeColor(r.avatar_color)}">${esc((r.display_name||'?').charAt(0))}</div>

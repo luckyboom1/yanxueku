@@ -26,12 +26,22 @@ CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_new_user();
 
 ALTER TABLE app_state ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "user_own" ON app_state FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "user_own" ON app_state FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "profiles_read" ON profiles FOR SELECT USING (true);
-CREATE POLICY "profiles_write" ON profiles FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "profiles_write" ON profiles FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
+-- 排行榜视图：不暴露 user_id，直接在数据库层聚合学习时长，减少客户端解析开销
+-- minutes 用正则校验后再 ::int，防御历史脏数据（非数字字符串）导致视图查询报错
 CREATE OR REPLACE VIEW leaderboard AS
-SELECT p.display_name, p.avatar_color, COALESCE((a.data->'studyLog')::jsonb, '[]'::jsonb) AS study_log, a.user_id
-FROM profiles p LEFT JOIN app_state a ON a.user_id = p.user_id;
+SELECT
+  p.display_name,
+  p.avatar_color,
+  COALESCE(
+    (SELECT SUM(CASE WHEN x->>'minutes' ~ '^[0-9]+$' THEN (x->>'minutes')::int ELSE 0 END)
+     FROM jsonb_array_elements(a.data->'studyLog') AS x),
+    0
+  ) AS total_minutes
+FROM profiles p
+LEFT JOIN app_state a ON a.user_id = p.user_id;
