@@ -406,6 +406,8 @@ canvas#chart-days{width:100%;height:260px}
 <meta property="og:image" content="https://luckyboom1.github.io/yanxueku/icon-512.png">
 <meta name="twitter:card" content="summary">
 <meta name="format-detection" content="telephone=no">
+<!-- CSP 纵深防御：限制外部脚本/连接来源，XSS 发生时数据无法外传到白名单外域名 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://gwihiemggugzwhutsfea.supabase.co wss://gwihiemggugzwhutsfea.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
 </head>
 <body>
 <div class="loading-shield" id="loading-screen">
@@ -504,6 +506,8 @@ function addDays(str, n){ const d = new Date(str+'T00:00:00'); d.setDate(d.getDa
 function diffDays(a, b){ return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00'))/86400000); }
 function uid(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// 安全色值校验：仅允许 #hex，防止颜色字段被注入恶意 CSS（存储型 CSS 注入防护）
+function safeColor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(String(c==null?'':c)) ? c : '#6366f1'; }
 function md(s){
   return esc(s)
     .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
@@ -724,7 +728,7 @@ function renderSidebar(){
     const cnt = db.knowledge.filter(k=>k.subjectId===s.id).length;
     const due = db.knowledge.filter(k=>k.subjectId===s.id && isDue(k)).length;
     return `<div class="subj-item" onclick="switchView('library');setLibSubject('${s.id}')">
-      <span class="subj-dot" style="background:${s.color}"></span>${esc(s.name)}
+      <span class="subj-dot" style="background:${safeColor(s.color)}"></span>${esc(s.name)}
       <span class="subj-count">${due>0? due+' 待复习 · ' : ''}${cnt}</span>
       <button class="subj-del" title="删除科目" onclick="delSubject('${s.id}',event)">✕</button></div>`;
   }).join('');
@@ -895,7 +899,7 @@ function kwCard(k){
   else if(k.nextReview===t){ dueCls='today'; dueTxt='今日待复习'; }
   else if(diffDays(k.nextReview,t)<=3){ dueCls='soon'; dueTxt=diffDays(k.nextReview,t)+' 天后复习'; }
   else { dueCls='later'; dueTxt=k.nextReview.slice(5).replace('-','/')+' 复习'; }
-  return `<div class="kw-card" style="--kc:${s?s.color:'#6366f1'}" onclick="openKwDetail('${k.id}')">
+  return `<div class="kw-card" style="--kc:${safeColor(s?s.color:'#6366f1')}" onclick="openKwDetail('${k.id}')">
     <div class="kw-head">
       <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
       <span class="kw-due ${dueCls}">${dueTxt}</span>
@@ -914,7 +918,7 @@ function openKwDetail(id){
   const s = getSubject(k.subjectId);
   openModal(`
     <button class="modal-close" onclick="closeModal()">✕</button>
-    <h3><span class="subj-dot" style="background:${s?s.color:'#6366f1'};width:11px;height:11px"></span>${esc(k.title)}</h3>
+    <h3><span class="subj-dot" style="background:${safeColor(s?s.color:'#6366f1')};width:11px;height:11px"></span>${esc(k.title)}</h3>
     <div class="review-info">
       <span>📖 ${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
       <span>🧠 记忆阶段：${EBB_LABEL[Math.min(k.stage,6)]}</span>
@@ -1290,9 +1294,9 @@ function renderStats(){
         const avg = ks.reduce((sum,k)=>sum+masteryLevel(k),0)/ks.length/3*100;
         const due = ks.filter(isDue).length;
         return `<div class="subj-bar-row">
-          <div class="subj-bar-head"><b><span class="subj-dot" style="background:${s.color};display:inline-block;margin-right:6px"></span>${esc(s.name)}</b>
+          <div class="subj-bar-head"><b><span class="subj-dot" style="background:${safeColor(s.color)};display:inline-block;margin-right:6px"></span>${esc(s.name)}</b>
           <span>${ks.length} 个知识点 · ${due} 个待复习 · 掌握 ${Math.round(avg)}%</span></div>
-          <div class="subj-bar"><i style="width:${Math.round(avg)}%;background:${s.color}"></i></div>
+          <div class="subj-bar"><i style="width:${Math.round(avg)}%;background:${safeColor(s.color)}"></i></div>
         </div>`;
       }).join('')}
     </div>`;
@@ -1598,6 +1602,40 @@ function exportData(){
   URL.revokeObjectURL(a.href);
   toast('数据已导出 📦','ok');
 }
+// 导入数据消毒：结构校验 + 字段限长/类型清洗，防恶意 JSON（超长字段撑爆 localStorage、非法结构导致应用崩溃）
+function sanitizeImport(d){
+  if(!d || typeof d !== 'object') return null;
+  if(!Array.isArray(d.subjects) || !Array.isArray(d.knowledge)) return null;
+  var out = {subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
+  out.subjects = d.subjects.slice(0,200).map(function(s){
+    return {id:String(s&&s.id||'').slice(0,40), name:String(s&&s.name||'未命名').slice(0,50),
+            color:safeColor(s&&s.color), exam:String(s&&s.exam||'').slice(0,100)};
+  });
+  out.knowledge = d.knowledge.slice(0,20000).map(function(k){
+    return {id:String(k&&k.id||'').slice(0,40), subjectId:String(k&&k.subjectId||'').slice(0,40),
+            chapter:String(k&&k.chapter||'未分章').slice(0,100), title:String(k&&k.title||'').slice(0,200),
+            content:String(k&&k.content||'').slice(0,20000),
+            tags:(Array.isArray(k&&k.tags)?k.tags:[]).slice(0,50).map(function(t){return String(t||'').slice(0,50);}),
+            stage:Math.max(0,Math.min(6,parseInt(k&&k.stage)||0)),
+            nextReview:String(k&&k.nextReview||'').slice(0,10),
+            lastReview:k&&k.lastReview?String(k.lastReview).slice(0,10):null,
+            createdAt:String(k&&k.createdAt||'').slice(0,10)};
+  });
+  out.questions = (Array.isArray(d.questions)?d.questions:[]).slice(0,10000).map(function(q){
+    return {id:String(q&&q.id||'').slice(0,40), subjectId:String(q&&q.subjectId||'').slice(0,40),
+            chapter:String(q&&q.chapter||'').slice(0,100), type:(q&&q.type)==='judge'?'judge':'single',
+            question:String(q&&q.question||'').slice(0,2000),
+            options:(Array.isArray(q&&q.options)?q.options:[]).slice(0,10).map(function(o){return String(o||'').slice(0,1000);}),
+            answer:parseInt(q&&q.answer)||0, explanation:String(q&&q.explanation||'').slice(0,5000)};
+  });
+  out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(0,100000).map(function(r){
+    return {qid:String(r&&r.qid||'').slice(0,40), correct:!!(r&&r.correct), date:String(r&&r.date||'').slice(0,10)};
+  });
+  out.studyLog = (Array.isArray(d.studyLog)?d.studyLog:[]).slice(0,5000).map(function(r){
+    return {date:String(r&&r.date||'').slice(0,10), minutes:Math.max(0,parseInt(r&&r.minutes)||0)};
+  });
+  return out;
+}
 function importData(ev){
   const f = ev.target.files[0];
   if(!f) return;
@@ -1605,8 +1643,9 @@ function importData(ev){
   reader.onload = e=>{
     try{
       const data = JSON.parse(e.target.result);
-      if(!data.subjects || !data.knowledge) throw new Error('格式不正确');
-      db = data; save(); render();
+      const clean = sanitizeImport(data);
+      if(!clean) throw new Error('格式不正确');
+      db = clean; save(); render();
       toast('导入成功，数据已恢复 ✅','ok');
     }catch(err){ toast('导入失败：文件格式不正确','err'); }
   };
@@ -1960,7 +1999,7 @@ let _starred = new Set(JSON.parse(localStorage.getItem('yanxueku_stars')||'[]'))
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
   if(_currentUser && _profile){
-    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+(_profile.avatar_color||'#6366f1')+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()">⚙</button><button onclick="signOut()">↩</button></div></div>';
+    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()">⚙</button><button onclick="signOut()">↩</button></div></div>';
   }else{
     el.innerHTML = '<div class="side-user" style="cursor:pointer;justify-content:center" onclick="openAuthModal()"><span style="color:var(--primary);font-weight:600;font-size:13px">👤 登录 / 注册</span></div>';
   }
@@ -1980,7 +2019,7 @@ function authErrorMsg(err){
   if(code==='email_address_invalid') return '邮箱地址格式无效，请检查后重试';
   if(code==='user_already_exists'||code==='user_exists') return '该邮箱已注册，请直接登录';
   if(code==='invalid_credentials') return '邮箱或密码错误';
-  if(code==='weak_password'||/password/i.test(code)) return '密码强度不足，请使用至少 6 位包含字母和数字的密码';
+  if(code==='weak_password'||/password/i.test(code)) return '密码强度不足，请使用至少 8 位包含字母和数字的密码';
   const m = String(err.message||'');
   if(/captcha/i.test(m)) return '人机验证未通过，请刷新后重试';
   if(/rate limit|too many requests/i.test(m)) return '请求过于频繁，请稍后再试';
@@ -1988,7 +2027,7 @@ function authErrorMsg(err){
   if(/invalid format|invalid email/i.test(m)) return '邮箱地址格式无效，请检查后重试';
   return m || '操作失败，请重试';
 }
-function validatePassword(p){ return String(p==null?'':p).length >= 6; }
+function validatePassword(p){ return String(p==null?'':p).length >= 8; }
 
 /* ===== Cloudflare Turnstile 人机验证（尽力而为模式） =====
  * 设计：Turnstile 可用时强制人机验证；不可用时（SDK 加载失败 /
@@ -2053,7 +2092,7 @@ function renderAuthModal(){
     '<h3>'+(isLogin?'👤 登录':'✨ 注册')+'</h3>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
     '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com"></div>'+
-    '<div class="form-row"><label>密码（≥6位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 6 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
+    '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
     (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
     (isLogin?'':'<div class="form-row"><div id="auth-captcha"></div></div>')+
     '<div class="modal-actions">'+
@@ -2086,7 +2125,7 @@ async function doLogin(){
   const e = cleanEmail(document.getElementById('auth-email').value);
   const p = document.getElementById('auth-password').value;
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
-  if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
+  if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
@@ -2114,7 +2153,7 @@ async function doSignUp(){
   const cpEl = document.getElementById('auth-confirm');
   const cp = cpEl ? cpEl.value : p;
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
-  if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
+  if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
   if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
   if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){ toast('请先完成人机验证','err'); return; }
@@ -2156,8 +2195,8 @@ function openProfileModal(){
 }
 async function saveProfile(){
   if(!sb||!_currentUser){ toast('未登录','err'); return; }
-  var n=document.getElementById('pf-name').value.trim()||'考研人';
-  var c=document.getElementById('pf-color').value||'#6366f1';
+  var n=(document.getElementById('pf-name').value.trim()||'考研人').slice(0,30); // 昵称限长防滥用
+  var c=safeColor(document.getElementById('pf-color').value)||'#6366f1';        // 颜色白名单防 CSS 注入
   try{
     await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
     _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
@@ -2196,7 +2235,7 @@ async function renderLeaderboard(){
     var data=x.data||[], rows='';
     data.forEach(function(r,i){
       var m=0; try{ JSON.parse(r.study_log||'[]').forEach(function(x){m+=x.minutes||0}); }catch(e){}
-      rows+='<div class="leader-row"><div class="rank '+(i<3?'t'+(i+1):'t')+'">'+(i+1)+'</div><div class="avatar" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:'+r.avatar_color+'">'+(r.display_name||'?').charAt(0)+'</div><div class="ld-name">'+esc(r.display_name||'考研人')+'</div><div class="ld-time">'+Math.floor(m/60)+'h '+m%60+'m</div></div>';
+      rows+='<div class="leader-row"><div class="rank '+(i<3?'t'+(i+1):'t')+'">'+(i+1)+'</div><div class="avatar" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:'+safeColor(r.avatar_color)+'">'+(r.display_name||'?').charAt(0)+'</div><div class="ld-name">'+esc(r.display_name||'考研人')+'</div><div class="ld-time">'+Math.floor(m/60)+'h '+m%60+'m</div></div>';
     });
     panel.innerHTML=rows||'<div style="text-align:center;padding:20px;color:var(--text-3)">暂无数据</div>';
   }catch(e){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>'; }
