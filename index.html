@@ -472,10 +472,10 @@ canvas#chart-days{width:100%;height:260px}
 const SUPABASE_URL = 'https://gwihiemggugzwhutsfea.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4';
 let sb = null;
-let _supabaseTried = false;
+let _supabaseFailed = false;   // SDK 加载超时/失败标记（供提示区分"连接中"与"失败"）
 function tryInitSupabase(){
-  if(sb || _supabaseTried) return !!sb;
-  _supabaseTried = true;
+  // 幂等：sb 已就绪直接返回；SDK 动态加载完成后可反复调用直到成功（不设一次性短路）
+  if(sb) return true;
   if(window.supabase && window.supabase.createClient){
     try{ sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); }catch(e){ console.warn('Supabase init failed:', e && e.message); }
   }
@@ -494,7 +494,10 @@ if(!sb){
     _s2.onload = function(){ tryInitSupabase(); setupAuthListener(); };
     document.head.appendChild(_s2);
   };
+
   document.head.appendChild(_s);
+  // 8 秒仍未就绪 → 标记失败（登录/注册提示可区分"连接中"与"加载失败"）
+  setTimeout(function(){ if(!sb) _supabaseFailed = true; }, 8000);
 }
 const THEME_KEY = 'yanxueku_theme';
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
@@ -2126,7 +2129,7 @@ async function doLogin(){
   const p = document.getElementById('auth-password').value;
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
-  if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
+  if(!sb){ toast(_supabaseFailed ? '云服务加载失败，请检查网络后刷新重试' : '正在连接云服务，请稍后再试','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   let loginOk = false;
