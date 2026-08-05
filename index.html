@@ -2055,13 +2055,13 @@ async function doLogin(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){ toast('请先完成人机验证','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   try{
     const r = await sb.auth.signInWithPassword({email:e, password:p, options:{captchaToken:_captchaToken||undefined}});
     if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
-    destroyTurnstile(); closeModal(); toast('登录成功 ✅','ok');
+    // 主动隐藏登录墙 + 渲染，不依赖 onAuthStateChange 异步时序（事件慢时用户会卡在登录墙）
+    destroyTurnstile(); closeModal(); hideGate(); render(); toast('登录成功 ✅','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
 }
@@ -2082,7 +2082,8 @@ async function doSignUp(){
   try{
     const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}, captchaToken:_captchaToken||undefined}});
     if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
-    destroyTurnstile(); closeModal(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
+    // 注册成功主动隐藏登录墙 + 渲染（不依赖 onAuthStateChange 时序），注册即进入应用
+    destroyTurnstile(); closeModal(); hideGate(); render(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
 }
