@@ -1528,44 +1528,85 @@ function renderSidebarUser(){
 }
 var __orig_rs = renderSidebar; renderSidebar = function(){ __orig_rs(); renderSidebarUser(); };
 
+let _authMode = 'login';        // login / signup
+let _authSubmitting = false;    // 防重复提交
+function validateEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s==null?'':s).trim()); }
+function validatePassword(p){ return String(p==null?'':p).length >= 6; }
+function renderAuthModal(){
+  const isLogin = _authMode === 'login';
+  const m =
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>'+(isLogin?'👤 登录':'✨ 注册')+'</h3>'+
+    (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
+    '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com"></div>'+
+    '<div class="form-row"><label>密码（≥6位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 6 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
+    (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
+    '<div class="modal-actions">'+
+    '<button class="btn btn-ghost" onclick="toggleAuthMode()">'+(isLogin?'去注册':'去登录')+'</button>'+
+    '<button class="btn btn-primary" id="auth-submit" onclick="'+(isLogin?'doLogin':'doSignUp')+'()">'+(isLogin?'登录':'注册')+'</button>'+
+    '</div>';
+  openModal(m);
+}
+function toggleAuthMode(){
+  _authMode = _authMode === 'login' ? 'signup' : 'login';
+  renderAuthModal();
+}
+function togglePwd(){
+  const inp = document.getElementById('auth-password');
+  if(inp) inp.type = inp.type === 'password' ? 'text' : 'password';
+}
 function openAuthModal(){
-  var isLogin = true;
-  function ra(){
-    var m = '<button class="modal-close" onclick="closeModal()">✕</button><h3>'+(isLogin?'👤 登录':'✨ 注册')+'</h3>';
-    if(!isLogin) m += '<div class="form-row"><label>昵称</label><input id="auth-name"></div>';
-    m += '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email"></div>';
-    m += '<div class="form-row"><label>密码（≥6位）</label><input id="auth-password" type="password"></div>';
-    m += '<div class="modal-actions"><button class="btn btn-ghost" onclick="isLogin=!isLogin;ra()">'+(isLogin?'去注册':'去登录')+'</button><button class="btn btn-primary" onclick="'+(isLogin?'doLogin':'doSignUp')+'()">'+(isLogin?'登录':'注册')+'</button></div>';
-    openModal(m);
-  }
-  ra();
+  _authMode = 'login';
+  _authSubmitting = false;
+  renderAuthModal();
+}
+function setAuthLoading(on){
+  const b = document.getElementById('auth-submit');
+  if(!b) return;
+  if(on){ b.disabled = true; b.dataset.orig = b.textContent; b.textContent = '处理中…'; }
+  else { b.disabled = false; b.textContent = b.dataset.orig || b.textContent; }
 }
 async function doLogin(){
+  const e = document.getElementById('auth-email').value.trim();
+  const p = document.getElementById('auth-password').value;
+  if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
+  if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
-  if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
+  if(_authSubmitting) return;
+  _authSubmitting = true; setAuthLoading(true);
   try{
-    var r = await sb.auth.signInWithPassword({email:e, password:p});
-    if(r.error){ toast(r.error.message,'err'); return; }
+    const r = await sb.auth.signInWithPassword({email:e, password:p});
+    if(r.error){ toast(r.error.message||'登录失败','err'); return; }
     closeModal(); toast('登录成功 ✅','ok');
-  }catch(e){ toast('网络错误，请重试','err'); }
+  }catch(err){ toast('网络错误，请检查网络后重试','err'); }
+  finally{ _authSubmitting = false; setAuthLoading(false); }
 }
 async function doSignUp(){
+  const e = document.getElementById('auth-email').value.trim();
+  const p = document.getElementById('auth-password').value;
+  const nEl = document.getElementById('auth-name');
+  const n = nEl ? nEl.value.trim()||e.split('@')[0] : e.split('@')[0];
+  const cpEl = document.getElementById('auth-confirm');
+  const cp = cpEl ? cpEl.value : p;
+  if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
+  if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
+  if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  var e=document.getElementById('auth-email').value.trim(), p=document.getElementById('auth-password').value;
-  var n=document.getElementById('auth-name'); n=n?n.value.trim()||e.split('@')[0]:e.split('@')[0];
-  if(!e||!p){ toast('请填写邮箱和密码','err'); return; }
+  if(_authSubmitting) return;
+  _authSubmitting = true; setAuthLoading(true);
   try{
-    var r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
-    if(r.error){ toast(r.error.message,'err'); return; }
-    closeModal(); toast(r.data.session?'注册成功 ✅':'请检查邮箱确认 📧','ok');
-  }catch(e){ toast('网络错误，请重试','err'); }
+    const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
+    if(r.error){ toast(r.error.message||'注册失败','err'); return; }
+    closeModal(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
+  }catch(err){ toast('网络错误，请检查网络后重试','err'); }
+  finally{ _authSubmitting = false; setAuthLoading(false); }
 }
 async function signOut(){
   if(!sb) return;
   _currentUser=null; _profile=null;
   try{ await sb.auth.signOut(); }catch(e){}
-  db=seedData(); ensureNewsSubject(); localStorage.removeItem('yanxueku_v1');
+  // 登出保留本地数据：把当前 db 写回 localStorage（不重置为示例数据，避免数据丢失）
+  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
   renderSidebarUser(); switchView('dashboard'); toast('已退出','info');
 }
 function openProfileModal(){
@@ -1595,7 +1636,11 @@ if(sb){sb.auth.onAuthStateChange(async function(ev,session){
     var r=await sb.from('profiles').select('*').eq('user_id', _currentUser.id).single();
     _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
     var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
-    if(rd && rd.data && rd.data.data && rd.data.data.subjects){ db = rd.data.data; }
+    if(rd && rd.data && rd.data.data && rd.data.data.subjects){
+      db = rd.data.data;                                  // 云端有数据 → 用云端
+    }else if(db && db.subjects && db.subjects.length){
+      try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){} // 云端无数据 → 上传本地（首次同步）
+    }
     try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
   }else{ _currentUser=null; _profile=null; }
   renderSidebarUser();

@@ -184,11 +184,11 @@
     "DOM id 引用一致性: 30 个"
   ],
   "stats": {
-    "total_lines": 2086,
-    "js_lines": 1628,
-    "css_lines": 372,
-    "js_functions": 93,
-    "css_rules": 288,
-    "file_size_kb": 278.6
+    "total_lines": 2135,
+    "js_lines": 1673,
+    "css_lines": 376,
+    "js_functions": 98,
+    "css_rules": 292,
+    "file_size_kb": 281.3
   }
 }
