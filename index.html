@@ -1964,7 +1964,7 @@ function validatePassword(p){ return String(p==null?'':p).length >= 6; }
  * 3. Supabase Auth 会自动校验 captchaToken，未通过时注册返回 403
  * 留空时自动跳过验证（优雅降级，不影响注册流程）
  */
-const TURNSTILE_SITE_KEY = ''; // TODO: 填入你的 Turnstile Site Key
+const TURNSTILE_SITE_KEY = '0x4AAAAAAEGrawQkO7430Qen'; // Cloudflare Turnstile Site Key
 let _captchaToken = null;
 let _turnstileWidget = null;
 let _turnstileSDKLoading = false;
