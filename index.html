@@ -1376,6 +1376,15 @@ function renderStats(){
       }).join('')}
     </div>`;
   drawBarChart(days);
+  // 完整排行榜（仪表盘 Top3 的"查看完整排行"入口指向这里）
+  setTimeout(function(){
+    const el = document.getElementById('view-stats');
+    if(el && !el.querySelector('#leaderboard-panel')){
+      const div = document.createElement('div');
+      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub" onclick="renderLeaderboard()" style="cursor:pointer;color:var(--primary)">刷新</span></div><div id="leaderboard-panel"></div></div>';
+      el.appendChild(div); renderLeaderboard();
+    }
+  }, 60);
 }
 function donutSVG(dist){
   const total = dist.reduce((a,b)=>a+b,0) || 1;
@@ -2040,15 +2049,6 @@ const _origRB = renderBadges;
 renderDashboard = function(){
   _origRD();
   requestAnimationFrame(updateDashboardHeader);
-  // 排行榜面板注入（合并进同一包装，避免二次包装）
-  setTimeout(function(){
-    var el = document.getElementById('view-dashboard');
-    if(el && !el.querySelector('#leaderboard-panel')){
-      var div = document.createElement('div');
-      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub" onclick="renderLeaderboard()" style="cursor:pointer;color:var(--primary)">刷新</span></div><div id="leaderboard-panel"></div></div>';
-      el.appendChild(div); renderLeaderboard();
-    }
-  }, 60);
 };
 renderBadges = function(){
   _origRB();
