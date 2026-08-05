@@ -108,3 +108,50 @@
 🎉 **审计结论：无严重问题 (P0=0)，代码质量良好**
 
 16 项 P1/P2 问题已全部修复。剩余 P1 标记均为审计脚本误报（JS 内置 API 和 monkey-patch 变量）。代码已通过语法检查和冒烟测试，可直接部署。
+
+---
+
+## 追加审计（8月5日上午）— kwCard 渲染异常 Bug
+
+### 用户报告
+知识库学习卡片显示异常代码、无法点开交互。
+
+### 根因（诊断确认，RED→GREEN）
+`kwCard` 的收藏按钮 monkey-patch（v2 收藏功能）有两层致命缺陷：
+
+1. **注入位置错误**：`replace('<div class="kw-card"', ...)` 把 `<button>` 插在 div 标签的 `>` **之前**，浏览器解析时 div 的 `style`/`onclick` 属性全部丢失，属性文本变成裸代码显示在卡片上 → **"异常代码"**；div 无 onclick → **无法点开**。
+2. **双引号嵌套**：`JSON.stringify(k.id)` 返回 `"ds1"` 拼进 `onclick="toggleStar("ds1",event)"`，属性值在 `toggleStar("` 处截断 → 收藏按钮 onclick 也失效。
+
+### 修复
+```js
+kwCard = function(k){
+  var on = _starred.has(k.id);
+  var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
+  return ___origKC(k).replace('>', '>' + star);   // 注入点移到 div 结束符 > 之后
+};
+```
+- 注入点 `.replace('>', '>' + star)`：按钮插入 div start tag 之后、内容之前（`kw-star` 有 `position:absolute` CSS，不占文档流）
+- `toggleStar(\'id\',event)`：单引号包裹 id，消除双引号嵌套
+
+### 同类隐患加固
+- `renderLibrary` 标签筛选 chip 原把 `esc(t)` 直接嵌入单引号 JS 字符串（esc 不转义单引号，标签含 `'` 时 onclick 被破坏）→ 改为 `data-tag="${esc(t)}"` + `this.dataset.tag` 引用，彻底消除字符串嵌入
+- 其余内联 onclick 中的 `uid()` id 只含 `[a-z0-9]`，安全
+
+### 回归验证（新增 `_regression_kwcard.js`）
+| 断言 | 修复前 | 修复后 |
+|------|--------|--------|
+| div onclick 属性完好 | ✅（侥幸在字符串里） | ✅ |
+| div style 属性保留（不破坏结构） | ❌ | ✅ |
+| 收藏按钮已注入 | ✅ | ✅ |
+| 按钮 onclick 合法（单引号） | ❌ | ✅ |
+| 无双引号嵌套 | ❌ | ✅ |
+| 无裸属性文本 | ✅ | ✅ |
+| 标签 chip 使用 data-tag | — | ✅ |
+| chip onclick 无字符串嵌入 | — | ✅ |
+| chip 无双引号嵌套 | — | ✅ |
+| **合计** | **3/6** | **9/9 GREEN** |
+
+### 回归结论
+- 冒烟测试 20/20 通过（修正 3 个与真实 API 不符的断言：settings 可缺省、exportData 触发下载不返回值）
+- 全量审计通过：语法 ✅ / CSS ✅ / 变量 ✅ / id 引用 ✅
+- 修复的教训：**字符串 monkey-patch 注入 HTML 必须插在标签结构完成之后，且属性内嵌 JS 字面量必须避免引号冲突** — 建议未来用 DOM API 或 `data-*` + 事件委托替代字符串拼接注入

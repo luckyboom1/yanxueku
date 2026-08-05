@@ -924,7 +924,7 @@ function renderLibrary(){
     </div>
     ${tags.length?`<div class="filter-bar" style="margin-top:-6px">
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
-      ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" onclick="libFilter.tag=libFilter.tag==='${esc(t)}'?'':'${esc(t)}';renderLibrary()">${esc(t)}</div>`).join('')}
+      ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" onclick="libFilter.tag = libFilter.tag===this.dataset.tag ? '' : this.dataset.tag; renderLibrary()">${esc(t)}</div>`).join('')}
     </div>`:''}
     ${list.length? `<div class="kw-grid">${list.map(kwCard).join('')}</div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
@@ -2072,7 +2072,11 @@ async function renderLeaderboard(){
 }
 function toggleStar(kwId, ev){ if(ev)ev.stopPropagation(); if(_starred.has(kwId))_starred.delete(kwId); else _starred.add(kwId); localStorage.setItem('yanxueku_stars', JSON.stringify([..._starred])); renderLibrary(); }
 var ___origKC = kwCard;
-kwCard = function(k){ var sid = JSON.stringify(k.id); return ___origKC(k).replace('<div class="kw-card"', '<div class="kw-card"><button class="kw-star' + (_starred.has(k.id)?' on':'') + '" onclick="toggleStar('+sid+',event)">' + (_starred.has(k.id)?'⭐':'☆') + '</button>'); };
+kwCard = function(k){
+  var on = _starred.has(k.id);
+  var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
+  return ___origKC(k).replace('>', '>' + star);
+};
 
 
 // 安全兜底：3秒后强制隐藏加载屏
