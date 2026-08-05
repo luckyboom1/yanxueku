@@ -1956,8 +1956,53 @@ function authErrorMsg(err){
   return m || '操作失败，请重试';
 }
 function validatePassword(p){ return String(p==null?'':p).length >= 6; }
+
+/* ===== Cloudflare Turnstile 人机验证（防刷注册） =====
+ * 使用方法：
+ * 1. Supabase Dashboard -> Authentication -> CAPTCHA -> Turnstile，生成 Site Key
+ * 2. 把 Site Key 填入下方 TURNSTILE_SITE_KEY
+ * 3. Supabase Auth 会自动校验 captchaToken，未通过时注册返回 403
+ * 留空时自动跳过验证（优雅降级，不影响注册流程）
+ */
+const TURNSTILE_SITE_KEY = ''; // TODO: 填入你的 Turnstile Site Key
+let _captchaToken = null;
+let _turnstileWidget = null;
+let _turnstileSDKLoading = false;
+function loadTurnstileSDK(cb){
+  if(window.turnstile){ cb(); return; }
+  if(_turnstileSDKLoading){ return; }
+  _turnstileSDKLoading = true;
+  var s = document.createElement('script');
+  s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+  s.async = true;
+  s.onload = function(){ _turnstileSDKLoading = false; cb(); };
+  s.onerror = function(){ _turnstileSDKLoading = false; }; // 加载失败静默降级，不阻塞注册
+  document.head.appendChild(s);
+}
+function renderTurnstile(){
+  if(!TURNSTILE_SITE_KEY || !window.turnstile) return;
+  var holder = document.getElementById('auth-captcha');
+  if(!holder || _turnstileWidget) return;
+  _captchaToken = null;
+  _turnstileWidget = window.turnstile.render(holder, {
+    sitekey: TURNSTILE_SITE_KEY,
+    theme: document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light',
+    callback: function(token){ _captchaToken = token; },
+    'expired-callback': function(){ _captchaToken = null; },
+    'error-callback': function(){ _captchaToken = null; }
+  });
+}
+function resetTurnstile(){
+  if(_turnstileWidget && window.turnstile){ try{ window.turnstile.reset(_turnstileWidget); }catch(e){} }
+  _captchaToken = null;
+}
+function destroyTurnstile(){
+  if(_turnstileWidget && window.turnstile){ try{ window.turnstile.remove(_turnstileWidget); }catch(e){} }
+  _turnstileWidget = null; _captchaToken = null;
+}
 function renderAuthModal(){
   const isLogin = _authMode === 'login';
+  destroyTurnstile(); // openModal 会重建 DOM，先销毁旧 widget
   const m =
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
     '<h3>'+(isLogin?'👤 登录':'✨ 注册')+'</h3>'+
@@ -1965,11 +2010,13 @@ function renderAuthModal(){
     '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com"></div>'+
     '<div class="form-row"><label>密码（≥6位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 6 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
     (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
+    (isLogin?'':'<div class="form-row"><div id="auth-captcha"></div></div>')+
     '<div class="modal-actions">'+
     '<button class="btn btn-ghost" onclick="toggleAuthMode()">'+(isLogin?'去注册':'去登录')+'</button>'+
     '<button class="btn btn-primary" id="auth-submit" onclick="'+(isLogin?'doLogin':'doSignUp')+'()">'+(isLogin?'登录':'注册')+'</button>'+
     '</div>';
   openModal(m);
+  if(!isLogin && TURNSTILE_SITE_KEY) loadTurnstileSDK(renderTurnstile);
 }
 function toggleAuthMode(){
   _authMode = _authMode === 'login' ? 'signup' : 'login';
@@ -1996,12 +2043,13 @@ async function doLogin(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
+  if(TURNSTILE_SITE_KEY && !_captchaToken){ toast('请先完成人机验证','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   try{
-    const r = await sb.auth.signInWithPassword({email:e, password:p});
-    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
-    closeModal(); toast('登录成功 ✅','ok');
+    const r = await sb.auth.signInWithPassword({email:e, password:p, options:{captchaToken:_captchaToken||undefined}});
+    if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
+    destroyTurnstile(); closeModal(); toast('登录成功 ✅','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
 }
@@ -2016,12 +2064,13 @@ async function doSignUp(){
   if(!validatePassword(p)){ toast('密码长度至少 6 位','err'); return; }
   if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
   if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
+  if(TURNSTILE_SITE_KEY && !_captchaToken){ toast('请先完成人机验证','err'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   try{
-    const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}}});
-    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
-    closeModal(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
+    const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}, captchaToken:_captchaToken||undefined}});
+    if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
+    destroyTurnstile(); closeModal(); toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
   }catch(err){ toast('网络错误，请检查网络后重试','err'); }
   finally{ _authSubmitting = false; setAuthLoading(false); }
 }
