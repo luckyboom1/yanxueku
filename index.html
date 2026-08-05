@@ -438,7 +438,7 @@ body.modal-open #content{overflow:hidden}
 <div id="app">
   <aside id="sidebar">
     <div class="logo"><div class="logo-badge">研</div><span><em>研学库</em></span></div>
-    <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
+    <div class="nav-item active" data-view="dashboard" role="button" tabindex="0" onclick="switchView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('dashboard')}"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
     <div class="nav-item" data-view="library" role="button" tabindex="0" onclick="switchView('library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library')}"><span class="ico">📚</span>知识库</div>
     <div class="nav-item" data-view="review" role="button" tabindex="0" onclick="switchView('review')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('review')}"><span class="ico">🧠</span>记忆复习</div>
     <div class="nav-item" data-view="quiz" role="button" tabindex="0" onclick="switchView('quiz')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('quiz')}"><span class="ico">✍️</span>刷题自测</div>
@@ -2166,9 +2166,11 @@ function renderAuthModal(){
   destroyTurnstile(); // openModal 会重建 DOM，先销毁旧 widget
   const m =
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<h3>'+(isLogin?'👤 登录':'✨ 注册')+'</h3>'+
+    '<div style="text-align:center;margin-bottom:16px"><div class="gate-logo" style="width:48px;height:48px;font-size:22px;margin:0 auto 10px">研</div>'+
+    '<h3 style="font-size:18px;margin:0">'+(isLogin?'欢迎回来':'创建你的研学库账号')+'</h3>'+
+    '<div style="font-size:12px;color:var(--text-3);margin-top:4px">'+(isLogin?'继续你的考研学习之旅':'3 分钟记录第一个知识点')+'</div></div>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
-    '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com"></div>'+
+    '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com" value="'+esc(_authTempEmail)+'"></div>'+
     '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
     (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
     (isLogin?'':'<div class="form-row"><div id="auth-captcha"></div></div>')+
@@ -2179,7 +2181,10 @@ function renderAuthModal(){
   openModal(m);
   if(!isLogin && TURNSTILE_SITE_KEY) loadTurnstileSDK(renderTurnstile);
 }
+let _authTempEmail = ''; // 登录/注册切换时保留已输入邮箱
 function toggleAuthMode(){
+  const ei = document.getElementById('auth-email');
+  if(ei) _authTempEmail = ei.value;
   _authMode = _authMode === 'login' ? 'signup' : 'login';
   renderAuthModal();
 }
@@ -2232,8 +2237,12 @@ async function doSignUp(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
   if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
-  if(!sb){ toast('云端连接不可用，请稍后重试','err'); return; }
-  if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){ toast('请先完成人机验证','err'); return; }
+  if(!sb){ toast(_supabaseFailed ? '云服务加载失败，请检查网络后刷新重试' : '正在连接云服务，请稍后再试','err'); return; }
+  if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){
+    // 区分"验证码还在加载"与"加载完成但未验证"：避免用户看不到验证码却被提示"请完成验证"
+    if(_turnstileSDKLoading || !_turnstileWidget){ toast('人机验证加载中，请稍候…','info'); return; }
+    toast('请先完成人机验证','err'); return;
+  }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   let signupOk = false;
