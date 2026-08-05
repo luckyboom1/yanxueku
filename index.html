@@ -12,8 +12,7 @@
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>研学库 · 考研专业课高效学习</title>
-<!-- 运行时配置：config.js 包含 Supabase/Turnstile 等敏感配置，被 .gitignore 忽略，不提交到仓库 -->
-<script src="config.js"></script>
+<script>window.__YANXUEKU_CONFIG__={SUPABASE_URL:"https://gwihiemggugzwhutsfea.supabase.co",SUPABASE_KEY:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4",TURNSTILE_SITE_KEY:"0x4AAAAAAEGrawQkO7430Qen"};</script>
 <!-- Supabase SDK（云同步/登录依赖）：动态异步加载，不阻塞首屏渲染；加载失败自动回退本地模式 -->
 <style>
 :root{
@@ -496,11 +495,19 @@ body.modal-open #content{overflow:hidden}
 <script>
 /* ================= 数据层（Supabase 共享数据库） ================= */
 // 从外部配置读取 Supabase 凭据；config.js 被 .gitignore 忽略，避免敏感信息进入版本控制
+/* ========================================
+ * 研学库 — 代码组织分区
+ * 数据层 | 定时器 | DOM缓存 | 配置 | 工具函数 | 数据查询 | 视图 | 认证
+ * ======================================== */
 const _cfg = window.__YANXUEKU_CONFIG__ || {};
 const SUPABASE_URL = _cfg.SUPABASE_URL || '';
 const SUPABASE_KEY = _cfg.SUPABASE_KEY || '';
 let sb = null;
+
+// === 数据层（Supabase SDK 初始化） ===
 let _supabaseFailed = false;   // SDK 加载超时/失败标记（供提示区分"连接中"与"失败"）
+
+// === 定时器管理 ===
 // ===== 定时器管理：统一注册/清理，防止组件"卸载"后定时器在已销毁 DOM 上操作 =====
 let _timers = []; // setTimeout 清理队列（视图级定时器）
 let _rafIds = []; // requestAnimationFrame 清理队列
@@ -515,6 +522,18 @@ const _deferRaf = function(fn){
 function _flushTimers(){
   _timers.forEach(function(id){ clearTimeout(id); }); _timers = [];
   _rafIds.forEach(function(id){ cancelAnimationFrame(id); }); _rafIds = [];
+}
+
+
+// === DOM 缓存 ===
+// ===== DOM 节点缓存（高频静态节点，避免重复 getElementById） =====
+const _el = {};
+function _initElCache(){
+  _el.sidebar = document.getElementById("sidebar");
+  _el.modalRoot = document.getElementById("modal-root");
+  _el.content = document.getElementById("content");
+  _el.loginGate = document.getElementById("login-gate");
+  _el.toastRoot = document.getElementById("toast-root");
 }
 function tryInitSupabase(){
   // 幂等：sb 已就绪直接返回；SDK 动态加载完成后可反复调用直到成功（不设一次性短路）
@@ -547,6 +566,8 @@ if(!sb){
   // 8 秒仍未就绪 → 标记失败（登录/注册提示可区分"连接中"与"加载失败"）
   setTimeout(function(){ if(!sb) _supabaseFailed = true; }, 8000);
 }
+
+// === 数据模型（EBB 遗忘曲线、主题、日期工具） ===
 const THEME_KEY = 'yanxueku_theme';
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
@@ -567,6 +588,8 @@ function calcStreak(today, studyLog){
   return streak;
 }
 
+
+// === 日期工具函数 ===
 function todayStr(){ return dayStr(new Date()); }
 function dayStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function addDays(str, n){ const d = new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return dayStr(d); }
@@ -761,6 +784,8 @@ const VIEW_META = {
   stats:{title:'学习统计', sub:'用数据看见自己的进步'},
   mine:{title:'我的', sub:'账号信息 · 偏好设置 · 数据管理'},
 };
+
+// === 视图状态管理 ===
 let curView = 'dashboard';
 let libFilter = {subject:'all', tag:'', search:''};
 
@@ -1096,6 +1121,8 @@ function doDelKw(id){
 }
 
 /* ================= 艾宾浩斯复习 ================= */
+
+// === 复习队列 ===
 let reviewQueue = [], reviewIdx = 0, reviewDone = 0;
 function startReview(focusId){
   let q = dueList();
@@ -1190,6 +1217,8 @@ function grade(g, ev){
 }
 
 /* ================= 刷题自测 ================= */
+
+// === 测验状态 ===
 let quiz = null; // {list, idx, right, answered}
 let quizCfg = {subject:'all', count:10};
 function renderQuizHome(){
@@ -1724,6 +1753,8 @@ function exportData(){
   toast('数据已导出 📦','ok');
 }
 // 导入数据消毒：结构校验 + 字段限长/类型清洗，防恶意 JSON（超长字段撑爆 localStorage、非法结构导致应用崩溃）
+
+// === 数据安全（导入消毒） ===
 function sanitizeImport(d){
   if(!d || typeof d !== 'object') return null;
   if(!Array.isArray(d.subjects) || !Array.isArray(d.knowledge)) return null;
@@ -1987,6 +2018,8 @@ _dbReady.then(function(){
 /* ====== v3.1: 挖空模式 + 倒计时 + 每日目标 ====== */
 
 // --- 挖空模式 ---
+
+// === 挖空模式 ===
 let blanksMode = false;
 let blankAnswers = [];
 function toggleBlanksMode(){
@@ -2175,6 +2208,8 @@ function renderSidebarUser(){
 }
 var __orig_rs = renderSidebar; renderSidebar = function(){ __orig_rs(); renderSidebarUser(); };
 
+
+// === 认证 UI 状态 ===
 let _authMode = 'login';        // login / signup
 let _authSubmitting = false;    // 防重复提交
 function validateEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s==null?'':s).trim()); }
@@ -2204,6 +2239,8 @@ function validatePassword(p){ return String(p==null?'':p).length >= 8; }
  * 不阻塞注册 —— 面向国内用户，challenges.cloudflare.com 访问不稳定
  * 前提：Supabase 侧 CAPTCHA 需关闭强制校验（否则无 token 请求被 400 拒）
  */
+
+// === 认证与 Turnstile ===
 const TURNSTILE_SITE_KEY = _cfg.TURNSTILE_SITE_KEY || ''; // Cloudflare Turnstile Site Key（从 config.js 读取，空字符串表示关闭）
 let _captchaToken = null;
 let _turnstileWidget = null;
