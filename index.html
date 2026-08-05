@@ -2073,7 +2073,7 @@ let _starred = new Set(JSON.parse(localStorage.getItem('yanxueku_stars')||'[]'))
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
   if(_currentUser && _profile){
-    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()">⚙</button><button onclick="signOut()">↩</button></div></div>';
+    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()" title="编辑资料">⚙</button><button onclick="openAccountModal()" title="账号安全">🔑</button><button onclick="signOut()" title="退出登录">↩</button></div></div>';
   }else{
     el.innerHTML = '<div class="side-user" style="cursor:pointer;justify-content:center" onclick="openAuthModal()"><span style="color:var(--primary);font-weight:600;font-size:13px">👤 登录 / 注册</span></div>';
   }
@@ -2275,6 +2275,60 @@ async function saveProfile(){
     await sb.from('profiles').upsert({user_id:_currentUser.id, display_name:n, avatar_color:c});
     _profile={display_name:n, avatar_color:c}; closeModal(); renderSidebarUser(); toast('资料已更新','ok');
   }catch(e){ toast('保存失败，请重试','err'); }
+}
+/* ===== 账号安全：修改密码 / 修改邮箱 ===== */
+function openAccountModal(){
+  if(!sb||!_currentUser){ toast('请先登录','err'); return; }
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>🔑 账号安全</h3>'+
+    '<div class="panel" style="box-shadow:none;padding:14px;margin-bottom:14px">'+
+      '<div class="panel-title" style="font-size:13px;margin-bottom:8px">修改密码</div>'+
+      '<div class="form-row"><label>当前密码</label><input id="ac-old" type="password" placeholder="输入当前密码"></div>'+
+      '<div class="form-row"><label>新密码（≥8位）</label><input id="ac-new" type="password" placeholder="至少 8 位"></div>'+
+      '<div class="form-row"><label>确认新密码</label><input id="ac-new2" type="password" placeholder="再输入一次"></div>'+
+      '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="changePassword()">确认修改密码</button>'+
+    '</div>'+
+    '<div class="panel" style="box-shadow:none;padding:14px">'+
+      '<div class="panel-title" style="font-size:13px;margin-bottom:8px">修改邮箱</div>'+
+      '<div style="font-size:12px;color:var(--warn);margin-bottom:8px">⚠️ 当前未启用邮件验证，修改后立即生效且无法找回，请务必仔细输入</div>'+
+      '<div class="form-row"><label>新邮箱</label><input id="ac-mail" type="email" placeholder="you@example.com"></div>'+
+      '<div class="form-row"><label>确认新邮箱</label><input id="ac-mail2" type="email" placeholder="再输入一次"></div>'+
+      '<button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--warn);color:var(--warn)" onclick="changeEmail()">确认修改邮箱</button>'+
+    '</div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">关闭</button></div>');
+}
+async function changePassword(){
+  if(!sb||!_currentUser){ toast('请先登录','err'); return; }
+  const old = document.getElementById('ac-old').value;
+  const n1 = document.getElementById('ac-new').value;
+  const n2 = document.getElementById('ac-new2').value;
+  if(!old){ toast('请输入当前密码','err'); return; }
+  if(!validatePassword(n1)){ toast('新密码长度至少 8 位','err'); return; }
+  if(n1 !== n2){ toast('两次输入的新密码不一致','err'); return; }
+  try{
+    // 先验证旧密码（防会话劫持），再改密
+    const v = await sb.auth.signInWithPassword({email:_currentUser.email, password:old});
+    if(v.error){ toast('当前密码不正确','err'); return; }
+    const r = await sb.auth.updateUser({password:n1});
+    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
+    closeModal(); toast('密码已修改 ✅','ok');
+  }catch(e){ toast('网络错误，请稍后重试','err'); }
+}
+async function changeEmail(){
+  if(!sb||!_currentUser){ toast('请先登录','err'); return; }
+  const e1 = document.getElementById('ac-mail').value.trim();
+  const e2 = document.getElementById('ac-mail2').value.trim();
+  if(!validateEmail(e1)){ toast('请输入有效的新邮箱','err'); return; }
+  if(e1 !== e2){ toast('两次输入的新邮箱不一致','err'); return; }
+  if(e1.toLowerCase() === _currentUser.email.toLowerCase()){ toast('新邮箱与当前相同','err'); return; }
+  if(!confirm('修改邮箱后立即生效且无法找回，确认继续？')) return;
+  try{
+    const r = await sb.auth.updateUser({email:e1});
+    if(r.error){ toast(authErrorMsg(r.error),'err'); return; }
+    _currentUser.email = e1; // 本地同步（autoconfirm 下立即生效）
+    closeModal(); renderSidebarUser(); toast('邮箱已修改 ✅','ok');
+  }catch(e){ toast('网络错误，请稍后重试','err'); }
 }
 let _authListenerReady = false;
 function setupAuthListener(){
