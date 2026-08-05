@@ -1917,7 +1917,14 @@ renderBadges = function(){
 
 
 if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-  navigator.serviceWorker.register('sw.js').catch(()=>{});
+  navigator.serviceWorker.register('sw.js').then(function(reg){
+    // 每次加载主动检查 SW 更新（发布新版后尽快接管，绕过浏览器 24h 检查周期）
+    reg.update();
+    // 新 SW 接管页面时自动刷新，保证用户看到最新版（配合 sw.js v5 导航强制网络）
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      window.location.reload();
+    });
+  }).catch(()=>{});
 }
 
 

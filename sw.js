@@ -1,5 +1,7 @@
-/* 研学库 Service Worker — network-first with smart fallback */
-const CACHE = 'yanxueku-v4';
+/* 研学库 Service Worker — network-first with smart fallback
+ * v5: 页面导航强制走网络（保证每次打开都是最新版），离线才回退缓存
+ */
+const CACHE = 'yanxueku-v5';
 const ASSETS = ['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -17,6 +19,20 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('supabase.co')) return;
 
+  // 页面导航：强制走网络拿最新 HTML，避免用户看到旧版；离线才回退缓存
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(netRes => {
+        if (netRes && netRes.status === 200) {
+          caches.open(CACHE).then(cache => cache.put(e.request, netRes.clone()));
+        }
+        return netRes;
+      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // 静态资源：network-first
   e.respondWith(
     caches.open(CACHE).then(cache =>
       fetch(e.request).then(netRes => {
@@ -25,7 +41,6 @@ self.addEventListener('fetch', e => {
         }
         return netRes;
       }).catch(() =>
-        // 离线回退：优先精准匹配，其次返回首页
         cache.match(e.request).then(hit => hit || caches.match('./index.html'))
       )
     )
