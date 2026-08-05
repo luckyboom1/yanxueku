@@ -497,7 +497,7 @@ function dayStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2
 function addDays(str, n){ const d = new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return dayStr(d); }
 function diffDays(a, b){ return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00'))/86400000); }
 function uid(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function md(s){
   return esc(s)
     .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
@@ -576,6 +576,7 @@ async function load(){
   hideLoading();
 }
 function hideLoading(){
+  // 120ms 延迟确保 DOM 渲染完成再隐藏加载屏
   setTimeout(function(){
     var s = document.getElementById('loading-screen');
     if(s && !s.classList.contains('done')) s.classList.add('done');
@@ -726,7 +727,7 @@ function renderDashboard(){
   const t = todayStr();
   const due = dueList();
   const todayMin = (db.studyLog.find(r=>r.date===t)||{minutes:0}).minutes;
-  // 连续学习天数
+  // 连续学习天数（今天未学到不计入中断，当天尚未结束）
   let streak = 0;
   for(let i=0;;i++){
     const d = addDays(t,-i);
@@ -1622,7 +1623,7 @@ render();
 
 /* ====== 按钮波纹 ====== */
 document.addEventListener('click', function(e){
-  var el = e.target.closest('.btn,.grade-btn,.mini-btn');
+  var el = e.target.closest('.btn,.grade-btn,.mini-btn,.chip,.nav-item,.q-opt,.opt-card');
   if(!el||el.querySelector('.ripple')) return;
   var r = document.createElement('span');
   r.className = 'ripple';
@@ -1652,7 +1653,7 @@ function nextGuide(){
     var b2 = document.createElement('div');
     b2.className = 'guide-bubble';
     b2.id = 'guide-bubble';
-    b2.innerHTML = '<b>📖 从新建知识点开始</b><br>点击右上角「＋ 记知识点」或点击任意卡片查看详情。<br>已内置 104 张中国新闻史卡片，可随时删除。<br><button class="guide-next" onclick="closeGuide()">明白了</button>';
+    b2.innerHTML = '<b>📖 从新建知识点开始</b><br>点击右上角「＋ 记知识点」创建专属知识库。<br>支持批量导入真经笔记文本、手动逐条录入。<br><button class="guide-next" onclick="closeGuide()">明白了</button>';
     b2.style.top = '130px';
     b2.style.left = '280px';
     document.body.appendChild(b2);
