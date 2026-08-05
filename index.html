@@ -71,6 +71,8 @@ body{
 .subj-del{display:none;width:18px;height:18px;border-radius:6px;border:none;background:transparent;color:var(--text-3);font-size:11px;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;font-family:inherit;transition:all .15s}
 .subj-item:hover .subj-del{display:inline-flex}
 .subj-del:hover{background:rgba(239,68,68,.12);color:var(--danger)}
+.add-subj-btn{display:inline-flex;align-items:center;gap:2px;padding:3px 9px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--primary);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.add-subj-btn:hover{border-color:var(--primary);transform:translateY(-1px)}
 .side-foot{margin-top:auto;display:flex;gap:8px;padding-top:12px;border-top:1px solid var(--border)}
 .foot-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:12px;cursor:pointer;transition:all .2s;font-family:inherit}
 .foot-btn:hover{border-color:var(--primary);color:var(--primary);transform:translateY(-1px)}
@@ -310,7 +312,8 @@ canvas#chart-days{width:100%;height:260px}
   #page-title{font-size:15px}
   #page-sub{display:none}
   .top-actions .btn{font-size:12px;padding:7px 12px}
-  .top-actions .btn-ghost{display:none}
+  .top-actions .btn-ghost{width:36px;height:36px;padding:0;justify-content:center}
+  .top-actions .btn-label{display:none}
   .grid-stats{grid-template-columns:1fr 1fr;gap:8px}
   .stat-card{padding:12px}
   .stat-num{font-size:22px}
@@ -442,16 +445,17 @@ body.modal-open #content{overflow:hidden}
     <div class="nav-item" data-view="wrong" role="button" tabindex="0" onclick="switchView('wrong')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('wrong')}"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
     <div class="nav-item" data-view="stats" role="button" tabindex="0" onclick="switchView('stats')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('stats')}"><span class="ico">📊</span>学习统计</div>
     <div id="sidebar-user-area"></div>
-    <div class="side-label">专业科目 <button style="display:inline-flex;width:auto;padding:1px 8px;font-size:16px;line-height:1;border:none;background:none;color:var(--primary);cursor:pointer;font-weight:800" onclick="openNewSubjectModal(event)" title="新建科目">＋</button></div>
+    <div class="side-label" style="display:flex;align-items:center;justify-content:space-between">专业科目 <button class="add-subj-btn" onclick="openNewSubjectModal(event)" title="新建科目">＋ 新建</button></div>
     <div id="subj-list"></div>
     
   <div class="side-label">⏱ 学习计时</div>
   <div id="sidebar-timer" style="text-align:center;font-size:22px;font-weight:800;letter-spacing:1px;padding:6px 0;color:var(--primary);font-variant-numeric:tabular-nums" title="今日学习时长">00:00</div>
-  <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:-6px">累计 <span id="sidebar-total">0时0分</span></div>
+  <div style="font-size:11px;color:var(--text-3);text-align:center;margin-top:-6px">累计 <span id="sidebar-total">0时0分</span> · 复习/刷题自动计入</div>
+  <div id="sync-status" style="font-size:11px;color:var(--text-3);text-align:center;margin-top:2px;transition:color .3s">已保存</div>
 
   <div class="side-foot">
       <button class="foot-btn" onclick="exportData()" title="导出全部数据">⬇ 导出</button>
-      <button class="foot-btn" onclick="document.getElementById('import-file').click()" title="导入数据">⬆ 导入</button>
+      <button class="foot-btn" onclick="document.getElementById('import-file').click()" title="从备份 JSON 恢复数据">⬆ 恢复备份</button>
       <button class="foot-btn" id="theme-btn" onclick="cycleTheme()" title="切换主题">🌓 主题</button>
       <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
       <input type="file" id="import-cards-file" accept=".txt,.md" style="display:none" onchange="importCardsFile(event)">
@@ -466,7 +470,7 @@ body.modal-open #content{overflow:hidden}
         <div id="page-sub"></div>
       </div>
       <div class="top-actions">
-        <button class="btn btn-ghost" onclick="openKwModal()">＋ 记知识点</button>
+        <button class="btn btn-ghost" onclick="openKwModal()"><span class="btn-plus">＋</span><span class="btn-label"> 记知识点</span></button>
         <button class="btn btn-primary" onclick="startReview()">▶ 开始今日复习</button>
       </div>
     </header>
@@ -614,12 +618,24 @@ function hideLoading(){
 }
 // save 防抖合并：连续操作（复习/答题/编辑）只做一次持久化，避免全量 upsert 刷爆带宽与 API 配额
 let _saveTimer = null, _savePending = false;
+function _setSync(t, warn){
+  const el = document.getElementById('sync-status');
+  if(el){ el.textContent = t; el.style.color = warn ? 'var(--warn)' : ''; }
+}
 function doSave(){
   _savePending = false;
+  let localOk = true;
+  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){ localOk = false; console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
   if(sb && _currentUser){
-    try{ sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){ console.warn('Supabase save failed'); }
+    _setSync('同步中…');
+    try{
+      sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() })
+        .then(()=> _setSync('已保存'))
+        .catch(()=> _setSync('仅本地保存', true));
+    }catch(e){ console.warn('Supabase save failed'); _setSync('仅本地保存', true); }
+  } else {
+    _setSync(localOk ? '已保存（本地）' : '保存失败', !localOk);
   }
-  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){ console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
 }
 function save(){
   if(_saveTimer) clearTimeout(_saveTimer);
@@ -842,6 +858,31 @@ function renderDashboard(){
       </div>
     </div>
 
+    ${!db.knowledge.length?`
+    <div class="panel" style="border-color:rgba(99,102,241,.3);background:linear-gradient(135deg,rgba(99,102,241,.06),rgba(139,92,246,.04))">
+      <div class="panel-title">🚀 三步开始你的考研学习</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
+        <div style="padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">
+          <div style="font-size:20px">①</div>
+          <div style="font-weight:700;margin:6px 0 2px">新建科目</div>
+          <div style="font-size:12px;color:var(--text-3)">比如：专业课一、英语</div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="openNewSubjectModal(event)">＋ 新建科目</button>
+        </div>
+        <div style="padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">
+          <div style="font-size:20px">②</div>
+          <div style="font-weight:700;margin:6px 0 2px">记录知识点</div>
+          <div style="font-size:12px;color:var(--text-3)">标题 + 内容，支持 Markdown</div>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="openKwModal()">＋ 记知识点</button>
+        </div>
+        <div style="padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">
+          <div style="font-size:20px">③</div>
+          <div style="font-weight:700;margin:6px 0 2px">开始复习</div>
+          <div style="font-size:12px;color:var(--text-3)">按艾宾浩斯节奏巩固</div>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="switchView('library')">去知识库看看</button>
+        </div>
+      </div>
+    </div>`:''}
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="dash-2col">
       <div class="panel">
         <div class="panel-title">⚡ 快捷操作</div>
@@ -869,7 +910,13 @@ function renderDashboard(){
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="panel" id="dash-leader-wrap" style="margin-top:20px;display:none">
+      <div class="panel-title">🏅 学习排行榜 <span class="sub" style="cursor:pointer;color:var(--primary)" onclick="switchView('stats')">查看完整排行 →</span></div>
+      <div id="dash-leader-panel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
     </div>`;
+  setTimeout(loadDashLeader, 120);
 }
 
 /* ================= 知识库 ================= */
@@ -900,7 +947,7 @@ function renderLibrary(){
       </div>
       <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
       ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
-      <button class="btn btn-ghost" style="margin-left:auto" onclick="document.getElementById('import-cards-file').click()">📥 导入卡片文本</button>
+      <button class="btn btn-ghost" style="margin-left:auto" onclick="document.getElementById('import-cards-file').click()">📥 导入卡片</button>
       <button class="btn btn-primary" onclick="openKwModal()">＋ 新建知识点</button>
     </div>
     ${tags.length?`<div class="filter-bar" style="margin-top:-6px">
@@ -1018,8 +1065,13 @@ function startReview(focusId){
     q = k? [k] : [];
   }
   if(!q.length){ toast('今日没有待复习内容，太棒了！🎉','ok'); return; }
+  const total = q.length;
+  if(!focusId && q.length > 10) q = q.slice(0,10); // 逾期积压分批：先复习最旧的 10 张，完成后自动继续
   reviewQueue = q; reviewIdx = 0; reviewDone = 0;
   switchView('review');
+  if(focusId){ toast('开始复习该知识点','info'); }
+  else if(total > q.length){ toast(`今日待复习 ${total} 张，先复习最旧的 ${q.length} 张，完成后自动继续`,'info'); }
+  else { toast(`本轮共 ${q.length} 张，预计约 ${Math.ceil(q.length*1.5)} 分钟`,'info'); }
 }
 function renderReviewHome(){
   if(!db||!db.knowledge) return;
@@ -2263,6 +2315,31 @@ async function renderLeaderboard(){
   }catch(e){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>'; }
 }
 function toggleStar(kwId, ev){ if(ev)ev.stopPropagation(); if(_starred.has(kwId))_starred.delete(kwId); else _starred.add(kwId); localStorage.setItem('yanxueku_stars', JSON.stringify([..._starred])); renderLibrary(); }
+// 仪表盘 Top3 排行榜（异步加载，复用 leaderboard view）
+async function loadDashLeader(){
+  if(!sb||!_currentUser) return;
+  try{
+    const x = await sb.from('leaderboard').select('*').limit(3);
+    const data = x.data||[];
+    const wrap = document.getElementById('dash-leader-wrap');
+    const panel = document.getElementById('dash-leader-panel');
+    if(!wrap||!panel) return;
+    if(!data.length){ wrap.style.display='none'; return; }
+    wrap.style.display='';
+    const medals=['🥇','🥈','🥉'];
+    panel.innerHTML = data.map(function(r,i){
+      var m=0; try{ JSON.parse(r.study_log||'[]').forEach(function(v){m+=v.minutes||0}); }catch(e){}
+      return `<div style="padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">${medals[i]||(i+1)}</span>
+        <div class="avatar" style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:${safeColor(r.avatar_color)}">${esc((r.display_name||'?').charAt(0))}</div>
+        <div style="min-width:0">
+          <div style="font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.display_name||'考研人')}</div>
+          <div style="font-size:11px;color:var(--text-3)">${Math.floor(m/60)}h ${m%60}m</div>
+        </div>
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
 var ___origKC = kwCard;
 kwCard = function(k){
   var on = _starred.has(k.id);
