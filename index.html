@@ -652,10 +652,10 @@ let _loadResolve = null;
 let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中访问触发 TDZ
 const _dbReady = new Promise(r => { _loadResolve = r; });
 async function load(){
-  // 立即显示登录墙（纯色背景全覆盖），防止 SDK 异步加载期间短暂露出首页。
-  // 若 session 有效 → onAuthStateChange 会 hideGate → 仪表盘；无效 → gate 保持
+  // SDK 就绪前用登录墙预覆盖，防止旧 DOM 短暂可见。Loading 屏在上层遮挡，
+  // hideLoading() 由 onAuthStateChange 确认 session 后统一触发，避免 SDK 未就绪
+  // 时 loading 先消失 → 露出 gate → SDK 就绪后才 hideGate → 登录墙闪现
   renderGate();
-  // Supabase 查询包在 try/catch 里：任何异常都不影响本地回退
   if(sb){
     try{
       const uid = _currentUser ? _currentUser.id : null;
@@ -664,21 +664,18 @@ async function load(){
         db = data.data;
         _loadResolve(db);
         setupRealtimeSync();
-        hideLoading();
         return;
       }
-    }catch(e){ console.warn('Supabase load failed, using local:', e.message); _currentUser = null; /* API 失败 = token 无效，清除会话避免 render() 误判 */ }
+    }catch(e){ console.warn('Supabase load failed, using local:', e.message); _currentUser = null; }
   }
-  // Fallback: localStorage or seed
   try{
     const raw = localStorage.getItem('yanxueku_v1');
-    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); hideLoading(); return; }
+    if(raw){ db = JSON.parse(raw); _loadResolve(db); setupRealtimeSync(); return; }
   }catch(e){}
   db = seedData();
   try{ await save(); }catch(e){ console.warn('save failed:', e.message); }
   _loadResolve(db);
   setupRealtimeSync();
-  hideLoading();
 }
 function hideLoading(){
   // 120ms 延迟确保 DOM 渲染完成再隐藏加载屏
@@ -2549,6 +2546,7 @@ function setupAuthListener(){
       setupRealtimeSync();
     }else{ _currentUser=null; _profile=null; renderGate(); }
     _scheduleRender();
+    hideLoading(); // SDK 确认 session 后统一隐藏 loading，避免 SDK 加载慢时 loading 先消失露出 gate
   });
 }
 setupAuthListener();
