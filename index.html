@@ -678,6 +678,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 2;
+const APP_VERSION = 'v2.1.0';   // 应用版本号，在「我的」页面底部显示
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -3038,7 +3039,8 @@ function renderMine(){
     </div>
     <div style="text-align:center;margin-top:10px">
       <button class="btn" style="background:rgba(239,68,68,.12);color:var(--danger)" onclick="signOut()">退出登录</button>
-    </div>`;
+    </div>
+    <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-3)">研学库 <b>'+APP_VERSION+'</b> · 数据格式 v'+DATA_VERSION+'</div>`;
 }
 /* ================= 公共课程库 ================= */
 var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
