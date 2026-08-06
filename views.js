@@ -595,12 +595,13 @@ function destroyTurnstile(){
 }
 function renderAuthModal(){
   const isLogin = _authMode === 'login';
-  destroyTurnstile(); // openModal 会重建 DOM，先销毁旧 widget
+  destroyTurnstile();
   const m =
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<div style="text-align:center;margin-bottom:16px"><div style="width:48px;height:48px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;margin:0 auto 10px;box-shadow:0 6px 18px rgba(99,102,241,.3)">研</div>'+
+    '<div style="text-align:center;margin-bottom:16px">'+
+    '<div class="gate-logo-sm">研</div>'+
     '<h3 style="font-size:18px;margin:0">'+(isLogin?'欢迎回来':'创建你的研学库账号')+'</h3>'+
-    '<div style="font-size:12px;color:var(--text-3);margin-top:4px">'+(isLogin?'继续你的考研学习之旅':'3 分钟记录第一个知识点')+'</div></div>'+
+    '<div style="font-size:12px;color:var(--text-3);margin-top:4px">'+(isLogin?'继续你的考研学习之旅':'开启科学备考新体验')+'</div></div>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
     '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com" value="'+esc(_authTempEmail)+'"></div>'+
     '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+

@@ -1028,6 +1028,12 @@ function openModal(html){
 }
 function closeModal(){
   const root = document.getElementById('modal-root');
+  const modal = root.querySelector('.modal');
+  if(modal && !modal.classList.contains('closing')){
+    modal.classList.add('closing');
+    _defer(function(){ root.classList.remove('open'); root.innerHTML = ''; document.body.classList.remove('modal-open'); }, 180);
+    return;
+  }
   root.classList.remove('open'); root.innerHTML = '';
   document.body.classList.remove('modal-open');
 }
@@ -1096,17 +1102,28 @@ function closeGuide(){
   localStorage.setItem('yanxueku_guided', '1');
 }
 
-/* ====== 登录墙（一人一号，强制登录） ====== */
+/* ====== 登录首页：暗色渐变 + 毛玻璃 + 极光特效 ====== */
 function renderGate(){
   let g = document.getElementById('login-gate');
   if(!g){
     g = document.createElement('div');
     g.id = 'login-gate';
-    g.innerHTML = '<div class="gate-card">'+
-      '<div class="gate-logo">📚</div>'+
-      '<h2>登录后开始学习</h2>'+
-      '<p>一人一号 · 学习资料云端专属存储<br>登录即可同步历史学习进度与个人知识库</p>'+
-      '<button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="openAuthModal()">👤 登录 / 注册</button>'+
+    g.innerHTML =
+      '<div class="gate-geo gate-geo-ring" style="left:8%;top:18%"></div>'+
+      '<div class="gate-geo gate-geo-square" style="right:12%;top:25%"></div>'+
+      '<div class="gate-geo gate-geo-triangle" style="left:15%;bottom:22%"></div>'+
+      '<div class="gate-geo gate-geo-ring" style="right:10%;bottom:30%;width:60px;height:60px"></div>'+
+      '<div class="gate-card">'+
+        '<div class="gate-logo">研</div>'+
+        '<h2>研学库 · 考研专业课学习系统</h2>'+
+        '<div class="gate-subtitle">基于艾宾浩斯遗忘曲线的智能复习工具<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
+        '<div class="gate-features">'+
+          '<div class="gate-feat"><div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
+          '<div class="gate-feat"><div class="gf-icon">📚</div><span>10科505卡片</span></div>'+
+          '<div class="gate-feat"><div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
+          '<div class="gate-feat"><div class="gf-icon">☁️</div><span>云端同步</span></div>'+
+        '</div>'+
+        '<button class="gate-btn" onclick="openAuthModal()">👤 登录 / 注册</button>'+
       '</div>';
     document.body.appendChild(g);
   }
