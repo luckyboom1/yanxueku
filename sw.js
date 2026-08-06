@@ -1,8 +1,8 @@
 /* 研学库 Service Worker — network-first with smart fallback
- * v6: 新增 public-library.json 预缓存 + 缓存版本号提升（配合公共课程库上线）
+ * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
  */
-const CACHE = 'yanxueku-v6';
-const ASSETS = ['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json'];
+const CACHE = 'yanxueku-v7';
+const ASSETS = ['./','./index.html','./styles.css','./core.js','./quiz.js','./views.js','./public-lib.js','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
