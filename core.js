@@ -469,11 +469,16 @@ function toggleSidebar(){
     document.getElementById('sidebar').classList.toggle('collapsed');
   }
 }
+var _resizeTimer = 0;
 window.addEventListener('resize', ()=>{
-  if(window.innerWidth>767){
-    document.getElementById('sidebar').classList.remove('open');
-    const ov=document.getElementById('sidebar-overlay');if(ov)ov.remove();
-  }
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(function(){
+    if(window.innerWidth>767){
+      var sb = document.getElementById('sidebar');
+      if(sb) sb.classList.remove('open');
+      var ov = document.getElementById('sidebar-overlay'); if(ov) ov.remove();
+    }
+  }, 200);
 });
 
 function render(){
@@ -1262,6 +1267,8 @@ save = function(){
 // 学习时自动 +1 分钟（每 60 秒检测活跃状态）
 let _activeSeconds = 0;
 let _activeTimer = null;
+/* 页面卸载时清理定时器 */
+window.addEventListener('pagehide', function(){ if(_activeTimer){ clearInterval(_activeTimer); _activeTimer = null; } });
 function startActivityTracking(){
   if(_activeTimer) return;
   _activeTimer = setInterval(()=>{

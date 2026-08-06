@@ -765,21 +765,6 @@ function renderMine(){
 
 // Note: boot sequence (applyTheme + load + render) runs from core.js
 
-/* ====== 按钮波纹 ====== */
-document.addEventListener('click', function(e){
-  var el = e.target.closest('.btn,.grade-btn,.mini-btn,.chip,.nav-item,.q-opt,.opt-card');
-  if(!el||el.querySelector('.ripple')) return;
-  var r = document.createElement('span');
-  r.className = 'ripple';
-  var rect = el.getBoundingClientRect();
-  var size = Math.max(rect.width, rect.height);
-  r.style.width = r.style.height = size + 'px';
-  r.style.left = (e.clientX - rect.left - size/2) + 'px';
-  r.style.top = (e.clientY - rect.top - size/2) + 'px';
-  el.appendChild(r);
-  setTimeout(function(){ r.remove(); }, 500);
-});
-
 /* ================= 公共课程库 ================= */
 var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
 
