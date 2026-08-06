@@ -466,7 +466,6 @@ body.modal-open #content{overflow:hidden}
   animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth;
 }
 @keyframes gateBgShift{
   0%{background-position:0% 50%}
