@@ -458,22 +458,9 @@ body.modal-open #content{overflow:hidden}
 /* ---------- 登录首页：暗色渐变 + 毛玻璃 + 极光效果 ---------- */
 #login-gate{
   position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(180deg,#0C092A 0%,#281558 35%,#4C1D95 70%,#7C3AED 100%);
   padding:20px;overflow:hidden;
 }
-/* Aurora glows */
-#login-gate::before{
-  content:'';position:absolute;left:-150px;top:-200px;width:600px;height:500px;
-  background:radial-gradient(ellipse,rgba(177,226,255,.18) 0%,transparent 70%);
-  mix-blend-mode:screen;pointer-events:none;animation:gateAurora1 8s ease-in-out infinite alternate;
-}
-#login-gate::after{
-  content:'';position:absolute;right:-100px;bottom:-150px;width:500px;height:400px;
-  background:radial-gradient(ellipse,rgba(236,73,153,.12) 0%,transparent 70%);
-  mix-blend-mode:screen;pointer-events:none;animation:gateAurora2 10s ease-in-out infinite alternate;
-}
-@keyframes gateAurora1{0%{transform:translate(0,0) scale(1)}100%{transform:translate(30px,20px) scale(1.08)}}
-@keyframes gateAurora2{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-20px,-15px) scale(1.05)}}
+/* 科技感自主呼吸背景——见底部 #login-gate 覆盖声明 */
 
 /* Floating geometric decorations */
 .gate-geo{position:absolute;pointer-events:none}
