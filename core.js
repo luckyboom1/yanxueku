@@ -1138,6 +1138,59 @@ function renderGate(){
           '我已阅读并同意 <a href="terms.html" target="_blank" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" onclick="event.stopPropagation()">隐私政策</a></label>'+
         '</div>'+
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
+      '</div>'+
+      // 向下滚动引导
+      '<div class="gate-scroll-hint" onclick="document.getElementById(\'login-gate\').querySelector(\'.gate-features-section\').scrollIntoView({behavior:\'smooth\'})">'+
+        '<span>了解更多功能</span>'+
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
+      '</div>'+
+      // 功能详细展示区
+      '<div class="gate-features-section">'+
+        '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
+        '<div class="gate-showcase">'+
+          // 功能1: 科学记忆
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">🧠</div>'+
+            '<h3>艾宾浩斯智能复习</h3>'+
+            '<p>基于遗忘曲线科学排期，在记忆临界点精准推送复习。1-2-4-7-15-30-60天七轮强化，从短期记忆到长期掌握。</p>'+
+            '<ul><li>自动计算每张卡片的复习时间</li><li>翻卡评分：难/一般/简单，动态调整间隔</li><li>可视化今日待复习数量</li></ul>'+
+          '</div>'+
+          // 功能2: 知识库
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#10b981,#14b8a6)">📚</div>'+
+            '<h3>结构化知识库</h3>'+
+            '<p>按科目 → 章节 → 标签三层组织专业课笔记。支持 Markdown 排版、代码高亮、挖空记忆。</p>'+
+            '<ul><li>10大热门考研专业 · 505张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
+          '</div>'+
+          // 功能3: 刷题自测
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#f59e0b,#ec4899)">✍️</div>'+
+            '<h3>多题型智能刷题</h3>'+
+            '<p>单选、判断、填空、简答四种题型随机组卷，即时判分，答错自动收录错题本。</p>'+
+            '<ul><li>填空精确匹配 / 简答关键词评分</li><li>错题本支持原题型重做</li><li>每题附详细解析 + 参考答案</li></ul>'+
+          '</div>'+
+          // 功能4: 学习统计
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#3b82f6,#0ea5e9)">📊</div>'+
+            '<h3>数据驱动的学习追踪</h3>'+
+            '<p>连续学习天数、每日学习时长、考研倒计时、各科掌握度分布一目了然。</p>'+
+            '<ul><li>日/周学习日历热力图</li><li>四阶段掌握度：初学→熟悉→熟练→精通</li><li>自定义每日目标 + 考研日倒计时</li></ul>'+
+          '</div>'+
+          // 功能5: 云端同步
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#ec4899)">☁️</div>'+
+            '<h3>云端安全同步</h3>'+
+            '<p>一人一号专属存储，手机电脑浏览器数据实时同步。本地离线自动回退，永不丢失进度。</p>'+
+            '<ul><li>Supabase 托管 · 端到端加密传输</li><li>数据导出 / 卡包分享 / 备份恢复</li><li>支持学习小组成员实时同步进度</li></ul>'+
+          '</div>'+
+          // 功能6: 学习计时
+          '<div class="gate-showcase-card">'+
+            '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">⏱</div>'+
+            '<h3>沉浸式学习计时器</h3>'+
+            '<p>侧栏实时显示今日学习时长，复习和刷题自动计入。累计统计帮你看见自己的成长。</p>'+
+            '<ul><li>60秒无操作自动暂停计分</li><li>番茄钟模式（后续版本支持）</li><li>排行榜与同学互相激励</li></ul>'+
+          '</div>'+
+        '</div>'+
       '</div>';
     document.body.appendChild(g);
   }
