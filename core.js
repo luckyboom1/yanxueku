@@ -1155,6 +1155,7 @@ function renderGate(){
       '</div>'+ // 关闭 gate-hero
       '<div class="gate-features-section">'+
         '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
+        '<div class="gate-section-divider"></div>'+
         '<div class="gate-showcase">'+
           // 功能1: 科学记忆
           '<div class="gate-showcase-card">'+
