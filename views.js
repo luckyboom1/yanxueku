@@ -598,9 +598,8 @@ function renderAuthModal(){
   destroyTurnstile();
   const m =
     '<button class="modal-close" onclick="closeModal()">✕</button>'+
-    '<div style="text-align:center;padding:8px 0 20px">'+
-    '<div class="gate-logo-sm"></div>'+
-    '<h3 style="font-size:20px;margin:12px 0 6px;font-weight:700;color:var(--text)">'+(isLogin?'欢迎回来 👋':'创建你的研学库账号')+'</h3>'+
+    '<div style="text-align:center;padding:12px 0 20px">'+
+    '<h3 style="font-size:20px;margin:0 0 6px;font-weight:700;color:var(--text)">'+(isLogin?'欢迎回来 👋':'创建你的研学库账号')+'</h3>'+
     '<p style="font-size:13px;color:var(--text-3);margin:0;line-height:1.6">'+(isLogin?'继续你的考研学习之旅，今天也要加油':'开启科学备考新体验，3分钟起步')+'</p></div>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
     '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com" value="'+esc(_authTempEmail)+'"></div>'+
