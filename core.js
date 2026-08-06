@@ -1199,6 +1199,41 @@ function renderGate(){
             '<ul><li>60秒无操作自动暂停计分</li><li>番茄钟模式（后续版本支持）</li><li>排行榜与同学互相激励</li></ul>'+
           '</div>'+
         '</div>'+
+        // 页脚
+        '<div class="gate-footer">'+
+          '<div class="gate-footer-grid">'+
+            '<div class="gate-footer-col">'+
+              '<div class="gate-footer-title">研学库</div>'+
+              '<p>考研专业课高效学习系统。基于艾宾浩斯遗忘曲线的智能复习工具，让记忆更科学。</p>'+
+            '</div>'+
+            '<div class="gate-footer-col">'+
+              '<div class="gate-footer-title">功能</div>'+
+              '<a href="javascript:void(0)">知识库管理</a>'+
+              '<a href="javascript:void(0)">智能复习</a>'+
+              '<a href="javascript:void(0)">刷题自测</a>'+
+              '<a href="javascript:void(0)">错题本</a>'+
+            '</div>'+
+            '<div class="gate-footer-col">'+
+              '<div class="gate-footer-title">资源</div>'+
+              '<a href="public-library.json" target="_blank">公共课程库 JSON</a>'+
+              '<a href="javascript:void(0)">导出数据备份</a>'+
+              '<a href="javascript:void(0)">卡包分享</a>'+
+              '<a href="README.md" target="_blank">项目文档</a>'+
+            '</div>'+
+            '<div class="gate-footer-col">'+
+              '<div class="gate-footer-title">联系我们</div>'+
+              '<a href="https://github.com/luckyboom1/yanxueku/issues" target="_blank">GitHub Issues · 反馈</a>'+
+              '<a href="https://github.com/luckyboom1/yanxueku" target="_blank">GitHub 仓库 · 开源</a>'+
+              '<a href="privacy.html" target="_blank">隐私政策</a>'+
+              '<a href="terms.html" target="_blank">服务条款</a>'+
+            '</div>'+
+          '</div>'+
+          '<div class="gate-footer-bottom">'+
+            '<span>研学库 v2.2 · MIT License</span>'+
+            '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
+            '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
+          '</div>'+
+        '</div>'+
       '</div>';
     document.body.appendChild(g);
     _scrollHintDismissed = false;
