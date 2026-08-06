@@ -515,15 +515,13 @@ body.modal-open #content{overflow:hidden}
 /* 卡片 */
 #login-gate .gate-card{
   position:relative;z-index:10;width:min(92vw,500px);
-  margin:calc(40vh - 180px) auto 0; /* 居中 + 顶部留白，视觉接近视口 1/3 */
+  margin:10vh auto 0; /* 顶部留白，视口高度自适应 */
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
   border-radius:28px;padding:48px 40px;text-align:center;
   backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
   box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12);
   animation:gateCardIn .6s cubic-bezier(.16,1,.3,1);
 }
-/* 向下滚动引导 */
-@keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 #login-gate .gate-logo{
   width:64px;height:64px;border-radius:18px;
   background:linear-gradient(135deg,#818cf8,#6366f1,#8b5cf6);
@@ -531,8 +529,10 @@ body.modal-open #content{overflow:hidden}
   color:#fff;font-size:28px;font-weight:800;
   margin:0 auto 20px;box-shadow:0 12px 32px rgba(99,102,241,.4);
 }
+/* 向下滚动引导 */
+@keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .gate-scroll-hint{
-  text-align:center;padding:32px 0 60px;cursor:pointer;user-select:none;
+  text-align:center;padding:24px 0 48px;cursor:pointer;user-select:none;
   animation:gateScrollPulse 2s ease-in-out infinite;
 }
 .gate-scroll-hint span{
@@ -542,18 +542,18 @@ body.modal-open #content{overflow:hidden}
 @keyframes gateScrollPulse{0%,100%{opacity:.5;transform:translateY(0)}50%{opacity:1;transform:translateY(6px)}}
 /* 功能展示区 */
 .gate-features-section{
-  max-width:1100px;margin:0 auto;padding:20px 20px 80px;
+  max-width:1100px;margin:0 auto;padding:0 20px 80px;
 }
 .gate-section-title{
-  text-align:center;font-size:32px;font-weight:700;color:#fff;margin-bottom:48px;
+  text-align:center;font-size:28px;font-weight:700;color:#fff;margin-bottom:40px;
   letter-spacing:-.5px;
 }
 .gate-showcase{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;
 }
 .gate-showcase-card{
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-  border-radius:20px;padding:28px 24px;
+  border-radius:20px;padding:24px 20px;
   transition:transform .25s,border-color .25s,box-shadow .25s;
 }
 .gate-showcase-card:hover{
@@ -562,23 +562,40 @@ body.modal-open #content{overflow:hidden}
   box-shadow:0 12px 32px rgba(0,0,0,.3);
 }
 .gate-sc-icon{
-  width:48px;height:48px;border-radius:14px;display:flex;align-items:center;
-  justify-content:center;font-size:22px;color:#fff;margin-bottom:14px;
+  width:44px;height:44px;border-radius:12px;display:flex;align-items:center;
+  justify-content:center;font-size:20px;color:#fff;margin-bottom:12px;
   box-shadow:0 6px 16px rgba(0,0,0,.2);
 }
-.gate-showcase-card h3{color:#fff;font-size:17px;font-weight:700;margin-bottom:8px}
-.gate-showcase-card p{color:rgba(255,255,255,.6);font-size:13px;line-height:1.7;margin-bottom:12px}
+.gate-showcase-card h3{color:#fff;font-size:16px;font-weight:700;margin-bottom:6px}
+.gate-showcase-card p{color:rgba(255,255,255,.55);font-size:13px;line-height:1.65;margin-bottom:10px}
 .gate-showcase-card ul{list-style:none;padding:0;margin:0}
 .gate-showcase-card li{
-  color:rgba(255,255,255,.45);font-size:12px;line-height:1.8;
-  padding-left:16px;position:relative;
+  color:rgba(255,255,255,.4);font-size:12px;line-height:1.7;
+  padding-left:14px;position:relative;
 }
 .gate-showcase-card li::before{
-  content:'•';position:absolute;left:0;color:rgba(99,102,241,.6);font-weight:700;
+  content:'•';position:absolute;left:0;color:rgba(99,102,241,.5);font-weight:700;
 }
+
+/* 响应式 */
 @media(max-width:768px){
-  .gate-showcase{grid-template-columns:1fr}
-  .gate-section-title{font-size:24px}
+  #login-gate .gate-card{padding:32px 20px;margin:6vh auto 0}
+  #login-gate h2{font-size:22px}
+  #login-gate .gate-features{gap:14px}
+  .gate-section-title{font-size:22px;margin-bottom:28px}
+  .gate-showcase{grid-template-columns:1fr;gap:16px}
+  .gate-showcase-card{padding:20px 16px}
+  .gate-scroll-hint{padding:20px 0 36px}
+}
+@media(max-width:480px){
+  #login-gate{padding:12px}
+  #login-gate .gate-card{padding:28px 16px;margin:4vh auto 0;border-radius:22px}
+  #login-gate .gate-logo{width:52px;height:52px;font-size:24px}
+  #login-gate h2{font-size:18px}
+  #login-gate .gate-subtitle{font-size:12px;margin-bottom:20px}
+  .gate-sc-icon{width:36px;height:36px;font-size:16px;border-radius:10px}
+  .gate-showcase-card h3{font-size:14px}
+  .gate-features-section{padding:0 12px 60px}
 }
 #login-gate h2{color:#fff;font-size:26px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px}
 #login-gate .gate-subtitle{color:rgba(255,255,255,.65);font-size:14px;margin-bottom:28px;line-height:1.8}
@@ -631,12 +648,6 @@ body.modal-open #content{overflow:hidden}
 }
 #login-gate .gate-legal a{color:rgba(255,255,255,.6);text-decoration:underline;transition:color .2s}
 #login-gate .gate-legal a:hover{color:rgba(255,255,255,.9)}
-
-@media(max-width:768px){
-  #login-gate .gate-card{padding:36px 24px}
-  #login-gate h2{font-size:22px}
-  #login-gate .gate-features{gap:14px}
-}
 
 /* ---------- 弹窗动画 ---------- */
 #modal-root .modal{
