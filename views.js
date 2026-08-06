@@ -791,7 +791,7 @@ function loadPublicLibrary(cb){
   el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载中…</h3><p>正在获取十大热门考研专业课数据</p></div>';
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'public-library.json', true);
+  xhr.open('GET', 'public-library.json?v=2.2', true);
   xhr.onload = function(){
     _pubLibLoading = false;
     if(xhr.status >= 200 && xhr.status < 300){

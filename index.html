@@ -13,6 +13,26 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>研学库 · 考研专业课高效学习</title>
 <script>window.__YANXUEKU_CONFIG__={SUPABASE_URL:"https://gwihiemggugzwhutsfea.supabase.co",SUPABASE_KEY:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4",TURNSTILE_SITE_KEY:"0x4AAAAAAEGrawQkO7430Qen"};</script>
+<script>
+// 版本跳变检测：每次发布 bump 这个值，旧版本自动强制刷新
+var __APP_VERSION = 'v2.2.0';
+var __sv = localStorage.getItem('yanxueku_ver');
+if(__sv && __sv !== __APP_VERSION){
+  // 旧版本用户：清除 SW 缓存 → 硬刷新
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      regs.forEach(function(r){ r.unregister(); });
+      localStorage.setItem('yanxueku_ver', __APP_VERSION);
+      location.reload(true);
+    });
+  }else{
+    localStorage.setItem('yanxueku_ver', __APP_VERSION);
+    location.reload(true);
+  }
+}else{
+  localStorage.setItem('yanxueku_ver', __APP_VERSION);
+}
+</script>
 <!-- Supabase SDK（云同步/登录依赖）：动态异步加载，不阻塞首屏渲染；加载失败自动回退本地模式 -->
 
 <meta name="description" content="研学库 - 考研专业课高效学习系统。艾宾浩斯遗忘曲线智能复习、刷题自测、错题本、学习统计。支持多人实时同步，永久免费。">
@@ -26,7 +46,7 @@
 <meta name="format-detection" content="telephone=no">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
 
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2.2">
 </head>
 <body>
 <div class="loading-shield" id="loading-screen">
@@ -92,9 +112,9 @@
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
-<script src="core.js"></script>
-<script src="quiz.js"></script>
-<script src="public-lib.js"></script>
-<script src="views.js"></script>
+<script src="core.js?v=2.2"></script>
+<script src="quiz.js?v=2.2"></script>
+<script src="public-lib.js?v=2.2"></script>
+<script src="views.js?v=2.2"></script>
 </body>
 </html>
