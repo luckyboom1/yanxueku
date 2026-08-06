@@ -1141,10 +1141,14 @@ function renderGate(){
         '</div>'+
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
-      // 向下滚动引导
-      '<div class="gate-scroll-hint" onclick="this.closest(\'.gate-hero\').nextElementSibling.scrollIntoView({behavior:\'smooth\'})">'+
-        '<span>了解更多功能</span>'+
-        '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
+      // 向下滚动引导（点击后消失 + 动态引导效果）
+      '<div class="gate-scroll-hint" onclick="var t=this;t.classList.add(\'hide\');setTimeout(function(){this.closest(\'.gate-hero\').nextElementSibling.scrollIntoView({behavior:\'smooth\'})}.bind(t),200)">'+
+        '<span class="gate-scroll-label">了解更多功能</span>'+
+        '<div class="gate-scroll-arrows">'+
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
+        '</div>'+
       '</div>'+
       '</div>'+ // 关闭 gate-hero
       '<div class="gate-features-section">'+

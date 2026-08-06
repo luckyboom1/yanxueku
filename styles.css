@@ -543,17 +543,35 @@ body.modal-open #content{overflow:hidden}
   color:#fff;font-size:28px;font-weight:800;
   margin:0 auto 20px;box-shadow:0 12px 32px rgba(99,102,241,.4);
 }
-/* 向下滚动引导 */
+/* 向下滚动引导：三箭头弹跳 + 点击淡出消失 */
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .gate-scroll-hint{
-  text-align:center;padding-bottom:24px;cursor:pointer;user-select:none;
-  animation:gateScrollPulse 2s ease-in-out infinite;flex-shrink:0;
+  text-align:center;padding-bottom:28px;cursor:pointer;user-select:none;flex-shrink:0;
+  opacity:1;transition:opacity .3s,transform .3s;
 }
-.gate-scroll-hint span{
-  display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:6px;
+.gate-scroll-hint.hide{opacity:0;transform:translateY(10px);pointer-events:none}
+.gate-scroll-label{
+  display:block;font-size:14px;font-weight:500;
+  color:rgba(255,255,255,.55);margin-bottom:10px;
+  letter-spacing:1px;
 }
-.gate-scroll-hint svg{display:block;margin:0 auto}
-@keyframes gateScrollPulse{0%,100%{opacity:.5;transform:translateY(0)}50%{opacity:1;transform:translateY(6px)}}
+.gate-scroll-arrows{display:flex;flex-direction:column;align-items:center;gap:2px}
+.gate-scroll-arrows svg{color:rgba(255,255,255,.4)}
+.gate-scroll-arrows svg:nth-child(1){
+  animation:gateBounce 1.6s ease-in-out infinite;
+}
+.gate-scroll-arrows svg:nth-child(2){
+  animation:gateBounce 1.6s ease-in-out .25s infinite;
+  opacity:.6;
+}
+.gate-scroll-arrows svg:nth-child(3){
+  animation:gateBounce 1.6s ease-in-out .5s infinite;
+  opacity:.35;
+}
+@keyframes gateBounce{
+  0%,100%{transform:translateY(0);opacity:.5}
+  50%{transform:translateY(6px);opacity:1}
+}
 /* 功能展示区 */
 .gate-features-section{
   max-width:1100px;margin:0 auto;padding:0 20px 80px;
