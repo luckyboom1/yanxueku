@@ -1119,6 +1119,8 @@ function renderGate(){
       '<div class="gate-particle" style="right:20%;top:60%;width:3px;height:3px;animation-delay:0.7s"></div>'+
       '<div class="gate-particle" style="left:60%;top:80%;width:4px;height:4px;animation-delay:1.8s"></div>'+
       '<div class="gate-particle" style="right:30%;top:12%;width:5px;height:5px;animation-delay:3.1s"></div>'+
+      // 首屏：Hero 卡片 + 滚动箭头（占满一整屏）
+      '<div class="gate-hero">'+
       '<div class="gate-card">'+
         '<div class="gate-logo">研</div>'+
         '<h2>研学库 · 考研专业课学习系统</h2>'+
@@ -1140,11 +1142,11 @@ function renderGate(){
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
       // 向下滚动引导
-      '<div class="gate-scroll-hint" onclick="document.getElementById(\'login-gate\').querySelector(\'.gate-features-section\').scrollIntoView({behavior:\'smooth\'})">'+
+      '<div class="gate-scroll-hint" onclick="this.closest(\'.gate-hero\').nextElementSibling.scrollIntoView({behavior:\'smooth\'})">'+
         '<span>了解更多功能</span>'+
         '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
       '</div>'+
-      // 功能详细展示区
+      '</div>'+ // 关闭 gate-hero
       '<div class="gate-features-section">'+
         '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
         '<div class="gate-showcase">'+
