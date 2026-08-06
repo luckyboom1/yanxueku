@@ -466,6 +466,8 @@ body.modal-open #content{overflow:hidden}
   animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
+  scroll-snap-type:y proximity;
+  scroll-behavior:smooth;
 }
 @keyframes gateBgShift{
   0%{background-position:0% 50%}
@@ -528,7 +530,7 @@ body.modal-open #content{overflow:hidden}
 /* 首屏：占满一整屏，居中 hero 卡片 + 底部箭头 */
 .gate-hero{
   min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
-  padding:12px;
+  padding:12px;scroll-snap-align:start;scroll-snap-stop:always;
 }
 /* 卡片 */
 #login-gate .gate-card{
@@ -553,11 +555,11 @@ body.modal-open #content{overflow:hidden}
   color:#fff;font-size:28px;font-weight:800;
   margin:0 auto 20px;box-shadow:0 12px 32px rgba(99,102,241,.4);
 }
-/* 向下滚动引导：三箭头弹跳 + 点击淡出消失 */
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 /* 功能展示区 */
 .gate-features-section{
   max-width:1100px;margin:0 auto;padding:80px 20px 80px;
+  scroll-snap-align:start;
 }
 .gate-section-title{
   text-align:center;font-size:30px;font-weight:700;color:#fff;margin:0 0 16px;
