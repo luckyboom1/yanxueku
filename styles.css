@@ -555,17 +555,27 @@ body.modal-open #content{overflow:hidden}
   margin:0 auto 20px;box-shadow:0 12px 32px rgba(99,102,241,.4);
 }
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
-/* 滚动指示器 — hero 底部居中 */
+/* 滚动指示器 — hero 底部居中，可点击 */
 .gate-scroll-indicator{
-  flex-shrink:0;width:28px;height:28px;margin:0 auto 12px;
-  border-right:2px solid rgba(255,255,255,.25);
-  border-bottom:2px solid rgba(255,255,255,.25);
+  flex-shrink:0;width:32px;height:32px;margin:0 auto 16px;cursor:pointer;
+  border-right:2.5px solid rgba(255,255,255,.3);
+  border-bottom:2.5px solid rgba(255,255,255,.3);
+  border-radius:2px;
   transform:rotate(45deg);
   animation:gateChevron 2s var(--ease-out-expo) infinite;
+  transition:border-color .2s,opacity .4s;
+}
+.gate-scroll-indicator:hover{
+  border-color:rgba(255,255,255,.65);
+}
+.gate-scroll-indicator:active{
+  border-color:rgba(129,140,248,.8);
+  transform:rotate(45deg) scale(.9);
+  transition:transform .1s;
 }
 @keyframes gateChevron{
-  0%,100%{transform:rotate(45deg) translate(0,0);opacity:.3}
-  50%{transform:rotate(45deg) translate(4px,4px);opacity:.7}
+  0%,100%{transform:rotate(45deg) translate(0,0);opacity:.35}
+  50%{transform:rotate(45deg) translate(5px,5px);opacity:.8}
 }
 /* 功能展示区 */
 .gate-features-section{
