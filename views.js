@@ -606,6 +606,7 @@ function renderAuthModal(){
     '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
     (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
     (isLogin?'':'<div class="form-row"><div id="auth-captcha"></div></div>')+
+    (isLogin?'':'<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-3);margin:8px 0 16px;line-height:1.5;cursor:pointer"><input type="checkbox" id="auth-agree" style="margin-top:2px;flex-shrink:0"><span>我已阅读并同意 <a href="privacy.html" target="_blank" style="color:var(--primary)">《隐私政策》</a>和 <a href="terms.html" target="_blank" style="color:var(--primary)">《服务条款及免责声明》</a></span></label>')+
     '<div class="modal-actions">'+
     '<button class="btn btn-ghost" onclick="toggleAuthMode()">'+(isLogin?'去注册':'去登录')+'</button>'+
     '<button class="btn btn-primary" id="auth-submit" onclick="'+(isLogin?'doLogin':'doSignUp')+'()">'+(isLogin?'登录':'注册')+'</button>'+
@@ -669,6 +670,8 @@ async function doSignUp(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
   if(cpEl && p !== cp){ toast('两次输入的密码不一致','err'); return; }
+  var agreeEl = document.getElementById('auth-agree');
+  if(agreeEl && !agreeEl.checked){ toast('请阅读并同意隐私政策和服务条款','warn'); return; }
   if(!sb){ toast(_supabaseFailed ? '云服务加载失败，请检查网络后刷新重试' : '正在连接云服务，请稍后再试','err'); return; }
   if(TURNSTILE_SITE_KEY && !_captchaToken && !_captchaDegraded){
     // 区分"验证码还在加载"与"加载完成但未验证"：避免用户看不到验证码却被提示"请完成验证"

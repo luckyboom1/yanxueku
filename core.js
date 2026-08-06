@@ -1134,6 +1134,9 @@ function renderGate(){
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
         '<button class="gate-btn" onclick="openAuthModal()">👤 登录 / 注册</button>'+
+        '<div class="gate-legal">'+
+          '继续即表示同意 <a href="terms.html" target="_blank">服务条款</a> 和 <a href="privacy.html" target="_blank">隐私政策</a>'+
+        '</div>'+
       '</div>';
     document.body.appendChild(g);
   }

@@ -576,6 +576,11 @@ body.modal-open #content{overflow:hidden}
 #login-gate .gate-btn:active{transform:translateY(0)}
 #login-gate .gate-card.loading{animation:none;opacity:.6;pointer-events:none}
 #login-gate .gate-card.loading .gate-btn{opacity:.5;pointer-events:none}
+#login-gate .gate-legal{
+  text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,.4);line-height:1.5;
+}
+#login-gate .gate-legal a{color:rgba(255,255,255,.55);text-decoration:underline;transition:color .2s}
+#login-gate .gate-legal a:hover{color:rgba(255,255,255,.8)}
 
 @media(max-width:768px){
   #login-gate .gate-card{padding:36px 24px}
