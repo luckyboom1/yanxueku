@@ -640,7 +640,8 @@ body.modal-open #content{overflow:hidden}
   .gate-showcase{grid-template-columns:1fr;gap:16px}
   .gate-showcase-card{padding:20px 16px}
   .gate-footer-grid{grid-template-columns:repeat(2,1fr);gap:24px}
-  .gate-footer-bottom{flex-direction:column;text-align:center}
+  .gate-footer-col:first-child{grid-column:1/-1}
+  .gate-footer-bottom{flex-direction:column;align-items:center;gap:4px}
 }
 @media(max-width:480px){
   #login-gate .gate-card{padding:24px 16px;border-radius:20px}
@@ -649,7 +650,12 @@ body.modal-open #content{overflow:hidden}
   #login-gate .gate-subtitle{font-size:12px;margin-bottom:20px}
   .gate-sc-icon{width:36px;height:36px;font-size:16px;border-radius:10px}
   .gate-showcase-card h3{font-size:14px}
-  .gate-features-section{padding:0 12px 60px}
+  .gate-features-section{padding:20px 12px 60px}
+  .gate-footer{padding:32px 16px 24px;margin-top:40px}
+  .gate-footer-grid{grid-template-columns:1fr;gap:20px}
+  .gate-footer-title{font-size:13px;margin-bottom:8px}
+  .gate-footer-col a{font-size:12px;line-height:1.8}
+  .gate-footer-bottom{flex-direction:column;align-items:center;text-align:center;gap:4px}
 }
 #login-gate h2{color:#fff;font-size:26px;font-weight:700;margin-bottom:10px;letter-spacing:-.3px}
 #login-gate .gate-subtitle{color:rgba(255,255,255,.65);font-size:14px;margin-bottom:28px;line-height:1.8}
