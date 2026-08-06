@@ -1005,6 +1005,7 @@ function confirmPackImport(){
 
 /* ================= 弹窗 & 提示 ================= */
 // 安全弹窗构建：接收对象 {title, body, actions} 时自动转义所有文本，避免 XSS
+/** 构建安全弹窗（必须确保所有调用点 action.onclick 为硬编码字符串，禁止拼接用户输入） */
 function buildSafeModal(opts){
   const title = opts.title ? `<h3>${esc(opts.title)}</h3>` : '';
   const body = opts.body || '';
