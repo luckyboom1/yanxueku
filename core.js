@@ -324,14 +324,8 @@ async function load(){
         setupRealtimeSync();
         return;
       }
-    }catch(e){ console.warn('Supabase load failed, using local:', e.message); _currentUser = null; }
+    }catch(e){ console.warn('Supabase load failed:', e.message); _currentUser = null; }
   }
-  // 尝试加载本地数据：先检查 v2 key，再回退 v1 key 并自动迁移
-  try{
-    var raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) raw = localStorage.getItem('yanxueku_v1'); // 旧版兼容
-    if(raw){ db = migrateData(JSON.parse(raw)); _loadResolve(db); setupRealtimeSync(); return; }
-  }catch(e){}
   db = seedData();
   try{ await save(); }catch(e){ console.warn('save failed:', e.message); }
   _loadResolve(db);
@@ -352,18 +346,16 @@ function _setSync(t, warn){
 }
 function doSave(){
   _savePending = false;
-  let localOk = true;
   db._schemaVersion = DATA_VERSION;
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){ localOk = false; console.warn('localStorage save failed:', e.message); } // always mirror to localStorage as backup
   if(sb && _currentUser){
     _setSync('同步中…');
     try{
       sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() })
         .then(()=> _setSync('已保存'))
-        .catch(()=> _setSync('仅本地保存', true));
-    }catch(e){ console.warn('Supabase save failed'); _setSync('仅本地保存', true); }
+        .catch(()=> _setSync('保存失败，请检查网络', true));
+    }catch(e){ console.warn('Supabase save failed'); _setSync('保存失败，请检查网络', true); }
   } else {
-    _setSync(localOk ? '已保存（本地）' : '保存失败', !localOk);
+    _setSync('未登录，无法保存', true);
   }
 }
 function save(){
@@ -386,7 +378,6 @@ function setupRealtimeSync(){
           const newUpdated = new Date(payload.new.data.updated_at||0).getTime();
           if(newUpdated > oldUpdated){
             db = payload.new.data;
-            try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
             if(curView) render();
             _defer(function(){ updateSidebarTimer(); }, 50);
             _defer(function(){ updateDashboardHeader(); }, 80);
@@ -1132,7 +1123,7 @@ function renderGate(){
             '<div class="gf-icon">📚</div><span>10科505卡片</span></div>'+
           '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
             '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
-          '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n离线自动回退本地模式">'+
+          '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
         '<div class="gate-legal">'+
@@ -1179,7 +1170,7 @@ function renderGate(){
           '<div class="gate-showcase-card" style="--i:4">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#ec4899)">☁️</div>'+
             '<h3>云端安全同步</h3>'+
-            '<p>一人一号专属存储，手机电脑浏览器数据实时同步。本地离线自动回退，永不丢失进度。</p>'+
+            '<p>一人一号专属存储，手机电脑浏览器数据实时同步。登录即可随时随地继续学习。</p>'+
             '<ul><li>Supabase 托管 · 端到端加密传输</li><li>数据导出 / 卡包分享 / 备份恢复</li><li>支持学习小组成员实时同步进度</li></ul>'+
           '</div>'+
           // 功能6: 学习计时
@@ -1527,7 +1518,6 @@ function setupAuthListener(){
       }else if(db && db.subjects && db.subjects.length){
         try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){} // 云端无数据 → 上传本地（首次同步）
       }
-      try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
       hideGate();
       setupRealtimeSync();
     }else{ _currentUser=null; _profile=null; renderGate(); }

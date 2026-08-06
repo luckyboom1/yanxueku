@@ -698,8 +698,6 @@ async function signOut(){
   if(!sb) return;
   _currentUser=null; _profile=null;
   try{ await sb.auth.signOut(); }catch(e){}
-  // 登出保留本地数据：把当前 db 写回 localStorage（不重置为示例数据，避免数据丢失）
-  try{ localStorage.setItem('yanxueku_v1', JSON.stringify(db)); }catch(e){}
   renderSidebarUser(); switchView('dashboard'); toast('已退出','info');
 }
 function openProfileModal(){
