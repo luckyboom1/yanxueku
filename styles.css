@@ -457,10 +457,13 @@ body.modal-open #content{overflow:hidden}
 
 /* ---------- 登录首页 ---------- */
 #login-gate{
+  --ease-out-expo: cubic-bezier(0.16,1,0.3,1);
+  --ease-out-quart: cubic-bezier(0.25,1,0.5,1);
+  --ease-in-out-back: cubic-bezier(0.65,0,0.35,1);
   position:fixed;inset:0;z-index:1000;display:block;padding:0;
   background:linear-gradient(135deg,#0a0826,#1a1050,#2d1b69,#1e1048,#0a0826,#281558,#1a1050,#0a0826);
   background-size:400% 400%;
-  animation:gateBgShift 20s ease-in-out infinite;
+  animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
 }
 @keyframes gateBgShift{
@@ -529,12 +532,17 @@ body.modal-open #content{overflow:hidden}
 /* 卡片 */
 #login-gate .gate-card{
   position:relative;z-index:10;width:min(92vw,500px);
-  margin:auto; /* flex 子项中 auto = 垂直居中 */
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
-  border-radius:28px;padding:48px 40px;text-align:center;
+  margin:auto;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  border-radius:24px;padding:48px 44px;text-align:center;
   backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-  box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.12);
-  animation:gateCardIn .6s cubic-bezier(.16,1,.3,1);
+  box-shadow:0 24px 64px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  animation:gateCardIn .6s var(--ease-out-expo) both;
+  transition:border-color .3s,box-shadow .4s;
+}
+#login-gate .gate-card:focus-within{
+  border-color:rgba(129,140,248,.35);
+  box-shadow:0 24px 64px rgba(0,0,0,.4),0 0 0 3px rgba(129,140,248,.15),inset 0 1px 0 rgba(255,255,255,.08);
 }
 #login-gate .gate-logo{
   width:64px;height:64px;border-radius:18px;
@@ -587,17 +595,24 @@ body.modal-open #content{overflow:hidden}
   margin:0 auto 52px;
 }
 .gate-showcase{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:24px;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;
 }
 .gate-showcase-card{
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);
-  border-radius:20px;padding:28px 24px;
-  transition:transform .25s,border-color .25s,box-shadow .25s;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:28px 24px;
+  transition:transform .3s var(--ease-out-quart),border-color .3s,box-shadow .3s,background .3s;
+  animation:gateCardReveal .5s var(--ease-out-expo) both;
+  animation-delay:calc(var(--i,0)*60ms);
 }
 .gate-showcase-card:hover{
   transform:translateY(-4px);
-  border-color:rgba(255,255,255,.22);
-  box-shadow:0 12px 32px rgba(0,0,0,.3);
+  background:rgba(255,255,255,.06);
+  border-color:rgba(129,140,248,.25);
+  box-shadow:0 16px 40px rgba(0,0,0,.35);
+}
+@keyframes gateCardReveal{
+  0%{opacity:0;transform:translateY(16px)}
+  100%{opacity:1;transform:translateY(0)}
 }
 .gate-sc-icon{
   width:44px;height:44px;border-radius:12px;display:flex;align-items:center;
@@ -692,26 +707,46 @@ body.modal-open #content{overflow:hidden}
 #login-gate .gate-feat:hover::after{opacity:1;transform:translateX(-50%) translateY(0)}
 /* 按钮 */
 #login-gate .gate-btn{
-  padding:16px 48px;border-radius:24px;border:none;
-  background:linear-gradient(135deg,#818cf8,#8b5cf6);
-  color:#fff;font-size:16px;font-weight:700;cursor:pointer;
-  box-shadow:0 8px 28px rgba(129,140,248,.4);
-  transition:transform .2s,box-shadow .2s;font-family:inherit;
-  animation:gateBtnIn .8s cubic-bezier(.16,1,.3,1) .1s both;
+  padding:16px 56px;border-radius:28px;border:none;
+  background:linear-gradient(135deg,#818cf8,#6366f1,#8b5cf6);
+  color:#fff;font-size:16px;font-weight:600;cursor:pointer;letter-spacing:.3px;
+  box-shadow:0 8px 28px rgba(129,140,248,.35);
+  transition:transform .2s var(--ease-out-quart),box-shadow .2s var(--ease-out-quart),filter .2s;
+  font-family:inherit;position:relative;overflow:hidden;
+  animation:gateBtnIn .6s var(--ease-out-expo) .15s both;
 }
-@keyframes gateBtnIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
-#login-gate .gate-btn:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(129,140,248,.55)}
-#login-gate .gate-btn:active{transform:translateY(0)}
+#login-gate .gate-btn::after{
+  content:'';position:absolute;inset:0;border-radius:28px;
+  background:linear-gradient(135deg,rgba(255,255,255,0),rgba(255,255,255,.08),rgba(255,255,255,0));
+  opacity:0;transition:opacity .3s;
+}
+#login-gate .gate-btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(129,140,248,.5);filter:brightness(1.05)}
+#login-gate .gate-btn:hover::after{opacity:1}
+#login-gate .gate-btn:active{transform:translateY(0) scale(.98);transition-duration:.1s}
+@keyframes gateBtnIn{0%{opacity:0;transform:translateY(12px) scale(.95)}100%{opacity:1;transform:translateY(0) scale(1)}}
 #login-gate .gate-card.loading{animation:none;opacity:.6;pointer-events:none}
 #login-gate .gate-card.loading .gate-btn{opacity:.5;pointer-events:none}
+/* 自定义 checkbox */
 #login-gate .gate-legal{
-  text-align:center;margin-bottom:18px;font-size:12px;color:rgba(255,255,255,.45);line-height:1.5;
+  text-align:center;margin:0 0 20px;font-size:12.5px;color:rgba(255,255,255,.4);line-height:1.5;
 }
 #login-gate .gate-legal label{
-  display:inline-flex;align-items:center;cursor:pointer;gap:6px;
+  display:inline-flex;align-items:center;cursor:pointer;gap:8px;position:relative;
 }
 #login-gate .gate-legal input[type=checkbox]{
-  width:15px;height:15px;accent-color:#818cf8;cursor:pointer;flex-shrink:0;
+  appearance:none;-webkit-appearance:none;width:20px;height:20px;
+  border:1.5px solid rgba(255,255,255,.25);border-radius:6px;cursor:pointer;flex-shrink:0;
+  background:rgba(255,255,255,.04);transition:all .2s var(--ease-out-quart);position:relative;
+}
+#login-gate .gate-legal input[type=checkbox]:checked{
+  background:linear-gradient(135deg,#818cf8,#8b5cf6);border-color:transparent;
+}
+#login-gate .gate-legal input[type=checkbox]:checked::after{
+  content:'';position:absolute;left:6px;top:2px;width:6px;height:10px;
+  border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
+}
+#login-gate .gate-legal input[type=checkbox]:focus-visible{
+  outline:2px solid rgba(129,140,248,.5);outline-offset:2px;
 }
 #login-gate .gate-legal a{color:rgba(255,255,255,.6);text-decoration:underline;transition:color .2s}
 #login-gate .gate-legal a:hover{color:rgba(255,255,255,.9)}
