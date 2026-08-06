@@ -527,11 +527,11 @@ body.modal-open #content{overflow:hidden}
 /* 首屏：占满一整屏，居中 hero 卡片 + 底部箭头 */
 .gate-hero{
   min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
-  padding:20px; /* hero 内边距替代 #login-gate 的 padding */
+  padding:16px;
 }
 /* 卡片 */
 #login-gate .gate-card{
-  position:relative;z-index:10;width:min(92vw,500px);
+  position:relative;z-index:10;width:100%;max-width:500px;
   margin:auto;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
   border-radius:24px;padding:48px 44px;text-align:center;
@@ -631,7 +631,7 @@ body.modal-open #content{overflow:hidden}
 
 /* 响应式 */
 @media(max-width:768px){
-  #login-gate .gate-card{padding:32px 20px}
+  #login-gate .gate-card{padding:32px 24px}
   #login-gate h2{font-size:22px}
   #login-gate .gate-features{gap:14px}
   .gate-section-title{font-size:22px;margin-bottom:28px}
@@ -641,8 +641,7 @@ body.modal-open #content{overflow:hidden}
   .gate-footer-bottom{flex-direction:column;text-align:center}
 }
 @media(max-width:480px){
-  #login-gate{padding:12px}
-  #login-gate .gate-card{padding:28px 16px;margin:4vh auto 0;border-radius:22px}
+  #login-gate .gate-card{padding:24px 16px;border-radius:20px}
   #login-gate .gate-logo{width:52px;height:52px;font-size:24px}
   #login-gate h2{font-size:18px}
   #login-gate .gate-subtitle{font-size:12px;margin-bottom:20px}
