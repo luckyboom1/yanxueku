@@ -1141,8 +1141,9 @@ function renderGate(){
         '</div>'+
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
-      // 向下滚动引导（点击后消失 + 动态引导效果）
-      '<div class="gate-scroll-hint" onclick="var t=this;t.classList.add(\'hide\');setTimeout(function(){this.closest(\'.gate-hero\').nextElementSibling.scrollIntoView({behavior:\'smooth\'})}.bind(t),200)">'+
+      '</div>'+ // 关闭 gate-hero
+      // 浮动引导箭头（独立图层，不占文档流）
+      '<div class="gate-scroll-hint" id="gate-scroll-hint" onclick="dismissScrollHint()">'+
         '<span class="gate-scroll-label">了解更多功能</span>'+
         '<div class="gate-scroll-arrows">'+
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
@@ -1150,6 +1151,7 @@ function renderGate(){
           '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 6v12"/></svg>'+
         '</div>'+
       '</div>'+
+      // 功能展示区（第二屏）
       '</div>'+ // 关闭 gate-hero
       '<div class="gate-features-section">'+
         '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
@@ -1199,6 +1201,8 @@ function renderGate(){
         '</div>'+
       '</div>';
     document.body.appendChild(g);
+    _scrollHintDismissed = false;
+    _defer(setupScrollHint, 50);
   }
   g.style.display = 'block';
   g.style.overflowY = 'auto';
@@ -1211,6 +1215,26 @@ function gateLogin(){
   var cb = document.getElementById('gate-agree');
   if(!cb || !cb.checked){ toast('请先阅读并勾选同意服务条款和隐私政策','warn'); return; }
   openAuthModal();
+}
+// 滚动引导：手动滚动过 hero 或点击后隐藏，回到第一页恢复
+var _scrollHintDismissed = false;
+function dismissScrollHint(){
+  _scrollHintDismissed = true;
+  var hint = document.getElementById('gate-scroll-hint');
+  if(hint){ hint.classList.add('hide');
+    setTimeout(function(){ document.querySelector('.gate-features-section').scrollIntoView({behavior:'smooth'}); }, 200);
+  }
+}
+function setupScrollHint(){
+  var gate = document.getElementById('login-gate');
+  var hint = document.getElementById('gate-scroll-hint');
+  if(!gate||!hint) return;
+  gate.addEventListener('scroll', function(){
+    if(_scrollHintDismissed) return;
+    var heroH = gate.querySelector('.gate-hero').offsetHeight;
+    if(gate.scrollTop > heroH * 0.5){ hint.classList.add('hide'); }
+    else{ hint.classList.remove('hide'); }
+  }, {passive:true});
 }
 
 /* ====== 学习计时器 ====== */

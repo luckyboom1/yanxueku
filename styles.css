@@ -546,10 +546,11 @@ body.modal-open #content{overflow:hidden}
 /* 向下滚动引导：三箭头弹跳 + 点击淡出消失 */
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .gate-scroll-hint{
-  text-align:center;padding-bottom:28px;cursor:pointer;user-select:none;flex-shrink:0;
-  opacity:1;transition:opacity .3s,transform .3s;
+  position:fixed;bottom:32px;left:50%;transform:translateX(-50%);z-index:50;
+  text-align:center;cursor:pointer;user-select:none;
+  opacity:1;transition:opacity .35s,transform .35s;
 }
-.gate-scroll-hint.hide{opacity:0;transform:translateY(10px);pointer-events:none}
+.gate-scroll-hint.hide{opacity:0;transform:translateX(-50%) translateY(12px);pointer-events:none}
 .gate-scroll-label{
   display:block;font-size:14px;font-weight:500;
   color:rgba(255,255,255,.55);margin-bottom:10px;
