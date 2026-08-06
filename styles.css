@@ -539,8 +539,11 @@ body.modal-open #content{overflow:hidden}
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   box-shadow:0 24px 64px rgba(0,0,0,.4);
   animation:gateCardIn .6s var(--ease-out-expo) both;
-  transition:border-color .3s,box-shadow .4s;
+  transition:border-color .3s,box-shadow .4s,transform .3s var(--ease-out-quart);
   overflow-wrap:break-word;word-break:break-word;
+}
+#login-gate .gate-card:hover{
+  transform:scale(1.01);
 }
 #login-gate .gate-card:focus-within{
   border-color:rgba(129,140,248,.3);
@@ -600,7 +603,7 @@ body.modal-open #content{overflow:hidden}
   animation-delay:calc(var(--i,0)*60ms);
 }
 .gate-showcase-card:hover{
-  transform:translateY(-4px);
+  transform:translateY(-4px) scale(1.02);
   background:rgba(255,255,255,.06);
   border-color:rgba(129,140,248,.25);
   box-shadow:0 16px 40px rgba(0,0,0,.35);
@@ -691,7 +694,7 @@ body.modal-open #content{overflow:hidden}
   display:flex;align-items:center;justify-content:center;font-size:18px;
   transition:transform .25s,background .25s;
 }
-#login-gate .gate-feat:hover .gf-icon{transform:translateY(-2px);background:rgba(255,255,255,.14)}
+#login-gate .gate-feat:hover .gf-icon{transform:translateY(-2px) scale(1.08);background:rgba(255,255,255,.14)}
 #login-gate .gate-feat:hover{color:rgba(255,255,255,.85)}
 /* 特性 tooltip */
 #login-gate .gate-feat::after{
