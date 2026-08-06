@@ -1122,10 +1122,10 @@ function renderGate(){
       // 首屏：Hero 卡片 + 滚动箭头（占满一整屏）
       '<div class="gate-hero">'+
       '<div class="gate-card">'+
-        '<div class="gate-logo">研</div>'+
-        '<h2>研学库 · 考研专业课学习系统</h2>'+
-        '<div class="gate-subtitle">基于艾宾浩斯遗忘曲线的智能复习工具<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
-        '<div class="gate-features">'+
+        '<div class="gate-logo gate-stagger">研</div>'+
+        '<h2 class="gate-stagger">研学库 · 考研专业课学习系统</h2>'+
+        '<div class="gate-subtitle gate-stagger">基于艾宾浩斯遗忘曲线的智能复习工具<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
+        '<div class="gate-features gate-stagger">'+
           '<div class="gate-feat" data-tip="基于艾宾浩斯遗忘曲线\n智能排期，在遗忘临界点\n精准推送复习卡片">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
           '<div class="gate-feat" data-tip="10大热门考研专业课\n505张真实知识点卡片\n打开即用，无需手动录入">'+
@@ -1135,11 +1135,11 @@ function renderGate(){
           '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
-        '<div class="gate-legal">'+
-          '<label><input type="checkbox" id="gate-agree" style="margin-right:6px">'+
+        '<div class="gate-legal gate-stagger">'+
+          '<label><input type="checkbox" id="gate-agree">'+
           '我已阅读并同意 <a href="terms.html" target="_blank" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" onclick="event.stopPropagation()">隐私政策</a></label>'+
         '</div>'+
-        '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
+        '<button class="gate-btn gate-stagger" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
       '<div class="gate-scroll-indicator" onclick="document.querySelector(\'.gate-features-section\').scrollIntoView({behavior:\'smooth\'})" title="向下滚动"></div>'+
       '</div>'+ // 关闭 gate-hero
