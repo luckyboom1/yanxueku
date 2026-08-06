@@ -461,38 +461,30 @@ body.modal-open #content{overflow:hidden}
   --ease-out-quart: cubic-bezier(0.25,1,0.5,1);
   --ease-in-out-back: cubic-bezier(0.65,0,0.35,1);
   position:fixed;inset:0;z-index:1000;display:block;padding:0;
-  background:linear-gradient(135deg,#0a0826,#1a1050,#2d1b69,#1e1048,#0a0826,#281558,#1a1050,#0a0826);
-  background-size:400% 400%;
-  animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
+  background:#0a0826;
 }
-@keyframes gateBgShift{
-  0%{background-position:0% 50%}
-  25%{background-position:100% 0%}
-  50%{background-position:100% 100%}
-  75%{background-position:0% 100%}
-  100%{background-position:0% 50%}
-}
-/* 极光光晕（保留静态位置，颜色由 JS 动态控制） */
+/* 双层渐变呼吸 — opacity 动画走 GPU 合成，不触发 paint */
 #login-gate::before{
-  content:'';position:absolute;left:-150px;top:-150px;width:700px;height:550px;
-  background:radial-gradient(ellipse,rgba(99,180,255,.16) 0%,rgba(139,92,246,.08) 40%,transparent 70%);
-  mix-blend-mode:screen;pointer-events:none;
-  animation:gateAuroraFloat 14s ease-in-out infinite;
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(135deg,#1a1050,#2d1b69,#1e1048,#281558,#1a1050);
+  background-size:200% 200%;
+  opacity:.6;animation:gateBreatheA 12s var(--ease-in-out-back) infinite;
 }
 #login-gate::after{
-  content:'';position:absolute;right:-150px;bottom:-120px;width:600px;height:500px;
-  background:radial-gradient(ellipse,rgba(236,73,153,.10) 0%,rgba(147,51,234,.06) 45%,transparent 70%);
-  mix-blend-mode:screen;pointer-events:none;
-  animation:gateAuroraFloat 16s ease-in-out infinite reverse;
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(225deg,#0a0826,#1e1048,#2d1b69,#1a1050,#0a0826);
+  background-size:200% 200%;
+  opacity:.4;animation:gateBreatheB 16s var(--ease-in-out-back) infinite;
 }
-@keyframes gateAuroraFloat{
-  0%{transform:translate(0,0) scale(1)}
-  25%{transform:translate(40px,20px) scale(1.06)}
-  50%{transform:translate(-20px,40px) scale(1.02)}
-  75%{transform:translate(-35px,-15px) scale(1.08)}
-  100%{transform:translate(0,0) scale(1)}
+@keyframes gateBreatheA{
+  0%,100%{opacity:.35}
+  50%{opacity:.7}
+}
+@keyframes gateBreatheB{
+  0%,100%{opacity:.55}
+  50%{opacity:.15}
 }
 /* 浮动粒子 */
 .gate-particle{
