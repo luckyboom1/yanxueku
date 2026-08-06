@@ -1132,6 +1132,7 @@ function renderGate(){
         '</div>'+
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
+      '<div class="gate-scroll-indicator"></div>'+
       '</div>'+ // 关闭 gate-hero
       // 功能展示区（第二屏）
       '<div class="gate-features-section">'+

@@ -466,8 +466,7 @@ body.modal-open #content{overflow:hidden}
   animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  scroll-snap-type:y proximity;
-  scroll-behavior:smooth;
+  scroll-snap-type:y mandatory;
 }
 @keyframes gateBgShift{
   0%{background-position:0% 50%}
@@ -556,6 +555,18 @@ body.modal-open #content{overflow:hidden}
   margin:0 auto 20px;box-shadow:0 12px 32px rgba(99,102,241,.4);
 }
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+/* 滚动指示器 — hero 底部居中 */
+.gate-scroll-indicator{
+  flex-shrink:0;width:28px;height:28px;margin:0 auto 12px;
+  border-right:2px solid rgba(255,255,255,.25);
+  border-bottom:2px solid rgba(255,255,255,.25);
+  transform:rotate(45deg);
+  animation:gateChevron 2s var(--ease-out-expo) infinite;
+}
+@keyframes gateChevron{
+  0%,100%{transform:rotate(45deg) translate(0,0);opacity:.3}
+  50%{transform:rotate(45deg) translate(4px,4px);opacity:.7}
+}
 /* 功能展示区 */
 .gate-features-section{
   max-width:1100px;margin:0 auto;padding:80px 20px 80px;
