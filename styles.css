@@ -466,8 +466,7 @@ body.modal-open #content{overflow:hidden}
   animation:gateBgShift 20s var(--ease-in-out-back) infinite;
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
-  scroll-snap-type:y mandatory;
-  will-change:background-position;transform:translateZ(0);
+  scroll-behavior:smooth;
 }
 @keyframes gateBgShift{
   0%{background-position:0% 50%}
@@ -530,23 +529,23 @@ body.modal-open #content{overflow:hidden}
 /* 首屏：占满一整屏，居中 hero 卡片 + 底部箭头 */
 .gate-hero{
   min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
-  padding:12px;scroll-snap-align:start;scroll-snap-stop:always;
+  padding:12px;
 }
 /* 卡片 */
 #login-gate .gate-card{
   position:relative;z-index:10;width:100%;max-width:500px;box-sizing:border-box;
   margin:auto;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  background:rgba(10,8,38,.6);border:1px solid rgba(255,255,255,.1);
   border-radius:24px;padding:36px 28px;text-align:center;
-  backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
-  box-shadow:0 24px 64px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  box-shadow:0 24px 64px rgba(0,0,0,.4);
   animation:gateCardIn .6s var(--ease-out-expo) both;
   transition:border-color .3s,box-shadow .4s;
   overflow-wrap:break-word;word-break:break-word;
 }
 #login-gate .gate-card:focus-within{
-  border-color:rgba(129,140,248,.35);
-  box-shadow:0 24px 64px rgba(0,0,0,.4),0 0 0 3px rgba(129,140,248,.15),inset 0 1px 0 rgba(255,255,255,.08);
+  border-color:rgba(129,140,248,.3);
+  box-shadow:0 24px 64px rgba(0,0,0,.4),0 0 0 3px rgba(129,140,248,.1);
 }
 #login-gate .gate-logo{
   width:64px;height:64px;border-radius:18px;
@@ -581,7 +580,6 @@ body.modal-open #content{overflow:hidden}
 /* 功能展示区 */
 .gate-features-section{
   max-width:1100px;margin:0 auto;padding:80px 20px 80px;
-  scroll-snap-align:start;
 }
 .gate-section-title{
   text-align:center;font-size:30px;font-weight:700;color:#fff;margin:0 0 16px;
