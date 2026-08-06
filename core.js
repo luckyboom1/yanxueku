@@ -1118,10 +1118,14 @@ function renderGate(){
         '<h2>研学库 · 考研专业课学习系统</h2>'+
         '<div class="gate-subtitle">基于艾宾浩斯遗忘曲线的智能复习工具<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
         '<div class="gate-features">'+
-          '<div class="gate-feat"><div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
-          '<div class="gate-feat"><div class="gf-icon">📚</div><span>10科505卡片</span></div>'+
-          '<div class="gate-feat"><div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
-          '<div class="gate-feat"><div class="gf-icon">☁️</div><span>云端同步</span></div>'+
+          '<div class="gate-feat" data-tip="基于艾宾浩斯遗忘曲线\n智能排期，在遗忘临界点\n精准推送复习卡片">'+
+            '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
+          '<div class="gate-feat" data-tip="10大热门考研专业课\n505张真实知识点卡片\n打开即用，无需手动录入">'+
+            '<div class="gf-icon">📚</div><span>10科505卡片</span></div>'+
+          '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
+            '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
+          '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n离线自动回退本地模式">'+
+            '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
         '<button class="gate-btn" onclick="openAuthModal()">👤 登录 / 注册</button>'+
       '</div>';
