@@ -762,10 +762,7 @@ function renderMine(){
     <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-3)">研学库 <b>${APP_VERSION}</b> · 数据格式 v${DATA_VERSION}</div>`;
 }
 
-/* ================= 启动 ================= */
-applyTheme(themeMode);
-load();
-render();
+// Note: boot sequence (applyTheme + load + render) runs from core.js
 
 /* ====== 按钮波纹 ====== */
 document.addEventListener('click', function(e){
@@ -877,7 +874,7 @@ function renderPubLibDetail(subjectId){
       html += '<div class="plib-kw-list">';
       cards.forEach(function(c){
         var tagHTML = (c.tags||[]).map(function(t){ return '<span class="tag tag-blue" style="font-size:10.5px;padding:2px 8px">'+esc(t)+'</span>'; }).join('');
-        html += '<div class="plib-kw-item" onclick="showPubLibKwPreview(\''+esc(c.title)+'\',\''+esc(c.content.replace(/\n/g,'<br>').replace(/'/g,'\\\'')) +'\')">' +
+        html += '<div class="plib-kw-item" data-preview-title="'+escAttr(c.title)+'" data-preview-content="'+escAttr(c.content)+'" onclick="showPubLibKwPreview(this)">' +
           '<div class="title">'+esc(c.title)+'</div>' +
           '<div style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px">'+esc(c.content.slice(0,60))+'…</div>' +
           (tagHTML ? '<div class="tags">'+tagHTML+'</div>' : '') +
@@ -891,12 +888,14 @@ function renderPubLibDetail(subjectId){
   });
 }
 
-function showPubLibKwPreview(title, content){
+function showPubLibKwPreview(el){
+  var title = el.getAttribute('data-preview-title') || '';
+  var content = el.getAttribute('data-preview-content') || '';
   openModal(
     '<button class="modal-close" onclick="closeModal()">✕</button>' +
     '<div class="plib-kw-preview">' +
-      '<h4>'+title+'</h4>' +
-      '<div class="content">'+content+'</div>' +
+      '<h4>'+esc(title)+'</h4>' +
+      '<div class="content">'+md(content)+'</div>' +
     '</div>'
   );
 }
@@ -934,4 +933,49 @@ function importPubLibSubject(subjectId){
     _analytics.packImported(addedKw, 0);
     toast('导入完成 ✅ 新增 '+addedKw+' 张卡片'+(skippedKw?'，跳过 '+skippedKw+' 张重复':'')+'，已加入今日复习队列','ok');
   });
+}
+
+// ===== Post-boot wrappers（在目标函数定义后执行） =====
+// 翻卡后默认开启挖空模式
+if(typeof renderFlashcard === 'function'){
+  var _origRF = renderFlashcard;
+  renderFlashcard = function(){
+    _origRF();
+    blanksMode = false;
+    blankAnswers = [];
+    _deferRaf(function(){
+      var fc = document.getElementById('fcard');
+      var back = document.querySelector('.fc-back');
+      if(fc){
+        fc.addEventListener('click', function autoBlanks(){
+          if(fc.classList.contains('flipped')){
+            toggleBlanksMode();
+            fc.removeEventListener('click', autoBlanks);
+          }
+        }, {once: false});
+      }
+      if(back && !back.querySelector('.blanks-toggle')){
+        var btn = document.createElement('div');
+        btn.className = 'blank-count';
+        btn.style.cssText = 'cursor:pointer;color:var(--primary);font-weight:600;margin-bottom:8px';
+        btn.textContent = '🔍 挖空模式（关闭）';
+        btn.onclick = function(e){
+          e.stopPropagation();
+          toggleBlanksMode();
+          this.textContent = blanksMode ? '🔍 挖空模式（开启中）' : '🔍 挖空模式（关闭）';
+        };
+        back.insertBefore(btn, back.firstChild);
+      }
+    });
+  };
+}
+
+// 知识卡片收藏按钮
+if(typeof kwCard === 'function'){
+  var _origKC = kwCard;
+  kwCard = function(k){
+    var on = _starred.has(k.id);
+    var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
+    return _origKC(k).replace('>', '>' + star);
+  };
 }

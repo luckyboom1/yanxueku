@@ -81,6 +81,9 @@ const APP_VERSION = 'v2.2.0';   // v2.2: 模块化拆分
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
+// === 分析埋点：防崩溃存根 ===
+var _analytics = _analytics || { page:function(){}, quizStart:function(){}, quizComplete:function(){}, reviewStart:function(){}, reviewComplete:function(){}, kwCreated:function(){}, kwImported:function(){}, packExported:function(){}, packImported:function(){}, login:function(){}, register:function(){}, dataExport:function(){}, dataImport:function(){} };
+
 // 计算连续学习天数：今天尚未学习时不计入中断，从最近一个有学习记录的日期开始向前统计
 function calcStreak(today, studyLog){
   let startOffset = 0;
@@ -107,8 +110,10 @@ function uid(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).sl
 let _svgIdCounter = 0;
 function uniqueSvgId(prefix){ return (prefix||'sg') + '-' + (++_svgIdCounter) + '-' + Date.now().toString(36); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+// HTML 属性值安全转义：用于 data-* 属性，防止属性值中引号撕裂属性边界
+function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
 // 安全色值校验：仅允许 #hex，防止颜色字段被注入恶意 CSS（存储型 CSS 注入防护）
-function safeColor(c){ return /^#[0-9a-fA-F]{3,8}$/.test(String(c==null?'':c)) ? c : '#6366f1'; }
+function safeColor(c){ var s = String(c==null?'':c); return /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(s) ? s : '#6366f1'; }
 function md(s){
   return esc(s)
     .replace(/\*\*([^*]+)\*\*/g,'<b>$1</b>')
@@ -1226,41 +1231,6 @@ function toggleBlanksMode(){
   }
 }
 
-// 翻卡后默认开启挖空模式
-const _origRF = renderFlashcard;
-renderFlashcard = function(){
-  _origRF();
-  blanksMode = false;
-  blankAnswers = [];
-  // 单次设置：autoBlanks 监听 + 挖空切换按钮
-  _deferRaf(() => {
-    const fc = document.getElementById('fcard');
-    const back = document.querySelector('.fc-back');
-    // 自动挖空
-    if(fc){
-      fc.addEventListener('click', function autoBlanks(){
-        if(fc.classList.contains('flipped')){
-          toggleBlanksMode();
-          fc.removeEventListener('click', autoBlanks);
-        }
-      }, {once: false});
-    }
-    // 挖空切换按钮
-    if(back && !back.querySelector('.blanks-toggle')){
-      const btn = document.createElement('div');
-      btn.className = 'blank-count';
-      btn.style.cssText = 'cursor:pointer;color:var(--primary);font-weight:600;margin-bottom:8px';
-      btn.textContent = '🔍 挖空模式（关闭）';
-      btn.onclick = function(e){
-        e.stopPropagation();
-        toggleBlanksMode();
-        this.textContent = blanksMode ? '🔍 挖空模式（开启中）' : '🔍 挖空模式（关闭）';
-      };
-      back.insertBefore(btn, back.firstChild);
-    }
-  });
-};
-
 // --- 考研倒计时 ---
 function getDecemberThirdSaturday(year){
   // 12月第三个周六：12月15日 + (6 - 12月1日星期几 + 7) % 7
@@ -1484,12 +1454,5 @@ async function loadDashLeader(){
     }).join('');
   }catch(e){}
 }
-var ___origKC = kwCard;
-kwCard = function(k){
-  var on = _starred.has(k.id);
-  var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
-  return ___origKC(k).replace('>', '>' + star);
-};
-
 
 // 安全兜底：3秒后强制隐藏加载屏

@@ -121,7 +121,7 @@ function answerInputQ(){
   const inputId = q.type === 'fill' ? 'q-fill-input' : 'q-short-input';
   const inputEl = document.getElementById(inputId);
   const btnEl = document.querySelector('#q-opts .q-submit-btn');
-  if (!inputEl || inputEl.classList.contains('locked')) return;
+  if (!inputEl || inputEl.classList.contains('locked') || inputEl.classList.contains('wrong-locked')) return;
 
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
@@ -279,125 +279,7 @@ function redoWrongInput(qid) {
   const q = db.questions.find(function(x){ return x.id === qid; });
   const box = document.getElementById('wq-' + qid);
   const inputEl = document.getElementById('wq-input-' + qid);
-  if (!inputEl || inputEl.classList.contains('locked')) return;
-  var userAnswer = inputEl.value.trim();
-  if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
-
-  var correct = false;
-  var stdAnswer = String(q.answer || '');
-  if (q.type === 'fill') {
-    correct = userAnswer.replace(/\s+/g,'').toLowerCase() === stdAnswer.replace(/\s+/g,'').toLowerCase();
-  } else {
-    var keywords = stdAnswer.split(';').filter(function(k){ return k.trim(); });
-    if (keywords.length === 0) {
-      correct = userAnswer.length >= 5;
-    } else {
-      var matched = 0;
-      var lowerUser = userAnswer.toLowerCase();
-      keywords.forEach(function(kw){
-        if (lowerUser.indexOf(kw.trim().toLowerCase()) !== -1) matched++;
-      });
-      correct = matched / keywords.length >= 0.5;
-    }
-  }
-
-  inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
-
-  db.quizRecords.push({qid: qid, correct: correct, date: todayStr()});
-  addStudy(1);
-  save();
-
-  var fb = box.querySelector('.wq-feedback');
-  var extraHtml = '';
-  if (q.type === 'short') {
-    extraHtml = '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 参考答案：</b>' + esc(stdAnswer.replace(/;/g,'；')) + '</div>';
-  } else if (q.type === 'fill') {
-    extraHtml = '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 正确答案：</b>' + esc(stdAnswer) + '</div>';
-  }
-
-  if (correct) {
-    fb.innerHTML = '<div class="q-explain" style="border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06)"><b>🎉 答对了！</b>本题已移出错题本。<br><b>📖 解析：</b>' + md(q.explanation) + '</div>' + extraHtml;
-    toast('错题攻克成功，已移出 🎉','ok');
-    _defer(function(){
-      box.style.transition = 'all .4s'; box.style.opacity = '0'; box.style.transform = 'translateX(30px)';
-      _defer(function(){ renderWrong(); }, 400);
-    }, 1200);
-  } else {
-    fb.innerHTML = '<div class="q-explain"><b>💪 再想想！</b>仍留在错题本中。<br><b>📖 解析：</b>' + md(q.explanation) + '</div>' + extraHtml;
-  }
-  renderBadges();
-}
-
-/* ================= 错题本 ================= */
-function renderWrong(){
-  if(!db||!db.questions) return;
-  const el = document.getElementById('view-wrong');
-  const list = wrongList();
-  if(!list.length){
-    el.innerHTML = `<div class="empty-state"><div class="big">✨</div><h3>错题本空空如也</h3><p>去「刷题自测」练练手，答错的题会自动收录到这里</p>
-      <button class="btn btn-primary" style="margin-top:18px" onclick="switchView('quiz')">去刷题</button></div>`;
-    return;
-  }
-  el.innerHTML = `
-    <div class="panel" style="display:flex;align-items:center;gap:12px;padding:16px 22px">
-      <span style="font-size:22px">📕</span>
-      <div><b>${list.length} 道错题待攻克</b><div style="font-size:12px;color:var(--text-3)">重做正确后将自动移出错题本</div></div>
-    </div>
-    ${list.map(q=>{
-      const s = getSubject(q.subjectId);
-      var answerArea = '';
-      if (q.type === 'single' || q.type === 'judge') {
-        const opts = q.type==='judge'? ['正确','错误'] : q.options;
-        answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('');
-      } else {
-        answerArea = `<div style="display:flex;gap:8px;align-items:stretch">
-          <input type="text" class="q-input" id="wq-input-${q.id}" placeholder="${q.type==='fill'?'请输入答案…':'请输入你的回答…'}" style="flex:1;margin-bottom:0">
-          <button class="q-submit-btn" onclick="redoWrongInput('${q.id}')" style="margin-top:0;white-space:nowrap">✓ 提交</button>
-        </div>`;
-      }
-      return `<div class="row-item" id="wq-${q.id}">
-        <div class="q-meta">
-          <span class="q-type ${q.type}">${typeIcon(q)} ${typeLabel(q)}</span>
-          <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(q.chapter)}</span>
-        </div>
-        <div class="q-text">${esc(q.question)}</div>
-        <div>${answerArea}</div>
-        <div class="wq-feedback"></div>
-      </div>`;
-    }).join('')}`;
-}
-function redoWrong(qid, i){
-  const q = db.questions.find(x=>x.id===qid);
-  const box = document.getElementById('wq-'+qid);
-  const optEls = box.querySelectorAll('.q-opt');
-  if(optEls[0].classList.contains('locked')) return;
-  const correct = i === q.answer;
-  optEls.forEach((el,j)=>{
-    el.classList.add('locked');
-    if(j===q.answer) el.classList.add('correct');
-    else if(j===i) el.classList.add('wrong');
-  });
-  db.quizRecords.push({qid, correct, date:todayStr()});
-  addStudy(1);
-  save();
-  const fb = box.querySelector('.wq-feedback');
-  if(correct){
-    fb.innerHTML = `<div class="q-explain" style="border-color:rgba(16,185,129,.35);background:rgba(16,185,129,.06)"><b>🎉 答对了！</b>本题已移出错题本。<br><b>📖 解析：</b>${md(q.explanation)}</div>`;
-    toast('错题攻克成功，已移出 🎉','ok');
-    _defer(()=>{ box.style.transition='all .4s'; box.style.opacity='0'; box.style.transform='translateX(30px)';
-      _defer(()=>renderWrong(), 400); }, 1200);
-  }else{
-    fb.innerHTML = `<div class="q-explain"><b>💪 再想想！</b>仍留在错题本中。<br><b>📖 解析：</b>${md(q.explanation)}</div>`;
-  }
-  renderBadges();
-}
-
-/* 错题本中填空/简答题的输入提交判分 */
-function redoWrongInput(qid) {
-  const q = db.questions.find(function(x){ return x.id === qid; });
-  const box = document.getElementById('wq-' + qid);
-  const inputEl = document.getElementById('wq-input-' + qid);
-  if (!inputEl || inputEl.classList.contains('locked')) return;
+  if (!inputEl || inputEl.classList.contains('locked') || inputEl.classList.contains('wrong-locked')) return;
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
 
