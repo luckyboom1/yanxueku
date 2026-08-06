@@ -1133,10 +1133,11 @@ function renderGate(){
           '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n离线自动回退本地模式">'+
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
-        '<button class="gate-btn" onclick="openAuthModal()">👤 登录 / 注册</button>'+
         '<div class="gate-legal">'+
-          '继续即表示同意 <a href="terms.html" target="_blank">服务条款</a> 和 <a href="privacy.html" target="_blank">隐私政策</a>'+
+          '<label><input type="checkbox" id="gate-agree" style="margin-right:6px">'+
+          '我已阅读并同意 <a href="terms.html" target="_blank" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" onclick="event.stopPropagation()">隐私政策</a></label>'+
         '</div>'+
+        '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>';
     document.body.appendChild(g);
   }
@@ -1145,6 +1146,11 @@ function renderGate(){
 function hideGate(){
   const g = document.getElementById('login-gate');
   if(g) g.style.display = 'none';
+}
+function gateLogin(){
+  var cb = document.getElementById('gate-agree');
+  if(!cb || !cb.checked){ toast('请先阅读并勾选同意服务条款和隐私政策','warn'); return; }
+  openAuthModal();
 }
 
 /* ====== 学习计时器 ====== */

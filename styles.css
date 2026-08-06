@@ -577,10 +577,16 @@ body.modal-open #content{overflow:hidden}
 #login-gate .gate-card.loading{animation:none;opacity:.6;pointer-events:none}
 #login-gate .gate-card.loading .gate-btn{opacity:.5;pointer-events:none}
 #login-gate .gate-legal{
-  text-align:center;margin-top:16px;font-size:11px;color:rgba(255,255,255,.4);line-height:1.5;
+  text-align:center;margin-bottom:18px;font-size:12px;color:rgba(255,255,255,.45);line-height:1.5;
 }
-#login-gate .gate-legal a{color:rgba(255,255,255,.55);text-decoration:underline;transition:color .2s}
-#login-gate .gate-legal a:hover{color:rgba(255,255,255,.8)}
+#login-gate .gate-legal label{
+  display:inline-flex;align-items:center;cursor:pointer;gap:6px;
+}
+#login-gate .gate-legal input[type=checkbox]{
+  width:15px;height:15px;accent-color:#818cf8;cursor:pointer;flex-shrink:0;
+}
+#login-gate .gate-legal a{color:rgba(255,255,255,.6);text-decoration:underline;transition:color .2s}
+#login-gate .gate-legal a:hover{color:rgba(255,255,255,.9)}
 
 @media(max-width:768px){
   #login-gate .gate-card{padding:36px 24px}
