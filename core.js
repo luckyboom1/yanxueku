@@ -1113,6 +1113,12 @@ function renderGate(){
       '<div class="gate-geo gate-geo-square" style="right:12%;top:25%"></div>'+
       '<div class="gate-geo gate-geo-triangle" style="left:15%;bottom:22%"></div>'+
       '<div class="gate-geo gate-geo-ring" style="right:10%;bottom:30%;width:60px;height:60px"></div>'+
+      '<div class="gate-particle" style="left:25%;top:15%;width:4px;height:4px;animation-delay:0s"></div>'+
+      '<div class="gate-particle" style="left:70%;top:30%;width:3px;height:3px;animation-delay:1.2s"></div>'+
+      '<div class="gate-particle" style="left:40%;top:70%;width:5px;height:5px;animation-delay:2.5s"></div>'+
+      '<div class="gate-particle" style="right:20%;top:60%;width:3px;height:3px;animation-delay:0.7s"></div>'+
+      '<div class="gate-particle" style="left:60%;top:80%;width:4px;height:4px;animation-delay:1.8s"></div>'+
+      '<div class="gate-particle" style="right:30%;top:12%;width:5px;height:5px;animation-delay:3.1s"></div>'+
       '<div class="gate-card">'+
         '<div class="gate-logo">研</div>'+
         '<h2>研学库 · 考研专业课学习系统</h2>'+
@@ -1130,31 +1136,6 @@ function renderGate(){
         '<button class="gate-btn" onclick="openAuthModal()">👤 登录 / 注册</button>'+
       '</div>';
     document.body.appendChild(g);
-
-    // 鼠标追踪视差效果
-    var glow = document.createElement('div');
-    glow.className = 'cursor-glow';
-    g.appendChild(glow);
-    g.addEventListener('mousemove', function(e){
-      var rect = g.getBoundingClientRect();
-      var x = (e.clientX - rect.left) / rect.width;   // 0~1
-      var y = (e.clientY - rect.top) / rect.height;
-      // 更新 CSS 变量驱动极光移动
-      g.style.setProperty('--mx', x);
-      g.style.setProperty('--my', y);
-      // 光斑跟随鼠标
-      glow.style.left = (x * 100) + '%';
-      glow.style.top = (y * 100) + '%';
-      // 几何装饰视差偏移（幅度依次增大产生层次感）
-      var geos = g.querySelectorAll('.gate-geo');
-      if(geos[0]) geos[0].style.transform = 'translate('+((x-0.5)*18)+'px,'+((y-0.5)*18)+'px)';
-      if(geos[1]) geos[1].style.transform = 'rotate(20deg) translate('+((x-0.5)*-14)+'px,'+((y-0.5)*-14)+'px)';
-      if(geos[2]) geos[2].style.transform = 'translate('+((x-0.5)*-22)+'px,'+((y-0.5)*-22)+'px)';
-      if(geos[3]) geos[3].style.transform = 'translate('+((x-0.5)*12)+'px,'+((y-0.5)*12)+'px)';
-      // 卡片微倾斜
-      var card = g.querySelector('.gate-card');
-      if(card) card.style.transform = 'rotateY('+((x-0.5)*2)+'deg) rotateX('+((0.5-y)*1.5)+'deg)';
-    });
   }
   g.style.display = 'flex';
 }
