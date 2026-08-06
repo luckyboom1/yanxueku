@@ -1141,15 +1141,6 @@ function renderGate(){
         '</div>'+
         '<button class="gate-btn" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
-      // 引导箭头（在 hero 内部，随滚动自然消失，回到首屏恢复）
-      '<div class="gate-scroll-hint" id="gate-scroll-hint" onclick="document.querySelector(\'.gate-features-section\').scrollIntoView({behavior:\'smooth\'})">'+
-        '<span class="gate-scroll-label">下划探索更多功能</span>'+
-        '<div class="gate-scroll-arrows">'+
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 4v13"/></svg>'+
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 4v13"/></svg>'+
-          '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 13l5 5 5-5"/><path d="M12 4v13"/></svg>'+
-        '</div>'+
-      '</div>'+
       '</div>'+ // 关闭 gate-hero
       // 功能展示区（第二屏）
       '<div class="gate-features-section">'+
