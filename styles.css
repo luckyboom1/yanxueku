@@ -467,6 +467,7 @@ body.modal-open #content{overflow:hidden}
   overflow-y:auto;overflow-x:hidden;
   -webkit-overflow-scrolling:touch;
   scroll-snap-type:y mandatory;
+  will-change:background-position;transform:translateZ(0);
 }
 @keyframes gateBgShift{
   0%{background-position:0% 50%}
