@@ -326,6 +326,7 @@ async function load(){
       }
     }catch(e){ console.warn('Supabase load failed:', e.message); _currentUser = null; }
   }
+  try{ var lr = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('yanxueku_v1'); if(lr){ db = migrateData(JSON.parse(lr)); _loadResolve(db); setupRealtimeSync(); return; } }catch(e){}
   db = seedData();
   try{ await save(); }catch(e){ console.warn('save failed:', e.message); }
   _loadResolve(db);
@@ -347,15 +348,17 @@ function _setSync(t, warn){
 function doSave(){
   _savePending = false;
   db._schemaVersion = DATA_VERSION;
+  // localStorage 始终写入作为降级备份（无 UI 提示，用户无感知）
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
   if(sb && _currentUser){
     _setSync('同步中…');
     try{
       sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() })
         .then(()=> _setSync('已保存'))
         .catch(()=> _setSync('保存失败，请检查网络', true));
-    }catch(e){ console.warn('Supabase save failed'); _setSync('保存失败，请检查网络', true); }
+    }catch(e){ _setSync('保存失败，请检查网络', true); }
   } else {
-    _setSync('未登录，无法保存', true);
+    _setSync('未登录，无法云端保存', true);
   }
 }
 function save(){
@@ -504,10 +507,10 @@ function renderBadges(){
   if(!db||!db.knowledge) return;
   const due = dueList().length;
   const b1 = document.getElementById('badge-due');
-  b1.style.display = due? 'flex':'none'; b1.textContent = due;
+  if(b1){ b1.style.display = due? 'flex':'none'; b1.textContent = due; }
   const wn = wrongList().length;
   const b2 = document.getElementById('badge-wrong');
-  b2.style.display = wn? 'flex':'none'; b2.textContent = wn;
+  if(b2){ b2.style.display = wn? 'flex':'none'; b2.textContent = wn; }
 }
 
 /* ================= 仪表盘 ================= */

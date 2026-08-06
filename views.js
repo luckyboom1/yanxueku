@@ -499,7 +499,9 @@ function confirmCardsImport(){
 }
 
 /* ====== v5: 用户系统 + 排行榜 + 收藏 ====== */
-let _starred = new Set(JSON.parse(localStorage.getItem('yanxueku_stars')||'[]'));
+var _starredData = '[]';
+try{ _starredData = localStorage.getItem('yanxueku_stars') || '[]'; }catch(e){}
+var _starred = new Set(JSON.parse(_starredData));
 
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
