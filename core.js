@@ -1195,18 +1195,6 @@ function renderGate(){
         '</div>'+
       '</div>';
     document.body.appendChild(g);
-
-    // JS 驱动背景渐变动画
-    var bgPhase = 0;
-    function animGateBg(){
-      bgPhase += 0.0003; if(bgPhase>1) bgPhase-=1;
-      var t = bgPhase * 4;
-      var s = Math.sin(bgPhase*Math.PI*2), c = Math.cos(bgPhase*Math.PI*2);
-      var r = Math.round(10 + s*8), gv = Math.round(8 + c*10), b = Math.round(38 + s*12);
-      g.style.background = 'radial-gradient(ellipse at 30% 20%, rgba(99,180,255,'+(0.08+s*0.04).toFixed(2)+') 0%, transparent 55%), radial-gradient(ellipse at 65% 75%, rgba(236,73,153,'+(0.06+c*0.03).toFixed(2)+') 0%, transparent 55%), linear-gradient(180deg, rgb('+(r-2)+','+(gv-1)+','+(b-2)+'), rgb('+r+','+gv+','+b+'))';
-      if(g.style.display !== 'none') requestAnimationFrame(animGateBg);
-    }
-    requestAnimationFrame(animGateBg);
   }
   g.style.display = 'block';
   g.style.overflowY = 'auto';

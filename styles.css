@@ -457,9 +457,18 @@ body.modal-open #content{overflow:hidden}
 
 /* ---------- 登录首页 ---------- */
 #login-gate{
-  position:fixed;inset:0;z-index:1000;display:block;padding:20px;
-  background:#0a0826; /* 默认色，JS 驱动渐变 */
+  position:fixed;inset:0;z-index:1000;display:block;padding:0;
+  background:linear-gradient(135deg,#0a0826,#1a1050,#2d1b69,#1e1048,#0a0826,#281558,#1a1050,#0a0826);
+  background-size:400% 400%;
+  animation:gateBgShift 20s ease-in-out infinite;
   overflow-y:auto;overflow-x:hidden;
+}
+@keyframes gateBgShift{
+  0%{background-position:0% 50%}
+  25%{background-position:100% 0%}
+  50%{background-position:100% 100%}
+  75%{background-position:0% 100%}
+  100%{background-position:0% 50%}
 }
 /* 极光光晕（保留静态位置，颜色由 JS 动态控制） */
 #login-gate::before{
@@ -514,13 +523,13 @@ body.modal-open #content{overflow:hidden}
 @keyframes gateGeoPulse{0%,100%{border-color:rgba(177,226,255,.2)}50%{border-color:rgba(177,226,255,.45)}}
 /* 首屏：占满一整屏，居中 hero 卡片 + 底部箭头 */
 .gate-hero{
-  min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;
+  min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+  padding:20px; /* hero 内边距替代 #login-gate 的 padding */
 }
 /* 卡片 */
 #login-gate .gate-card{
   position:relative;z-index:10;width:min(92vw,500px);
-  margin:0 auto; /* hero 容器已负责垂直居中 */
+  margin:auto; /* flex 子项中 auto = 垂直居中 */
   background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
   border-radius:28px;padding:48px 40px;text-align:center;
   backdrop-filter:blur(40px);-webkit-backdrop-filter:blur(40px);
@@ -537,8 +546,8 @@ body.modal-open #content{overflow:hidden}
 /* 向下滚动引导 */
 @keyframes gateCardIn{0%{opacity:0;transform:translateY(20px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .gate-scroll-hint{
-  margin-top:auto;padding:0 0 32px;cursor:pointer;user-select:none;
-  animation:gateScrollPulse 2s ease-in-out infinite;
+  text-align:center;padding-bottom:24px;cursor:pointer;user-select:none;
+  animation:gateScrollPulse 2s ease-in-out infinite;flex-shrink:0;
 }
 .gate-scroll-hint span{
   display:block;font-size:13px;color:rgba(255,255,255,.45);margin-bottom:6px;
