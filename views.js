@@ -333,29 +333,29 @@ function donutSVG(dist){
     <circle cx="70" cy="70" r="36" fill="var(--surface)"/></svg>`;
 }
 function drawBarChart(days){
-  const cv = document.getElementById('chart-days');
-  if(!cv) return;
+  const canvas = document.getElementById('chart-days');
+  if(!canvas) return;
   const dpr = window.devicePixelRatio || 1;
-  const W = cv.clientWidth, H = 260;
-  cv.width = W*dpr; cv.height = H*dpr;
-  const ctx = cv.getContext('2d');
+  const chartWidth = canvas.clientWidth, chartHeight = 260;
+  canvas.width = chartWidth*dpr; canvas.height = chartHeight*dpr;
+  const ctx = canvas.getContext('2d');
   ctx.scale(dpr,dpr);
   const dark = document.documentElement.getAttribute('data-theme')==='dark';
   const cText = dark? '#a3a9c9' : '#5a5f7a';
   const cGrid = dark? '#272b47' : '#e6e8f2';
   const max = Math.max(10, ...days.map(d=>d.m));
   const padL = 34, padB = 26, padT = 14, padR = 8;
-  const cw = (W-padL-padR)/days.length;
+  const colWidth = (chartWidth-padL-padR)/days.length;
   // 网格线
   ctx.strokeStyle = cGrid; ctx.fillStyle = cText; ctx.lineWidth = 1;
   ctx.font = '10px sans-serif'; ctx.textAlign = 'right';
   for(let g=0; g<=4; g++){
-    const y = padT + (H-padT-padB)*g/4;
-    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W-padR, y); ctx.stroke();
+    const y = padT + (chartHeight-padT-padB)*g/4;
+    ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(chartWidth-padR, y); ctx.stroke();
     ctx.fillText(Math.round(max*(4-g)/4), padL-6, y+3);
   }
   // 柱子
-  const grad = ctx.createLinearGradient(0,padT,0,H-padB);
+  const grad = ctx.createLinearGradient(0,padT,0,chartHeight-padB);
   grad.addColorStop(0,'#6366f1'); grad.addColorStop(1,'#8b5cf6');
   days.forEach((d,i)=>{
     const bh = d.m/max*(H-padT-padB);
@@ -510,9 +510,9 @@ function confirmCardsImport(){
 }
 
 /* ====== v5: 用户系统 + 排行榜 + 收藏 ====== */
-var _starredData = '[]';
+let _starredData = '[]';
 try{ _starredData = localStorage.getItem('yanxueku_stars') || '[]'; }catch(e){}
-var _starred = new Set(JSON.parse(_starredData));
+let _starred = new Set(JSON.parse(_starredData));
 
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
@@ -930,7 +930,7 @@ function importPubLibSubject(subjectId){
 // ===== Post-boot wrappers（在目标函数定义后执行） =====
 // 翻卡后默认开启挖空模式
 if(typeof renderFlashcard === 'function'){
-  var _origRF = renderFlashcard;
+  const _origRF = renderFlashcard;
   renderFlashcard = function(){
     _origRF();
     blanksMode = false;
@@ -964,7 +964,7 @@ if(typeof renderFlashcard === 'function'){
 
 // 知识卡片收藏按钮
 if(typeof kwCard === 'function'){
-  var _origKC = kwCard;
+  const _origKC = kwCard;
   kwCard = function(k){
     var on = _starred.has(k.id);
     var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
