@@ -81,8 +81,15 @@ const APP_VERSION = 'v2.2.0';   // v2.2: 模块化拆分
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
+/* 共享常量：科目颜色 */
+const SUBJECT_COLORS = ['#6366f1','#e11d48','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#0891b2','#ca8a04','#dc2626','#16a34a','#ef4444','#ec4899','#7c3aed','#14b8a6','#2563eb','#eab308'];
+function nextSubjectColor(){ return SUBJECT_COLORS[db ? db.subjects.length % SUBJECT_COLORS.length : 0]; }
+
+// === 安全 DOM 查询 ===
+function safeGetEl(id){ var el = document.getElementById(id); if(!el) console.warn('[yanxueku] element #'+id+' not found'); return el; }
+
 // === 分析埋点：防崩溃存根 ===
-var _analytics = _analytics || { page:function(){}, quizStart:function(){}, quizComplete:function(){}, reviewStart:function(){}, reviewComplete:function(){}, kwCreated:function(){}, kwImported:function(){}, packExported:function(){}, packImported:function(){}, login:function(){}, register:function(){}, dataExport:function(){}, dataImport:function(){} };
+let _analytics = window._analytics || { page:function(){}, quizStart:function(){}, quizComplete:function(){}, reviewStart:function(){}, reviewComplete:function(){}, kwCreated:function(){}, kwImported:function(){}, packExported:function(){}, packImported:function(){}, login:function(){}, register:function(){}, dataExport:function(){}, dataImport:function(){} };
 
 // 计算连续学习天数：今天尚未学习时不计入中断，从最近一个有学习记录的日期开始向前统计
 function calcStreak(today, studyLog){
@@ -472,13 +479,13 @@ function toggleSidebar(){
     document.getElementById('sidebar').classList.toggle('collapsed');
   }
 }
-var _resizeTimer = 0;
+let _resizeTimer = 0;
 window.addEventListener('resize', ()=>{
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(function(){
     if(window.innerWidth>767){
-      var sb = document.getElementById('sidebar');
-      if(sb) sb.classList.remove('open');
+      var sidebarEl = document.getElementById('sidebar');
+      if(sidebarEl) sidebarEl.classList.remove('open');
       var ov = document.getElementById('sidebar-overlay'); if(ov) ov.remove();
     }
   }, 200);
@@ -958,9 +965,8 @@ function confirmPackImport(){
     var exist = db.subjects.find(function(x){ return x.name === s.name; });
     if (exist) { subjIdMap[s.id] = exist.id; }
     else {
-      var palette = ['#e11d48','#7c3aed','#0891b2','#ca8a04','#16a34a','#dc2626','#2563eb','#6366f1','#10b981','#f59e0b','#ec4899','#14b8a6'];
       var newId = uid();
-      db.subjects.push({id: newId, name: s.name, color: s.color || palette[db.subjects.length % palette.length], exam: s.exam || ''});
+      db.subjects.push({id: newId, name: s.name, color: s.color || nextSubjectColor(), exam: s.exam || ''});
       subjIdMap[s.id] = newId;
     }
   });

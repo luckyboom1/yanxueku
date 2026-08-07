@@ -1,5 +1,23 @@
-/* 研学库 Views v2.1.1 — All render functions: Library, Review, Stats, Mine, Auth */
-/* ================= 知识库 ================= */
+/* 研学库 Views v2.3 — All render functions: Library, Review, Stats, Mine, Auth, PublicLib */
+
+// === 共享辅助：科目创建 + 标题去重 ===
+function findOrCreateSubject(name, exam) {
+  let subj = db.subjects.find(function(s){ return s.name === name; });
+  if (!subj) {
+    subj = { id: uid(), name: name, color: nextSubjectColor(), exam: exam || '' };
+    db.subjects.push(subj);
+  }
+  return subj;
+}
+function deduplicateTitle(title, usedTitles) {
+  let final = title;
+  let n = 2;
+  while (usedTitles.has(final)) { final = title + '\uff08' + n + '\uff09'; n++; }
+  usedTitles.add(final);
+  return final;
+}
+
+// === 知识库 ===
 let _searchTimer = null;
 function debounceSearch(v){ // 搜索防抖：连续输入只触发一次全量渲染
   clearTimeout(_searchTimer);
@@ -206,14 +224,14 @@ function renderFlashcard(){
       </div>
     </div>`;
 }
-function grade(g, ev){
+function grade(level, ev){
   ev.stopPropagation();
   const k = reviewQueue[reviewIdx];
-  const t = todayStr();
-  if(g===0){ k.stage = 0; k.nextReview = addDays(t, 1); }
-  else if(g===1){ const iv = Math.max(1, Math.round(EBB[Math.min(k.stage,6)]/2)); k.nextReview = addDays(t, iv); }
-  else { k.stage = Math.min(k.stage+1, EBB.length-1); k.nextReview = addDays(t, EBB[k.stage]); }
-  k.lastReview = t;
+  const today = todayStr();
+  if(level===0){ k.stage = 0; k.nextReview = addDays(today, 1); }
+  else if(level===1){ const iv = Math.max(1, Math.round(EBB[Math.min(k.stage,6)]/2)); k.nextReview = addDays(today, iv); }
+  else { k.stage = Math.min(k.stage+1, EBB.length-1); k.nextReview = addDays(today, EBB[k.stage]); }
+  k.lastReview = today;
   reviewDone++;
   addStudy(2);
   save();
@@ -470,19 +488,12 @@ function showCardsImportPreview(fname){
 }
 function confirmCardsImport(){
   const name = document.getElementById('imp-subject').value.trim() || '导入科目';
-  let subj = db.subjects.find(s=>s.name===name);
-  if(!subj){
-    const palette = ['#e11d48','#7c3aed','#0891b2','#ca8a04','#16a34a','#dc2626','#2563eb'];
-    subj = {id: uid(), name, color: palette[db.subjects.length % palette.length], exam:'新闻与传播'};
-    db.subjects.push(subj);
-  }
+  const subj = findOrCreateSubject(name, '新闻与传播');
   let added = 0;
   const t = todayStr();
   const usedTitles = new Set(db.knowledge.filter(k=>k.subjectId===subj.id).map(k=>k.title));
   pendingCards.forEach(c=>{
-    let title = c.title, n = 2;
-    while(usedTitles.has(title)){ title = c.title + '（' + n + '）'; n++; }
-    usedTitles.add(title);
+    const title = deduplicateTitle(c.title, usedTitles);
     const tags = ['真经笔记'];
     if(c.star) tags.push(c.star);
     db.knowledge.push({
@@ -892,14 +903,7 @@ function importPubLibSubject(subjectId){
   loadPublicLibrary(function(lib){
     var s = (lib.subjects || []).find(function(x){ return x.id === subjectId; });
     if(!s){ toast('科目数据未找到','err'); return; }
-    // 查找或创建科目
-    var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
-    if(!appSubj){
-      var palette = ['#6366f1','#10b981','#ef4444','#f59e0b','#0ea5e9','#ec4899','#8b5cf6','#14b8a6','#dc2626','#ca8a04'];
-      var newId = 'pubimp_'+Date.now().toString(36);
-      appSubj = {id: newId, name: s.name, color: palette[db.subjects.length % palette.length], exam: s.exam};
-      db.subjects.push(appSubj);
-    }
+    var appSubj = findOrCreateSubject(s.name, s.exam);
 
     var addedKw = 0, skippedKw = 0;
     var titleCount = {};

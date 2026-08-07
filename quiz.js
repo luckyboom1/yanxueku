@@ -1,18 +1,30 @@
-/* 研学库 Quiz v2.1.1 — Quiz engine, wrong book, question types */
-/* ================= 刷题自测 ================= */
+/* 研学库 Quiz v2.3 — Quiz engine, wrong book, question types */
 
 // === 测验状态 ===
-let quiz = null; // {list, idx, right, answered}
+let quiz = null;
 let quizCfg = {subject:'all', count:10};
 
-// 题型显示辅助
-function typeLabel(q){
-  var map = {single:'单选题', judge:'判断题', fill:'填空题', short:'简答题'};
-  return map[q.type] || '单选题';
-}
-function typeIcon(q){
-  var map = {single:'📝', judge:'⚖️', fill:'✏️', short:'💬'};
-  return map[q.type] || '📝';
+// 题型元数据（单一数据源，消除重复 map）
+const QUESTION_TYPE_META = {
+  single: {label:'单选题', icon:'📝'},
+  judge:  {label:'判断题', icon:'⚖️'},
+  fill:   {label:'填空题', icon:'✏️'},
+  short:  {label:'简答题', icon:'💬'}
+};
+function typeLabel(q){ return (QUESTION_TYPE_META[q.type] || QUESTION_TYPE_META.single).label; }
+function typeIcon(q) { return (QUESTION_TYPE_META[q.type] || QUESTION_TYPE_META.single).icon; }
+
+// 输入题评分（消除 answerInputQ 与 redoWrongInput 中的重复逻辑）
+function scoreUserAnswer(userAnswer, q) {
+  var std = String(q.answer || '');
+  if (q.type === 'fill') {
+    return userAnswer.replace(/\s+/g,'').toLowerCase() === std.replace(/\s+/g,'').toLowerCase();
+  }
+  var keywords = std.split(';').filter(function(k){ return k.trim(); });
+  if (!keywords.length) return userAnswer.length >= 5;
+  var lower = userAnswer.toLowerCase();
+  var matched = keywords.filter(function(kw){ return lower.indexOf(kw.trim().toLowerCase()) !== -1; }).length;
+  return matched / keywords.length >= 0.5;
 }
 
 function renderQuizHome(){
@@ -125,27 +137,7 @@ function answerInputQ(){
 
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
-
-  var correct = false;
-  var stdAnswer = String(q.answer || '');
-
-  if (q.type === 'fill') {
-    // 填空题：去除空格后忽略大小写精确匹配
-    correct = userAnswer.replace(/\s+/g,'').toLowerCase() === stdAnswer.replace(/\s+/g,'').toLowerCase();
-  } else {
-    // 简答题：关键词匹配——答案中的分号分隔的关键词，匹配率 ≥ 50% 判对
-    var keywords = stdAnswer.split(';').filter(function(k){ return k.trim(); });
-    if (keywords.length === 0) {
-      correct = userAnswer.length >= 5; // 无关键词时只要写了至少5个字就判对
-    } else {
-      var matched = 0;
-      var lowerUser = userAnswer.toLowerCase();
-      keywords.forEach(function(kw){
-        if (lowerUser.indexOf(kw.trim().toLowerCase()) !== -1) matched++;
-      });
-      correct = matched / keywords.length >= 0.5;
-    }
-  }
+  var correct = scoreUserAnswer(userAnswer, q);
 
   // 锁定输入
   inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
@@ -282,24 +274,7 @@ function redoWrongInput(qid) {
   if (!inputEl || inputEl.classList.contains('locked') || inputEl.classList.contains('wrong-locked')) return;
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
-
-  var correct = false;
-  var stdAnswer = String(q.answer || '');
-  if (q.type === 'fill') {
-    correct = userAnswer.replace(/\s+/g,'').toLowerCase() === stdAnswer.replace(/\s+/g,'').toLowerCase();
-  } else {
-    var keywords = stdAnswer.split(';').filter(function(k){ return k.trim(); });
-    if (keywords.length === 0) {
-      correct = userAnswer.length >= 5;
-    } else {
-      var matched = 0;
-      var lowerUser = userAnswer.toLowerCase();
-      keywords.forEach(function(kw){
-        if (lowerUser.indexOf(kw.trim().toLowerCase()) !== -1) matched++;
-      });
-      correct = matched / keywords.length >= 0.5;
-    }
-  }
+  var correct = scoreUserAnswer(userAnswer, q);
 
   inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
 
