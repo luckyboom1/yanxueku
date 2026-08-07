@@ -1128,8 +1128,8 @@ function renderGate(){
         '<div class="gate-features gate-stagger">'+
           '<div class="gate-feat" data-tip="基于艾宾浩斯遗忘曲线\n智能排期，在遗忘临界点\n精准推送复习卡片">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
-          '<div class="gate-feat" data-tip="10大热门考研专业课\n505张真实知识点卡片\n打开即用，无需手动录入">'+
-            '<div class="gf-icon">📚</div><span>10科505卡片</span></div>'+
+          '<div class="gate-feat" data-tip="13大热门考研专业课\n558张真实知识点卡片\n打开即用，无需手动录入">'+
+            '<div class="gf-icon">📚</div><span>13科558卡片</span></div>'+
           '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
             '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
           '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
