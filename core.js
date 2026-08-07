@@ -108,11 +108,12 @@ function calcStreak(today, studyLog){
 }
 
 
-// === 日期工具函数 ===
+// === 日期/时间工具函数 ===
 function todayStr(){ return dayStr(new Date()); }
 function dayStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function addDays(str, n){ const d = new Date(str+'T00:00:00'); d.setDate(d.getDate()+n); return dayStr(d); }
 function diffDays(a, b){ return Math.round((new Date(a+'T00:00:00') - new Date(b+'T00:00:00'))/86400000); }
+function formatMinutes(m, style){ const h=Math.floor(m/60),min=m%60; return style==='colon'?String(h).padStart(2,'0')+':'+String(min).padStart(2,'0'):style==='compact'?h+'h '+min+'m':h+' \u65f6 '+min+' \u5206'; }
 function uid(){ return 'k'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 let _svgIdCounter = 0;
 function uniqueSvgId(prefix){ return (prefix||'sg') + '-' + (++_svgIdCounter) + '-' + Date.now().toString(36); }
@@ -1256,10 +1257,10 @@ function updateSidebarTimer(){
   const todayRec = db.studyLog.find(r=>r.date===t);
   const m = todayRec ? todayRec.minutes : 0;
   const el = document.getElementById('sidebar-timer');
-  if(el) el.textContent = String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  if(el) el.textContent = formatMinutes(m, 'colon');
   const totalMin = db.studyLog.reduce((s,r)=>s+r.minutes,0);
   const totalEl = document.getElementById('sidebar-total');
-  if(totalEl) totalEl.textContent = Math.floor(totalMin/60)+'时'+totalMin%60+'分';
+  if(totalEl) totalEl.textContent = formatMinutes(totalMin, 'chinese');
 }
 function startTimer(){
   if(_timerInterval) clearInterval(_timerInterval);
