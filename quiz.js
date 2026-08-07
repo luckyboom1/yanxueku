@@ -1,8 +1,8 @@
-/* 研学库 Quiz v2.3 — Quiz engine, wrong book, question types */
+/* 研学库 Quiz v2.4 — Quiz engine + adaptive analysis */
 
 // === 测验状态 ===
 let quiz = null;
-let quizCfg = {subject:'all', count:10};
+let quizCfg = {subject:'all', count:10, mode:'smart'}; // mode: random | smart | weak
 
 // 题型元数据（单一数据源，消除重复 map）
 const QUESTION_TYPE_META = {
@@ -39,11 +39,18 @@ function renderQuizHome(){
         <div class="opt-card ${quizCfg.subject==='all'?'sel':''}" onclick="quizCfg.subject='all';renderQuizHome()">全部科目</div>
         ${db.subjects.map(s=>`<div class="opt-card ${quizCfg.subject===s.id?'sel':''}" onclick="quizCfg.subject='${s.id}';renderQuizHome()">${esc(s.name)}（${db.questions.filter(q=>q.subjectId===s.id).length}题）</div>`).join('')}
       </div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:4px">选题模式</div>
+      <div class="opt-grid" style="grid-template-columns:repeat(3,1fr)">
+        <div class="opt-card ${quizCfg.mode==='smart'?'sel':''}" onclick="quizCfg.mode='smart';renderQuizHome()">🧠 智能</div>
+        <div class="opt-card ${quizCfg.mode==='weak'?'sel':''}" onclick="quizCfg.mode='weak';renderQuizHome()">🎯 弱项</div>
+        <div class="opt-card ${quizCfg.mode==='random'?'sel':''}" onclick="quizCfg.mode='random';renderQuizHome()">🎲 随机</div>
+      </div>
       <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:4px">题目数量</div>
       <div class="opt-grid">
         ${[5,10,20].map(n=>`<div class="opt-card ${quizCfg.count===n?'sel':''}" onclick="quizCfg.count=${n};renderQuizHome()">${n} 题</div>`).join('')}
       </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:14px" onclick="startQuiz()">🚀 开始自测</button>
+      ${renderQuizAnalysis()}
       <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:12px">答错的题目会自动进入错题本</div>
     </div>`;
 }
@@ -51,7 +58,14 @@ function startQuiz(){
   let pool = db.questions.slice();
   if(quizCfg.subject!=='all') pool = pool.filter(q=>q.subjectId===quizCfg.subject);
   if(!pool.length){ toast('该科目暂无题目','err'); return; }
-  pool = pool.sort(()=>Math.random()-.5).slice(0, Math.min(quizCfg.count, pool.length));
+  // 智能 / 弱项 / 随机 三种模式
+  if(quizCfg.mode==='smart'){
+    pool = selectSmartQuiz(pool, Math.min(quizCfg.count, pool.length));
+  }else if(quizCfg.mode==='weak'){
+    pool = selectWeakFocusQuiz(pool, Math.min(quizCfg.count, pool.length), quizCfg.subject==='all'?null:quizCfg.subject);
+  }else{
+    pool = pool.sort(()=>Math.random()-.5).slice(0, Math.min(quizCfg.count, pool.length));
+  }
   quiz = {list:pool, idx:0, right:0};
   _analytics.quizStart(quizCfg.subject, pool.length);
   renderQuestion();
@@ -114,6 +128,7 @@ function answerQ(i){
     else if(j===i) el.classList.add('wrong');
   });
   db.quizRecords.push({qid:q.id, correct, date:todayStr()});
+  recordAnswer(q.id, correct);
   addStudy(1);
   save();
   if(correct) quiz.right++;
@@ -144,6 +159,7 @@ function answerInputQ(){
   if(btnEl) btnEl.disabled = true;
 
   db.quizRecords.push({qid:q.id, correct, date:todayStr()});
+  recordAnswer(q.id, correct);
   addStudy(2);
   save();
   if(correct) quiz.right++;
@@ -252,6 +268,7 @@ function redoWrong(qid, i){
     else if(j===i) el.classList.add('wrong');
   });
   db.quizRecords.push({qid, correct, date:todayStr()});
+  recordAnswer(qid, correct);
   addStudy(1);
   save();
   const fb = box.querySelector('.wq-feedback');
@@ -279,6 +296,7 @@ function redoWrongInput(qid) {
   inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
 
   db.quizRecords.push({qid: qid, correct: correct, date: todayStr()});
+  recordAnswer(qid, correct);
   addStudy(1);
   save();
 
@@ -301,4 +319,46 @@ function redoWrongInput(qid) {
     fb.innerHTML = '<div class="q-explain"><b>💪 再想想！</b>仍留在错题本中。<br><b>📖 解析：</b>' + md(q.explanation) + '</div>' + extraHtml;
   }
   renderBadges();
+}
+
+// ========== 题库分析面板 ==========
+function renderQuizAnalysis(){
+  if(!db||!db.quizStats) return '';
+  var answeredCount = Object.keys(db.quizStats).length;
+  if(answeredCount < 3) return '';
+
+  var subjectId = quizCfg.subject==='all'?null:quizCfg.subject;
+  var chapters = getWeakChapters(subjectId);
+  var health = getQuizHealthReport(subjectId);
+
+  if(!chapters.length) return '';
+
+  var topWeak = chapters.slice(0, 3);
+  var weakHtml = topWeak.map(function(c){
+    var level = c.difficulty > 0.7 ? '\uD83D\uDD34' : c.difficulty > 0.4 ? '\uD83D\uDFE1' : '\uD83D\uDFE2';
+    var w = Math.min(Math.round(c.difficulty * 100), 100);
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;color:var(--text-2)">'+
+      '<span style="width:80px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(c.chapter)+'</span>'+
+      '<div style="flex:1;height:6px;background:var(--surface);border-radius:3px;overflow:hidden">'+
+      '<div style="width:'+w+'%;height:100%;background:linear-gradient(90deg,#6366f1,#ef4444);border-radius:3px"></div></div>'+
+      '<span style="color:var(--text-3);min-width:36px">'+level+' '+(c.difficulty*100|0)+'%</span></div>';
+  }).join('');
+
+  var healthHtml = '';
+  if(health.totalAnswered >= 3){
+    healthHtml = '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px;font-size:11px">'+
+      '<span style="color:var(--text-2)">答题 <b>'+health.totalAnswered+'</b>/'+health.totalQuestions+'</span>'+
+      (health.avgDifficulty!==null?'<span style="color:var(--text-2)">难度 <b>'+(health.avgDifficulty*100|0)+'%</b></span>':'')+
+      (health.unusedCount>0?'<span style="color:var(--warn)">待选 <b>'+health.unusedCount+'</b></span>':'')+
+      (health.flaggedTooHard.length>0?'<span style="color:var(--danger)">偏难 <b>'+health.flaggedTooHard.length+'</b></span>':'')+
+      '</div>';
+  }
+
+  return '<div style="margin-top:24px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)">'+
+    '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">题库智能分析</div>'+
+    healthHtml+
+    '<div style="font-size:11px;color:var(--text-2);margin-bottom:6px">弱项章节 TOP3</div>'+
+    weakHtml+
+    '<div style="margin-top:8px;font-size:10px;color:var(--text-3)">选择弱项模式可集中突击薄弱章节</div>'+
+    '</div>';
 }
