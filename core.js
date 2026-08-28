@@ -78,7 +78,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.1';   // v2.3.1: 字段统一 / 图表与判分修复 / 首次同步防护
+const APP_VERSION = 'v2.3.2';   // v2.3.2: 实时同步时间戳修复 / 日期健壮性 / 洗牌公平性 / 快捷键
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -391,12 +391,17 @@ function _setSync(t, warn){
 function doSave(){
   _savePending = false;
   db._schemaVersion = DATA_VERSION;
+  // JSONB 内部时间戳：实时同步靠它做 last-write-wins 比较。
+  // 此前只有 updated_at 列被打戳、data 内部从未赋值，导致远端更新比较恒为 0>0，多设备同步形同虚设。
+  db.updated_at = new Date().toISOString();
+  // 答题记录只保留最近 20000 条：防止 localStorage 配额溢出后被整体静默丢弃
+  if(db.quizRecords && db.quizRecords.length > 20000) db.quizRecords = db.quizRecords.slice(-20000);
   // localStorage 始终写入作为降级备份（无 UI 提示，用户无感知）
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
   if(sb && _currentUser){
     _setSync('同步中…');
     try{
-      sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() })
+      sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: db.updated_at })
         .then(()=> _setSync('已保存'))
         .catch(()=> _setSync('保存失败，请检查网络', true));
     }catch(e){ _setSync('保存失败，请检查网络', true); }
@@ -425,7 +430,7 @@ function setupRealtimeSync(){
           const oldUpdated = new Date(db.updated_at||0).getTime();
           const newUpdated = new Date(payload.new.data.updated_at||0).getTime();
           if(newUpdated > oldUpdated){
-            db = payload.new.data;
+            db = migrateData(payload.new.data);   // 远端可能由旧版本客户端写入，先迁移字段再接管
             if(curView) render();
             _defer(function(){ updateSidebarTimer(); }, 50);
             _defer(function(){ updateDashboardHeader(); }, 80);
@@ -802,6 +807,8 @@ function sanitizeImport(d){
   if(!Array.isArray(d.subjects) || !Array.isArray(d.knowledge)) return null;
   // id 只允许 [A-Za-z0-9_-]：id 会被拼进内联事件处理器，单引号/反斜杠可能撕裂 JS 字符串造成注入
   var cleanId = function(v){ return String(v==null?'':v).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40); };
+  // 日期统一校验 YYYY-MM-DD：日期字段用字符串比较排期，垃圾值会破坏排序与到期判断
+  var cleanDate = function(v){ var s = String(v==null?'':v).slice(0,10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''; };
   var out = {subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
   out.subjects = d.subjects.slice(0,200).map(function(s){
     return {id:cleanId(s&&s.id), name:String(s&&s.name||'未命名').slice(0,50),
@@ -813,9 +820,9 @@ function sanitizeImport(d){
             content:String(k&&k.content||'').slice(0,20000),
             tags:(Array.isArray(k&&k.tags)?k.tags:[]).slice(0,50).map(function(t){return String(t||'').slice(0,50);}),
             stage:Math.max(0,Math.min(6,parseInt(k&&k.stage)||0)),
-            nextReview:String(k&&k.nextReview||'').slice(0,10),
-            lastReview:k&&k.lastReview?String(k.lastReview).slice(0,10):null,
-            createdAt:String(k&&k.createdAt||'').slice(0,10)};
+            nextReview:cleanDate(k&&k.nextReview) || todayStr(),
+            lastReview:(k&&k.lastReview)?(cleanDate(k.lastReview)||null):null,
+            createdAt:cleanDate(k&&k.createdAt) || todayStr()};
   });
   out.questions = (Array.isArray(d.questions)?d.questions:[]).slice(0,10000).map(function(q){
     var qType = q&&q.type ? q.type : (q&&q.options===null?'judge':'single');
@@ -833,10 +840,10 @@ function sanitizeImport(d){
             answer: answer, explanation:String(q&&q.explanation||'').slice(0,5000)};
   });
   out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(0,100000).map(function(r){
-    return {qid:cleanId(r&&r.qid), correct:!!(r&&r.correct), date:String(r&&r.date||'').slice(0,10)};
+    return {qid:cleanId(r&&r.qid), correct:!!(r&&r.correct), date:cleanDate(r&&r.date) || todayStr()};
   });
   out.studyLog = (Array.isArray(d.studyLog)?d.studyLog:[]).slice(0,5000).map(function(r){
-    return {date:String(r&&r.date||'').slice(0,10), minutes:Math.min(Math.max(0,parseInt(r&&r.minutes)||0), 1440)};
+    return {date:cleanDate(r&&r.date) || todayStr(), minutes:Math.min(Math.max(0,parseInt(r&&r.minutes)||0), 1440)};
   });
   // quizStats（智能选题统计）此前不在白名单内，恢复备份后会静默清零；一并保留
   out.quizStats = {};
@@ -847,7 +854,7 @@ function sanitizeImport(d){
         times_asked: Math.max(0, parseInt(st.times_asked) || 0),
         times_correct: Math.max(0, parseInt(st.times_correct) || 0),
         streak_wrong: Math.max(0, parseInt(st.streak_wrong) || 0),
-        last_asked_at: String(st.last_asked_at || '').slice(0,10) || null
+        last_asked_at: cleanDate(st.last_asked_at) || null
       };
     });
   }
@@ -1013,31 +1020,36 @@ function confirmPackImport(){
   var pack = _pendingPackData;
   _pendingPackData = null;
 
-  // 合并科目（按名称查重，不存在则新建）
+  // 合并科目（按名称查重，不存在则新建）；卡包来自外部文件，字段按导入消毒标准限长
   var subjIdMap = {};
   (pack.subjects || []).forEach(function(s){
-    var exist = db.subjects.find(function(x){ return x.name === s.name; });
+    if(!s || typeof s !== 'object') return;
+    var sName = String(s.name || '').slice(0,50);
+    var exist = sName && db.subjects.find(function(x){ return x.name === sName; });
     if (exist) { subjIdMap[s.id] = exist.id; }
     else {
       var newId = uid();
-      db.subjects.push({id: newId, name: s.name, color: s.color || nextSubjectColor(), exam: s.exam || ''});
+      db.subjects.push({id: newId, name: sName || '导入科目', color: safeColor(s.color), exam: String(s.exam || '').slice(0,100)});
       subjIdMap[s.id] = newId;
     }
   });
+  if(!db.subjects.length) db.subjects.push({id: uid(), name:'导入科目', color: nextSubjectColor(), exam:''});
 
   // 导入知识点
   var addedKw = 0, addedQ = 0;
   var titleCount = {};
   (pack.knowledge || []).forEach(function(k){
-    titleCount[k.title] = (titleCount[k.title] || 0) + 1;
-    var newTitle = titleCount[k.title] > 1 ? k.title + ' (' + titleCount[k.title] + ')' : k.title;
+    if(!k || typeof k !== 'object') return;
+    var baseTitle = String(k.title || '').slice(0,200);
+    titleCount[baseTitle] = (titleCount[baseTitle] || 0) + 1;
+    var newTitle = titleCount[baseTitle] > 1 ? baseTitle + ' (' + titleCount[baseTitle] + ')' : baseTitle;
     var existsInDb = db.knowledge.some(function(ex){ return ex.title === newTitle; });
     if (existsInDb) return;
 
     db.knowledge.push({
       id: uid(), subjectId: subjIdMap[k.subjectId] || db.subjects[0].id,
-      chapter: k.chapter || '导入', title: newTitle,
-      content: k.content || '', tags: (k.tags || []).slice(0,20),
+      chapter: String(k.chapter || '导入').slice(0,100), title: newTitle,
+      content: String(k.content || '').slice(0,20000), tags: (k.tags || []).slice(0,20).map(function(t){ return String(t || '').slice(0,50); }),
       stage: 0, nextReview: todayStr(), lastReview: null,
       createdAt: todayStr()
     });
@@ -1046,14 +1058,16 @@ function confirmPackImport(){
 
   // 导入题目
   (pack.questions || []).forEach(function(q){
+    if(!q || typeof q !== 'object') return;
     var qType = q.type;
     if (['single','judge','fill','short'].indexOf(qType) === -1) qType = 'single';
     db.questions.push({
       id: uid(), subjectId: subjIdMap[q.subjectId] || db.subjects[0].id,
-      chapter: q.chapter || '导入', type: qType,
-      question: q.question || '', options: q.options || null,
-      answer: qType === 'fill' || qType === 'short' ? String(q.answer || '') : (parseInt(q.answer) || 0),
-      explanation: q.explanation || ''
+      chapter: String(q.chapter || '导入').slice(0,100), type: qType,
+      question: String(q.question || '').slice(0,2000),
+      options: Array.isArray(q.options) ? q.options.slice(0,10).map(function(o){ return String(o || '').slice(0,1000); }) : null,
+      answer: qType === 'fill' || qType === 'short' ? String(q.answer || '').slice(0,2000) : (parseInt(q.answer) || 0),
+      explanation: String(q.explanation || '').slice(0,5000)
     });
     addedQ++;
   });
@@ -1110,6 +1124,12 @@ document.addEventListener('keydown', e=>{
   if(e.key===' ' && curView==='review' && reviewQueue.length && !e.target.matches('input,textarea')){
     const fc = document.getElementById('fcard');
     if(fc){ e.preventDefault(); fc.classList.toggle('flipped'); }
+  }
+  // 复习评分快捷键：翻卡后 1=忘记了 2=有点模糊 3=记得牢固（与按钮顺序一致）
+  if(curView==='review' && (e.key==='1'||e.key==='2'||e.key==='3') && reviewQueue.length
+     && reviewIdx < reviewQueue.length && !e.target.matches('input,textarea')){
+    const fc = document.getElementById('fcard');
+    if(fc && fc.classList.contains('flipped')){ e.preventDefault(); grade(parseInt(e.key,10)-1, {stopPropagation(){}}); }
   }
 });
 
@@ -1281,7 +1301,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.1 · MIT License</span>'+
+            '<span>研学库 v2.3.2 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1434,7 +1454,9 @@ function getCountdownDate(){
   return exam;
 }
 function setExamDate(d){
-  localStorage.setItem('yanxueku_exam_date', d.toISOString().slice(0,10));
+  if(!d || isNaN(d.getTime())){ toast('请选择有效日期','err'); return; }
+  // 用本地日期存取，避免 toISOString 的 UTC 换算在东八区把日期挪前一天
+  localStorage.setItem('yanxueku_exam_date', dayStr(d));
   if(localStorage.getItem('yanxueku_exam_date_set') !== '1'){
     localStorage.setItem('yanxueku_exam_date_set', '1');
   }
@@ -1465,13 +1487,20 @@ function updateDashboardHeader(){
       <div class="goal-bar" style="width:80px"><div class="goal-fill" style="width:${Math.min(100, Math.round(todayDone/_dailyGoal*100))}%"></div></div>
     </div>`;
 }
+function confirmExamDate(){
+  var v = document.getElementById('exam-date-input').value;
+  var d = v ? new Date(v) : null;
+  if(!d || isNaN(d.getTime())){ toast('请选择有效日期','err'); return; }
+  setExamDate(d);
+  closeModal();
+}
 function openExamDatePicker(){
   const d = getCountdownDate();
   openModal(
     '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
     '<h3>📅 设定考研日期</h3>'+
-    '<div class="form-row"><label>考试日期</label><input id="exam-date-input" type="date" value="'+d.toISOString().slice(0,10)+'"></div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="setExamDate(new Date(document.getElementById(\'exam-date-input\').value));closeModal()">确定</button></div>');
+    '<div class="form-row"><label>考试日期</label><input id="exam-date-input" type="date" value="'+dayStr(d)+'"></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="confirmExamDate()">确定</button></div>');
 }
 function openGoalSetter(){
   openModal(

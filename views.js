@@ -138,6 +138,7 @@ function saveKw(id){
   if(!content){ toast('请填写内容','err'); return; }
   if(id){
     const k = db.knowledge.find(x=>x.id===id);
+    if(!k){ toast('知识点不存在或已被删除','err'); closeModal(); render(); return; }
     Object.assign(k, {subjectId, chapter, title, content, tags});
     toast('知识点已更新','ok');
   }else{
@@ -216,7 +217,7 @@ function renderFlashcard(){
           <div class="fc-face fc-front">
             <span class="fc-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)} · ${EBB_LABEL[Math.min(k.stage,6)]}</span>
             <div class="fc-title">${esc(k.title)}</div>
-            <div class="fc-hint">👆 点击卡片查看答案</div>
+            <div class="fc-hint">👆 点击卡片查看答案（翻卡后可按 1/2/3 评分）</div>
           </div>
           <div class="fc-face fc-back">
             <span class="fc-chapter" style="align-self:center">${esc(k.title)}</span>
@@ -234,6 +235,12 @@ function renderFlashcard(){
 function grade(level, ev){
   ev.stopPropagation();
   const k = reviewQueue[reviewIdx];
+  if(!k){  // 卡片已被删除（如另一设备同步后）：跳过而不是崩溃
+    reviewIdx++;
+    if(reviewIdx >= reviewQueue.length){ reviewQueue = []; renderReviewHome(); }
+    else { renderFlashcard(); }
+    return;
+  }
   const today = todayStr();
   if(level===0){ k.stage = 0; k.nextReview = addDays(today, 1); }
   else if(level===1){ const iv = Math.max(1, Math.round(EBB[Math.min(k.stage,6)]/2)); k.nextReview = addDays(today, iv); }

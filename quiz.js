@@ -11,6 +11,7 @@ const QUESTION_TYPE_META = {
   fill:   {label:'填空题', icon:'✏️'},
   short:  {label:'简答题', icon:'💬'}
 };
+const QUIZ_LETTERS = 'ABCDEFGHIJ'; // 卡包导入允许最多 10 个选项，'ABCD' 会取到 undefined
 function typeLabel(q){ return (QUESTION_TYPE_META[q.type] || QUESTION_TYPE_META.single).label; }
 function typeIcon(q) { return (QUESTION_TYPE_META[q.type] || QUESTION_TYPE_META.single).icon; }
 
@@ -64,7 +65,12 @@ function startQuiz(){
   }else if(quizCfg.mode==='weak'){
     pool = selectWeakFocusQuiz(pool, Math.min(quizCfg.count, pool.length), quizCfg.subject==='all'?null:quizCfg.subject);
   }else{
-    pool = pool.sort(()=>Math.random()-.5).slice(0, Math.min(quizCfg.count, pool.length));
+    // Fisher-Yates 洗牌：sort(random) 的偏差会让题目分布不均
+    for(var i = pool.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    pool = pool.slice(0, Math.min(quizCfg.count, pool.length));
   }
   quiz = {list:pool, idx:0, right:0};
   _analytics.quizStart(quizCfg.subject, pool.length);
@@ -82,7 +88,7 @@ function renderQuestion(){
   if (q.type === 'single' || q.type === 'judge') {
     const opts = q.type==='judge' ? ['正确','错误'] : q.options;
     answerArea = `<div id="q-opts">
-      ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('')}
+      ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('')}
     </div>`;
   } else if (q.type === 'fill') {
     answerArea = `
@@ -239,7 +245,7 @@ function renderWrong(){
       var answerArea = '';
       if (q.type === 'single' || q.type === 'judge') {
         const opts = q.type==='judge'? ['正确','错误'] : q.options;
-        answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):'ABCD'[i]}</span><span>${esc(o)}</span></div>`).join('');
+        answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('');
       } else {
         answerArea = `<div style="display:flex;gap:8px;align-items:stretch">
           <input type="text" class="q-input" id="wq-input-${q.id}" placeholder="${q.type==='fill'?'请输入答案…':'请输入你的回答…'}" style="flex:1;margin-bottom:0">
