@@ -18,10 +18,39 @@ function deduplicateTitle(title, usedTitles) {
 }
 
 // === 知识库 ===
-let _searchTimer = null;
-function debounceSearch(v){ // 搜索防抖：连续输入只触发一次全量渲染
-  clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(function(){ libFilter.search = v; renderLibrary(); }, 250);
+// 搜索改为"就地过滤"：输入时只切换卡片可见性，不再整页 innerHTML 重建。
+// 600+ 卡片时每次键入重建 6000+ DOM 节点是输入卡顿的主要来源。
+// 干草堆按数据版本缓存：任何 save()（数据变更）后版本号 +1，下一次渲染才重建索引。
+var _libHayCache = {};    // kwId -> {v: 数据版本, h: 小写拼接文本}
+var _libHaystacks = [];   // 与 #kw-grid 内卡片顺序一一对应
+var _libDataVer = 0;
+var _liveFilterTimer = null;
+function liveFilterLibrary(v){
+  libFilter.search = String(v == null ? '' : v);
+  clearTimeout(_liveFilterTimer);
+  _liveFilterTimer = setTimeout(function(){
+    var grid = document.getElementById('kw-grid');
+    if(!grid) return;
+    var cards = grid.querySelectorAll('.kw-card');
+    var q = libFilter.search.toLowerCase();
+    var visible = 0;
+    for(var i = 0; i < cards.length && i < _libHaystacks.length; i++){
+      var show = !q || _libHaystacks[i].indexOf(q) !== -1;
+      cards[i].style.display = show ? '' : 'none';
+      if(show) visible++;
+    }
+    var empty = document.getElementById('kw-live-empty');
+    if(empty) empty.style.display = (cards.length > 0 && visible === 0) ? '' : 'none';
+  }, 120);
+}
+function buildHaystacks(list){
+  _libHaystacks = list.map(function(k){
+    var c = _libHayCache[k.id];
+    if(!c || c.v !== _libDataVer){
+      c = _libHayCache[k.id] = { v: _libDataVer, h: (k.title+' '+k.content+' '+k.chapter+' '+((k.tags)||[]).join(' ')).toLowerCase() };
+    }
+    return c.h;
+  });
 }
 function setLibSubject(id){ libFilter.subject = id; renderLibrary(); }
 function renderLibrary(){
@@ -39,12 +68,13 @@ function renderLibrary(){
     list = list.filter(k=> (k.title+k.content+k.chapter+k.tags.join('')).toLowerCase().includes(q));
   }
   list.sort((a,b)=> (isDue(a)?0:1)-(isDue(b)?0:1) || a.nextReview.localeCompare(b.nextReview));
+  buildHaystacks(list);
 
   el.innerHTML = `
     <div class="filter-bar">
       <div class="search-box">
         <span class="s-ico">🔍</span>
-        <input id="lib-search" placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="debounceSearch(this.value)">
+        <input id="lib-search" placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="liveFilterLibrary(this.value)">
       </div>
       <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
       ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
@@ -57,7 +87,8 @@ function renderLibrary(){
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
       ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" onclick="libFilter.tag = libFilter.tag===this.dataset.tag ? '' : this.dataset.tag; renderLibrary()">${esc(t)}</div>`).join('')}
     </div>`:''}
-    ${list.length? `<div class="kw-grid">${list.map(kwCard).join('')}</div>`
+    ${list.length? `<div class="kw-grid" id="kw-grid">${list.map(kwCard).join('')}</div>
+      <div id="kw-live-empty" class="empty-state" style="display:none"><div class="big">🗂️</div><h3>没有匹配的搜索结果</h3><p>换个关键词试试</p></div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
   if(searchCaret != null){
     var newSearch = document.getElementById('lib-search');
@@ -79,7 +110,7 @@ function kwCard(k){
       <span class="kw-due ${dueCls}">${dueTxt}</span>
     </div>
     <div class="kw-title">${esc(k.title)}</div>
-    <div class="kw-preview">${esc(k.content).slice(0,120)}</div>
+    <div class="kw-preview">${esc(String(k.content||'').slice(0,120))}</div>
     <div class="kw-foot">
       ${k.tags.map(tg=>`<span class="tag">${esc(tg)}</span>`).join('')}
       <span class="mastery" title="掌握度：${MASTERY_NAMES[ml]}">${[0,1,2,3].map(i=>`<i class="${i<=ml && k.stage>0 || i<ml ? 'on':''}"></i>`).join('')}</span>

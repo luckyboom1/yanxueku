@@ -78,7 +78,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.3';   // v2.3.3: PWA 离线补全 / 收藏云同步 / 刷题快捷键 / 日期时区
+const APP_VERSION = 'v2.3.4';   // v2.3.4: 性能——搜索就地过滤/索引缓存/预览先切后转义/仪表盘单遍计数
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -94,15 +94,14 @@ let _analytics = window._analytics || { page:function(){}, quizStart:function(){
 
 // 计算连续学习天数：今天尚未学习时不计入中断，从最近一个有学习记录的日期开始向前统计
 function calcStreak(today, studyLog){
+  const byDate = {};
+  studyLog.forEach(function(r){ byDate[r.date] = r.minutes; });
   let startOffset = 0;
-  const todayRec = studyLog.find(r => r.date === today);
-  if(!todayRec || todayRec.minutes === 0) startOffset = 1;
-  let streak = 0;
+  if(!(byDate[today] > 0)) startOffset=1;
+  let streak=0;
   const MAX_DAYS = 365;
   for(let i = startOffset; i < MAX_DAYS; i++){
-    const d = addDays(today, -i);
-    const rec = studyLog.find(r => r.date === d);
-    if(rec && rec.minutes > 0) streak++;
+    if(byDate[addDays(today, -i)] > 0) streak++;
     else break;
   }
   return streak;
@@ -414,6 +413,7 @@ function doSave(){
 function save(){
   if(_saveTimer) clearTimeout(_saveTimer);
   _savePending = true;
+  if(typeof _libDataVer === 'number') _libDataVer++;   // 数据变更：知识库搜索索引缓存失效（views.js）
   _saveTimer = setTimeout(doSave, 400); // 400ms 窗口合并连续操作
 }
 function flushSave(){
@@ -583,13 +583,18 @@ function renderDashboard(){
   const greet = hour<6?'夜深了':hour<12?'早上好':hour<14?'中午好':hour<18?'下午好':'晚上好';
   const dateStr = new Date().toLocaleDateString('zh-CN',{month:'long',day:'numeric',weekday:'long'});
 
-  // 未来7天复习计划
+  // 未来7天复习计划：单遍计数（原先每天一次全量 filter，O(7n) 且逾期单独再扫一遍）
+  const dayCount = {};
+  let overdue = 0;
+  db.knowledge.forEach(function(k){
+    if(k.nextReview < t) overdue++;
+    else dayCount[k.nextReview] = (dayCount[k.nextReview]||0) + 1;
+  });
   const plan = [];
   for(let i=0;i<7;i++){
     const d = addDays(t,i);
-    const n = db.knowledge.filter(k=>k.nextReview===d).length;
-    const over = i===0 ? db.knowledge.filter(k=>k.nextReview<d).length : 0;
-    plan.push({d, n: n+over, label: i===0?'今天': i===1?'明天': (d.slice(5).replace('-','/'))});
+    const n = (dayCount[d]||0) + (i===0 ? overdue : 0);
+    plan.push({d, n, label: i===0?'今天': i===1?'明天': (d.slice(5).replace('-','/'))});
   }
   const maxPlan = Math.max(1, ...plan.map(p=>p.n));
 
@@ -1320,7 +1325,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.3 · MIT License</span>'+
+            '<span>研学库 v2.3.4 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
