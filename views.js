@@ -27,6 +27,9 @@ function setLibSubject(id){ libFilter.subject = id; renderLibrary(); }
 function renderLibrary(){
   if(!db||!db.knowledge) return;
   const el = document.getElementById('view-library');
+  // 记录搜索框焦点与光标位置，innerHTML 全量重建后恢复，避免输入中断
+  var prevSearch = document.getElementById('lib-search');
+  var searchCaret = (prevSearch && document.activeElement === prevSearch) ? prevSearch.selectionStart : null;
   const tags = [...new Set(db.knowledge.flatMap(k=>k.tags))];
   let list = db.knowledge.slice();
   if(libFilter.subject!=='all') list = list.filter(k=>k.subjectId===libFilter.subject);
@@ -41,7 +44,7 @@ function renderLibrary(){
     <div class="filter-bar">
       <div class="search-box">
         <span class="s-ico">🔍</span>
-        <input placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="debounceSearch(this.value)">
+        <input id="lib-search" placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="debounceSearch(this.value)">
       </div>
       <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
       ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
@@ -56,6 +59,10 @@ function renderLibrary(){
     </div>`:''}
     ${list.length? `<div class="kw-grid">${list.map(kwCard).join('')}</div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
+  if(searchCaret != null){
+    var newSearch = document.getElementById('lib-search');
+    if(newSearch){ newSearch.focus(); try{ newSearch.setSelectionRange(searchCaret, searchCaret); }catch(e){} }
+  }
 }
 function kwCard(k){
   const s = getSubject(k.subjectId);
@@ -358,21 +365,21 @@ function drawBarChart(days){
   const grad = ctx.createLinearGradient(0,padT,0,chartHeight-padB);
   grad.addColorStop(0,'#6366f1'); grad.addColorStop(1,'#8b5cf6');
   days.forEach((d,i)=>{
-    const bh = d.m/max*(H-padT-padB);
-    const x = padL + i*cw + cw*0.2, w = cw*0.6;
-    const y = H-padB-bh;
+    const bh = d.m/max*(chartHeight-padT-padB);
+    const x = padL + i*colWidth + colWidth*0.2, w = colWidth*0.6;
+    const y = chartHeight-padB-bh;
     ctx.fillStyle = d.m? grad : cGrid;
     ctx.beginPath();
     const r = Math.min(5, w/2);
     if(bh>0){
       ctx.moveTo(x, y+r); ctx.arcTo(x, y, x+r, y, r); ctx.arcTo(x+w, y, x+w, y+r, r);
-      ctx.lineTo(x+w, H-padB); ctx.lineTo(x, H-padB); ctx.closePath(); ctx.fill();
+      ctx.lineTo(x+w, chartHeight-padB); ctx.lineTo(x, chartHeight-padB); ctx.closePath(); ctx.fill();
     }else{
-      ctx.fillRect(x, H-padB-2, w, 2);
+      ctx.fillRect(x, chartHeight-padB-2, w, 2);
     }
     ctx.fillStyle = cText; ctx.textAlign = 'center'; ctx.font = '9.5px sans-serif';
-    ctx.fillText(d.d.slice(5).replace('-','/'), padL+i*cw+cw/2, H-padB+14);
-    if(d.m>0){ ctx.font = 'bold 9.5px sans-serif'; ctx.fillText(d.m, padL+i*cw+cw/2, y-4); }
+    ctx.fillText(d.d.slice(5).replace('-','/'), padL+i*colWidth+colWidth/2, chartHeight-padB+14);
+    if(d.m>0){ ctx.font = 'bold 9.5px sans-serif'; ctx.fillText(d.m, padL+i*colWidth+colWidth/2, y-4); }
   });
 }
 
@@ -710,7 +717,11 @@ async function doSignUp(){
 async function signOut(){
   if(!sb) return;
   _currentUser=null; _profile=null;
+  if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel=null; }
   try{ await sb.auth.signOut(); }catch(e){}
+  // 清空本机该账号的痕迹（云端副本仍安全保留），防止同浏览器下一个账号注册/登录时被误同步
+  try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('yanxueku_v1'); }catch(e){}
+  db = blankDb();
   renderSidebarUser(); switchView('dashboard'); toast('已退出','info');
 }
 function openProfileModal(){
@@ -812,7 +823,7 @@ function renderPublicLibrary(){
     if(!lib || !lib.subjects) return;
     var el = document.getElementById('view-public-library');
     var html = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div>';
-    html += '<div style="font-size:13px;color:var(--text-3);margin-bottom:16px">十大热门考研专业课 · 共 <b>'+lib.subjects.length+'</b> 个科目 · 点击科目卡片查看详情并导入</div>';
+    html += '<div style="font-size:13px;color:var(--text-3);margin-bottom:16px">十三大热门考研专业课 · 共 <b>'+lib.subjects.length+'</b> 个科目 · 点击科目卡片查看详情并导入</div>';
     html += '<div class="plib-subject-grid">';
 
     lib.subjects.forEach(function(s){

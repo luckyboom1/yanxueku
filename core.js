@@ -1,6 +1,7 @@
 /* 研学库 Core v2.1.1 — Data, Auth, Theme, Nav, Utils, Analytics, Init */
 /* ================= 数据层（Supabase 共享数据库） ================= */
-// 从外部配置读取 Supabase 凭据；config.js 被 .gitignore 忽略，避免敏感信息进入版本控制
+// 从外部配置读取 Supabase 凭据：本地开发走 config.js（见 README），
+// 线上由 index.html 内联注入同一份公开凭据（anon key / Turnstile Site Key，本就随每次请求公开），两处需同步修改
 /* ========================================
  * 研学库 — 代码组织分区
  * 数据层 | 定时器 | DOM缓存 | 配置 | 工具函数 | 数据查询 | 视图 | 认证
@@ -76,8 +77,8 @@ if(!sb){
 // === 数据模型（EBB 遗忘曲线、主题、日期工具） ===
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
-const DATA_VERSION = 2;
-const APP_VERSION = 'v2.2.0';   // v2.2: 模块化拆分
+const DATA_VERSION = 3;
+const APP_VERSION = 'v2.3.1';   // v2.3.1: 字段统一 / 图表与判分修复 / 首次同步防护
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -144,7 +145,7 @@ function seedData(){
     {id:'ds', name:'数据结构', color:'#f59e0b', exam:'考研 408'},
   ];
 
-  const Q = (id, subjectId, chapter, type, q, options, answer, explain) => ({id, subjectId, chapter, type, q, options, answer, explain});
+  const Q = (id, subjectId, chapter, type, question, options, answer, explanation) => ({id, subjectId, chapter, type, question, options, answer, explanation});
 
   /* ======== 新闻传播学 卡片 ======== */
   const knowledge = [
@@ -276,6 +277,29 @@ function seedData(){
   return {_schemaVersion: DATA_VERSION, subjects, knowledge, questions, quizRecords, studyLog};
 }
 
+/* 空白数据骨架：全新账号/登出后的干净状态，不预置任何演示内容 */
+function blankDb(){
+  return {_schemaVersion: DATA_VERSION, subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
+}
+
+/* 判断内存数据是否仍是未动过的内置演示种子。
+ * 为真时注册/登录不得把该数据上传云端——否则每个新账号都会被灌入演示题，
+ * 换设备/换账号登录也可能把他人留在本机的数据写进新账号。 */
+function isPureSeed(d){
+  try{
+    const s = seedData();
+    return !!d
+      && Array.isArray(d.subjects) && d.subjects.length === s.subjects.length
+      && d.subjects.every((x,i)=> x.id === s.subjects[i].id)
+      && Array.isArray(d.knowledge) && d.knowledge.length === s.knowledge.length
+      && d.knowledge.every((k,i)=> k.id === s.knowledge[i].id)
+      && Array.isArray(d.questions) && d.questions.length === s.questions.length
+      && d.questions.every((q,i)=> q.id === s.questions[i].id)
+      && (!d.quizRecords || d.quizRecords.length === 0)
+      && (!d.studyLog || d.studyLog.every(r=> !r.minutes));
+  }catch(e){ return false; }
+}
+
 
 let db;
 let _loadResolve = null;
@@ -310,6 +334,17 @@ function migrateData(data) {
       if (!k.tags) k.tags = [];
       if (!k.lastReview) k.lastReview = null;
       if (!k.createdAt) k.createdAt = todayStr();
+    });
+  }
+
+  // v2 → v3：题库字段统一为 question/explanation。
+  // 线上历史数据在旧版迁移时已写入空的 explanation 并保留原文 explain，
+  // 因此这里以"非空优先"回填，再做删除，避免真实解析文本被空串顶掉。
+  if (ver < 3) {
+    data.questions.forEach(function(q) {
+      if (!q.question && q.q != null) q.question = q.q;
+      if (!q.explanation && q.explain != null) q.explanation = q.explain;
+      delete q.q; delete q.explain;
     });
   }
 
@@ -379,12 +414,14 @@ function flushSave(){
 }
 window.addEventListener('pagehide', flushSave);
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='hidden') flushSave(); });
+let _rtChannel = null;   // 实时同步频道句柄：登出时退订，重登录时先删旧再建新，避免同一回调重复叠加
 function setupRealtimeSync(){
-  if(!sb) return;
-  sb.channel('app_state_changes')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'user_id=eq.'+(_currentUser?_currentUser.id:'') },
+  if(!sb || !_currentUser) return;
+  if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel = null; }
+  _rtChannel = sb.channel('app_state_changes')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'user_id=eq.'+_currentUser.id },
       payload => {
-        if(payload.new && payload.new.data && payload.new.data.subjects){
+        if(db && payload.new && payload.new.data && payload.new.data.subjects){
           const oldUpdated = new Date(db.updated_at||0).getTime();
           const newUpdated = new Date(payload.new.data.updated_at||0).getTime();
           if(newUpdated > oldUpdated){
@@ -400,11 +437,12 @@ function setupRealtimeSync(){
 
 
 function getSubject(id){ return db.subjects.find(s=>s.id===id); }
+const MAX_MINUTES_PER_DAY = 1440; // 单日学习时长上限（分钟）：客户端侧防排行榜刷分，服务端约束见 UPGRADE_SQL.sql
 function addStudy(min){
   const t = todayStr();
   let rec = db.studyLog.find(r=>r.date===t);
   if(!rec){ rec = {date:t, minutes:0}; db.studyLog.push(rec); }
-  rec.minutes += min;
+  rec.minutes = Math.min(rec.minutes + min, MAX_MINUTES_PER_DAY);
   save();
 }
 function isDue(k){ return k.nextReview <= todayStr(); }
@@ -762,13 +800,15 @@ function exportData(){
 function sanitizeImport(d){
   if(!d || typeof d !== 'object') return null;
   if(!Array.isArray(d.subjects) || !Array.isArray(d.knowledge)) return null;
+  // id 只允许 [A-Za-z0-9_-]：id 会被拼进内联事件处理器，单引号/反斜杠可能撕裂 JS 字符串造成注入
+  var cleanId = function(v){ return String(v==null?'':v).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40); };
   var out = {subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
   out.subjects = d.subjects.slice(0,200).map(function(s){
-    return {id:String(s&&s.id||'').slice(0,40), name:String(s&&s.name||'未命名').slice(0,50),
+    return {id:cleanId(s&&s.id), name:String(s&&s.name||'未命名').slice(0,50),
             color:safeColor(s&&s.color), exam:String(s&&s.exam||'').slice(0,100)};
   });
   out.knowledge = d.knowledge.slice(0,20000).map(function(k){
-    return {id:String(k&&k.id||'').slice(0,40), subjectId:String(k&&k.subjectId||'').slice(0,40),
+    return {id:cleanId(k&&k.id), subjectId:cleanId(k&&k.subjectId),
             chapter:String(k&&k.chapter||'未分章').slice(0,100), title:String(k&&k.title||'').slice(0,200),
             content:String(k&&k.content||'').slice(0,20000),
             tags:(Array.isArray(k&&k.tags)?k.tags:[]).slice(0,50).map(function(t){return String(t||'').slice(0,50);}),
@@ -786,18 +826,31 @@ function sanitizeImport(d){
     } else {
       answer = parseInt(answer) || 0;
     }
-    return {id:String(q&&q.id||'').slice(0,40), subjectId:String(q&&q.subjectId||'').slice(0,40),
+    return {id:cleanId(q&&q.id), subjectId:cleanId(q&&q.subjectId),
             chapter:String(q&&q.chapter||'').slice(0,100), type: qType,
             question:String(q&&q.question||'').slice(0,2000),
             options:(Array.isArray(q&&q.options)?q.options:[]).slice(0,10).map(function(o){return String(o||'').slice(0,1000);}),
             answer: answer, explanation:String(q&&q.explanation||'').slice(0,5000)};
   });
   out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(0,100000).map(function(r){
-    return {qid:String(r&&r.qid||'').slice(0,40), correct:!!(r&&r.correct), date:String(r&&r.date||'').slice(0,10)};
+    return {qid:cleanId(r&&r.qid), correct:!!(r&&r.correct), date:String(r&&r.date||'').slice(0,10)};
   });
   out.studyLog = (Array.isArray(d.studyLog)?d.studyLog:[]).slice(0,5000).map(function(r){
-    return {date:String(r&&r.date||'').slice(0,10), minutes:Math.max(0,parseInt(r&&r.minutes)||0)};
+    return {date:String(r&&r.date||'').slice(0,10), minutes:Math.min(Math.max(0,parseInt(r&&r.minutes)||0), 1440)};
   });
+  // quizStats（智能选题统计）此前不在白名单内，恢复备份后会静默清零；一并保留
+  out.quizStats = {};
+  if(d.quizStats && typeof d.quizStats === 'object' && !Array.isArray(d.quizStats)){
+    Object.keys(d.quizStats).slice(0,20000).forEach(function(k){
+      var st = d.quizStats[k] || {};
+      out.quizStats[cleanId(k)] = {
+        times_asked: Math.max(0, parseInt(st.times_asked) || 0),
+        times_correct: Math.max(0, parseInt(st.times_correct) || 0),
+        streak_wrong: Math.max(0, parseInt(st.streak_wrong) || 0),
+        last_asked_at: String(st.last_asked_at || '').slice(0,10) || null
+      };
+    });
+  }
   return out;
 }
 let _pendingImportData = null;
@@ -852,7 +905,7 @@ function confirmImportData(){
   db = _pendingImportData;
   _pendingImportData = null;
   save(); closeModal(); render();
-  _analytics.dataImport(data.knowledge.length);
+  _analytics.dataImport(db.knowledge.length);
   toast('导入成功，数据已恢复 ✅','ok');
 }
 
@@ -1135,8 +1188,8 @@ function renderGate(){
         '<div class="gate-features gate-stagger">'+
           '<div class="gate-feat" data-tip="基于艾宾浩斯遗忘曲线\n智能排期，在遗忘临界点\n精准推送复习卡片">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
-          '<div class="gate-feat" data-tip="13大热门考研专业课\n854张真实知识点卡片\n打开即用，无需手动录入">'+
-            '<div class="gf-icon">📚</div><span>13科854卡片</span></div>'+
+          '<div class="gate-feat" data-tip="13大热门考研专业课\n616张真实知识点卡片\n打开即用，无需手动录入">'+
+            '<div class="gf-icon">📚</div><span>13科616卡片</span></div>'+
           '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
             '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
           '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
@@ -1167,7 +1220,7 @@ function renderGate(){
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#10b981,#14b8a6)">📚</div>'+
             '<h3>结构化知识库</h3>'+
             '<p>按科目 → 章节 → 标签三层组织专业课笔记。支持 Markdown 排版、代码高亮、挖空记忆。</p>'+
-            '<ul><li>10大热门考研专业 · 505张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
+            '<ul><li>13大热门考研专业 · 616张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
           '</div>'+
           // 功能3: 刷题自测
           '<div class="gate-showcase-card" style="--i:2">'+
@@ -1181,7 +1234,7 @@ function renderGate(){
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#3b82f6,#0ea5e9)">📊</div>'+
             '<h3>数据驱动的学习追踪</h3>'+
             '<p>连续学习天数、每日学习时长、考研倒计时、各科掌握度分布一目了然。</p>'+
-            '<ul><li>日/周学习日历热力图</li><li>四阶段掌握度：初学→熟悉→熟练→精通</li><li>自定义每日目标 + 考研日倒计时</li></ul>'+
+            '<ul><li>日/周学习日历热力图</li><li>四阶段掌握度：未掌握→初学→熟练→掌握</li><li>自定义每日目标 + 考研日倒计时</li></ul>'+
           '</div>'+
           // 功能5: 云端同步
           '<div class="gate-showcase-card" style="--i:4">'+
@@ -1228,7 +1281,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3 · MIT License</span>'+
+            '<span>研学库 v2.3.1 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1291,7 +1344,7 @@ function startActivityTracking(){
         const t = todayStr();
         let rec = db.studyLog.find(r=>r.date===t);
         if(!rec){ rec = {date:t, minutes:0}; db.studyLog.push(rec); }
-        rec.minutes++;
+        rec.minutes = Math.min(rec.minutes + 1, MAX_MINUTES_PER_DAY);
         save();
         updateSidebarTimer();
       }
@@ -1533,9 +1586,13 @@ function setupAuthListener(){
       _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
       var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
       if(rd && rd.data && rd.data.data && rd.data.data.subjects){
-        db = rd.data.data;                                  // 云端有数据 → 用云端
-      }else if(db && db.subjects && db.subjects.length){
-        try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){} // 云端无数据 → 上传本地（首次同步）
+        db = migrateData(rd.data.data);                     // 云端有数据 → 用云端（旧字段名先迁移成统一格式）
+      }else if(db && db.subjects && db.subjects.length && !isPureSeed(db)){
+        // 云端无数据 → 仅当本地确有用户自己产生的内容才上传（首次同步）。
+        // 纯种子演示数据不得上传：避免污染全新账号，也避免把他人留在本机的缓存写入新账号。
+        try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){}
+      }else{
+        db = blankDb();                                     // 全新账号 / 本地只有种子或为空 → 干净开始
       }
       hideGate();
       setupRealtimeSync();
@@ -1588,4 +1645,6 @@ async function loadDashLeader(){
   }catch(e){}
 }
 
-// 安全兜底：3秒后强制隐藏加载屏
+// 安全兜底：SDK 被拦截/断网导致 onAuthStateChange 永不触发时，3 秒后强制撤下加载屏，
+// 露出登录墙，让用户至少能看到"云服务不可用"的界面而不是永远转圈
+setTimeout(function(){ try{ hideLoading(); }catch(e){} }, 3000);

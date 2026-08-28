@@ -2,14 +2,14 @@
 
 export const THEME_KEY = 'yanxueku_theme';
 export const STORAGE_KEY = 'yanxueku_v2';
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 export const EBB = [1, 2, 4, 7, 15, 30, 60];
 export const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 export const MASTERY_NAMES = ['初学', '熟悉', '熟练', '精通'];
 export const MASTERY_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#6366f1'];
 
-export const APP_VERSION = 'v2.3.0';
+export const APP_VERSION = 'v2.3.1';
 
 export const VIEW_META = {
   dashboard: { name:'学习仪表盘', icon:'🏠' },

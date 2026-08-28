@@ -164,10 +164,10 @@ function getQuizHealthReport(subjectId) {
       totalDiff += d;
     }
     if (s.times_asked >= 3) {
-      if (d >= 0.85) flaggedTooHard.push({ id: q.id, title: q.q || q.id, difficulty: Math.round(d * 100), asked: s.times_asked });
-      if (d <= 0.1) flaggedTooEasy.push({ id: q.id, title: q.q || q.id, difficulty: Math.round(d * 100), asked: s.times_asked });
+      if (d >= 0.85) flaggedTooHard.push({ id: q.id, title: q.question || q.id, difficulty: Math.round(d * 100), asked: s.times_asked });
+      if (d <= 0.1) flaggedTooEasy.push({ id: q.id, title: q.question || q.id, difficulty: Math.round(d * 100), asked: s.times_asked });
     }
-    if (s.times_asked === 0) unusedQuestions.push({ id: q.id, title: q.q || q.id });
+    if (s.times_asked === 0) unusedQuestions.push({ id: q.id, title: q.question || q.id });
   });
 
   return {

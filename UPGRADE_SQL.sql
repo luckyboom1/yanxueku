@@ -45,3 +45,31 @@ SELECT
   ) AS total_minutes
 FROM profiles p
 LEFT JOIN app_state a ON a.user_id = p.user_id;
+
+-- ===== 可选加固（v2.3.1+）：排行榜防刷 =====
+-- 客户端已对单日 studyLog.minutes 限幅 1440，但客户端可被绕过；
+-- 此触发器在数据库层拒绝任何单日超过 1440 分钟的写入（伪造请求将报错回滚）。
+CREATE OR REPLACE FUNCTION check_app_state_minutes()
+RETURNS TRIGGER AS $$
+DECLARE
+  rec jsonb;
+  mx int;
+BEGIN
+  IF NEW.data ? 'studyLog' AND jsonb_typeof(NEW.data->'studyLog') = 'array' THEN
+    mx := 0;
+    FOR rec IN SELECT jsonb_array_elements(NEW.data->'studyLog') LOOP
+      IF (rec->>'minutes') ~ '^[0-9]+$' AND (rec->>'minutes')::int > mx THEN
+        mx := (rec->>'minutes')::int;
+      END IF;
+    END LOOP;
+    IF mx > 1440 THEN
+      RAISE EXCEPTION 'studyLog daily minutes % exceeds cap 1440', mx;
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS app_state_minutes_cap ON app_state;
+CREATE TRIGGER app_state_minutes_cap BEFORE INSERT OR UPDATE ON app_state
+  FOR EACH ROW EXECUTE FUNCTION check_app_state_minutes();

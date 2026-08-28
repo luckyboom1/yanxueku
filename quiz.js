@@ -153,6 +153,7 @@ function answerInputQ(){
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
   var correct = scoreUserAnswer(userAnswer, q);
+  var stdAnswer = String(q.answer || '');
 
   // 锁定输入
   inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
@@ -292,6 +293,7 @@ function redoWrongInput(qid) {
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
   var correct = scoreUserAnswer(userAnswer, q);
+  var stdAnswer = String(q.answer || '');
 
   inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
 

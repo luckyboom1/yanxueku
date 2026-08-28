@@ -1,7 +1,7 @@
 /* 研学库 Service Worker — network-first with smart fallback
  * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
  */
-const CACHE = 'yanxueku-v8';
+const CACHE = 'yanxueku-v9';
 const ASSETS = ['./','./index.html','./styles.css','./core.js','./quiz.js','./views.js','./public-lib.js','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json'];
 
 self.addEventListener('install', e => {
