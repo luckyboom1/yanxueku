@@ -570,3 +570,9 @@ body.modal-open #content{overflow:hidden}
 
 /* 暗色：高光线不可见改为微亮描边 */
 html[data-theme="dark"] .kw-card::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent)}
+
+/* 公共课程库加载骨架屏 */
+@keyframes shimmer{0%{background-position:-500px 0}100%{background-position:500px 0}}
+.skel-card{height:172px;border-radius:16px;border:1px solid var(--border);
+  background:linear-gradient(90deg,var(--surface-2) 25%,var(--border) 50%,var(--surface-2) 75%);
+  background-size:1000px 100%;animation:shimmer 1.4s linear infinite}

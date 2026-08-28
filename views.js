@@ -25,23 +25,18 @@ var _libHayCache = {};    // kwId -> {v: 数据版本, h: 小写拼接文本}
 var _libHaystacks = [];   // 与 #kw-grid 内卡片顺序一一对应
 var _libDataVer = 0;
 var _liveFilterTimer = null;
+var _libRenderLimit = 60; // 首屏只渲染 60 张，滚动到底部增量加载（千卡级首屏流畅）
+var _libSentinel = null;
+function _libLoadMore(){
+  if(_libSentinel){ _libSentinel.disconnect(); _libSentinel = null; }
+  _libRenderLimit += 60;
+  renderLibrary();
+}
 function liveFilterLibrary(v){
   libFilter.search = String(v == null ? '' : v);
   clearTimeout(_liveFilterTimer);
-  _liveFilterTimer = setTimeout(function(){
-    var grid = document.getElementById('kw-grid');
-    if(!grid) return;
-    var cards = grid.querySelectorAll('.kw-card');
-    var q = libFilter.search.toLowerCase();
-    var visible = 0;
-    for(var i = 0; i < cards.length && i < _libHaystacks.length; i++){
-      var show = !q || _libHaystacks[i].indexOf(q) !== -1;
-      cards[i].style.display = show ? '' : 'none';
-      if(show) visible++;
-    }
-    var empty = document.getElementById('kw-live-empty');
-    if(empty) empty.style.display = (cards.length > 0 && visible === 0) ? '' : 'none';
-  }, 120);
+  // 搜索即重建：renderLibrary 在搜索态渲染全部匹配项（匹配集小、干草堆有缓存）
+  _liveFilterTimer = setTimeout(renderLibrary, 150);
 }
 function buildHaystacks(list){
   _libHaystacks = list.map(function(k){
@@ -69,6 +64,9 @@ function renderLibrary(){
   }
   list.sort((a,b)=> (isDue(a)?0:1)-(isDue(b)?0:1) || a.nextReview.localeCompare(b.nextReview));
   buildHaystacks(list);
+  // 搜索时必须全量匹配（干草堆覆盖全部卡片），无搜索时增量渲染
+  var searching = !!libFilter.search;
+  var shown = searching ? list : list.slice(0, _libRenderLimit);
 
   el.innerHTML = `
     <div class="filter-bar">
@@ -87,13 +85,25 @@ function renderLibrary(){
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
       ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" onclick="libFilter.tag = libFilter.tag===this.dataset.tag ? '' : this.dataset.tag; renderLibrary()">${esc(t)}</div>`).join('')}
     </div>`:''}
-    ${list.length? `<div class="kw-grid" id="kw-grid">${list.map(kwCard).join('')}</div>
-      <div id="kw-live-empty" class="empty-state" style="display:none"><div class="big">🗂️</div><h3>没有匹配的搜索结果</h3><p>换个关键词试试</p></div>`
+    ${list.length? `<div class="kw-grid" id="kw-grid">${shown.map(kwCard).join('')}</div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
   if(searchCaret != null){
     var newSearch = document.getElementById('lib-search');
     if(newSearch){ newSearch.focus(); try{ newSearch.setSelectionRange(searchCaret, searchCaret); }catch(e){} }
   }
+  // 增量加载哨兵：滚动接近底部前 400px 预取下一批
+  if(!searching && list.length > shown.length){
+    if(_libSentinel){ _libSentinel.disconnect(); }
+    var more = document.createElement('div');
+    more.id = 'kw-more';
+    more.style.cssText = 'text-align:center;padding:16px;color:var(--text-3);font-size:12.5px';
+    more.textContent = '↓ 已显示 ' + shown.length + ' / ' + list.length + ' 张，继续滚动加载';
+    el.appendChild(more);
+    _libSentinel = new IntersectionObserver(function(entries){
+      if(entries.some(function(en){ return en.isIntersecting; })) _libLoadMore();
+    }, {rootMargin: '400px'});
+    _libSentinel.observe(more);
+  } else if(_libSentinel){ _libSentinel.disconnect(); _libSentinel = null; }
 }
 function kwCard(k){
   const s = getSubject(k.subjectId);
@@ -353,6 +363,7 @@ function renderStats(){
       }).join('')}
     </div>`;
   drawBarChart(days);
+  _deferRaf(function(){ animateStatNums(el); });
   // 完整排行榜（仪表盘 Top3 的"查看完整排行"入口指向这里）
   _defer(function(){
     const el = document.getElementById('view-stats');
@@ -838,7 +849,9 @@ function loadPublicLibrary(cb){
   if(_pubLibLoading) return; // 正在加载中不重复请求
   _pubLibLoading = true;
   var el = document.getElementById('view-public-library');
-  el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载中…</h3><p>正在获取十大热门考研专业课数据</p></div>';
+  el.innerHTML = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div><div class="plib-subject-grid">' +
+    '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>' +
+    '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
 
   var xhr = new XMLHttpRequest();
   xhr.open('GET', 'public-library.json?v=2.2', true);

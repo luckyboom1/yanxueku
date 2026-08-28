@@ -26,6 +26,30 @@ const _deferRaf = function(fn){
   const id = requestAnimationFrame(function(){ _rafIds = _rafIds.filter(function(r){ return r !== id; }); fn(); });
   _rafIds.push(id); return id;
 };
+// 统计数字滚动：只动首个文本节点里的整数，保留 <small> 等子节点；尊重系统"减少动态效果"
+function animateStatNums(scope){
+  try{
+    if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    (scope||document).querySelectorAll('.stat-num').forEach(function(el){
+      var first = el.firstChild;
+      if(!first || first.nodeType !== 3) return;
+      var m = first.textContent.match(/^(\d+)/);
+      if(!m) return;
+      var target = parseInt(m[1],10);
+      if(target <= 0) return;
+      var rest = first.textContent.slice(m[1].length);
+      var t0 = null, DUR = 650;
+      function step(ts){
+        if(t0 === null) t0 = ts;
+        var p = Math.min((ts - t0)/DUR, 1);
+        p = 1 - Math.pow(1-p, 3);
+        first.textContent = Math.round(target*p) + rest;
+        if(p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
+  }catch(e){}
+}
 function _flushTimers(){
   _timers.forEach(function(id){ clearTimeout(id); }); _timers = [];
   _rafIds.forEach(function(id){ cancelAnimationFrame(id); }); _rafIds = [];
@@ -78,7 +102,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.5';   // v2.3.5: 视觉打磨层——深度光感/入场错峰/微交互/Toast图标/昵称问候/标签页标题
+const APP_VERSION = 'v2.3.6';   // v2.3.6: 知识库增量渲染 / 统计数字滚动 / 公共库骨架屏
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -701,6 +725,7 @@ function renderDashboard(){
       <div class="panel-title">🏅 学习排行榜 <span class="sub" style="cursor:pointer;color:var(--primary)" onclick="switchView('stats')">查看完整排行 →</span></div>
       <div id="dash-leader-panel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
     </div>`;
+  _deferRaf(function(){ animateStatNums(el); });
   _defer(loadDashLeader, 120);
 }
 
@@ -1326,7 +1351,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.5 · MIT License</span>'+
+            '<span>研学库 v2.3.6 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
