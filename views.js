@@ -502,7 +502,7 @@ function showCardsImportPreview(fname){
 }
 function confirmCardsImport(){
   const name = document.getElementById('imp-subject').value.trim() || '导入科目';
-  const subj = findOrCreateSubject(name, '新闻与传播');
+  const subj = findOrCreateSubject(name);
   let added = 0;
   const t = todayStr();
   const usedTitles = new Set(db.knowledge.filter(k=>k.subjectId===subj.id).map(k=>k.title));
@@ -524,9 +524,11 @@ function confirmCardsImport(){
 }
 
 /* ====== v5: 用户系统 + 排行榜 + 收藏 ====== */
-let _starredData = '[]';
-try{ _starredData = localStorage.getItem('yanxueku_stars') || '[]'; }catch(e){}
-let _starred = new Set(JSON.parse(_starredData));
+// 收藏以 db.stars 为准（随云端同步）；此处理合并 localStorage 遗留数据兜底
+let _starred = new Set(Array.isArray(db && db.stars) ? db.stars : []);
+try{
+  (JSON.parse(localStorage.getItem('yanxueku_stars') || '[]') || []).forEach(function(id){ _starred.add(id); });
+}catch(e){}
 
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;

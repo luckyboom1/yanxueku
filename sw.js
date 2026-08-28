@@ -1,8 +1,13 @@
 /* 研学库 Service Worker — network-first with smart fallback
  * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
  */
-const CACHE = 'yanxueku-v10';
-const ASSETS = ['./','./index.html','./styles.css','./core.js','./quiz.js','./views.js','./public-lib.js','./manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json'];
+const CACHE = 'yanxueku-v11';
+// 预缓存必须完整覆盖 index.html 引用的全部资源：此前缺 src/*.js、gate.css、quiz_analyzer.js，
+// 离线时模块加载失败整个应用打不开；法律页一并缓存供离线查看
+const ASSETS = ['./','./index.html','./styles.css','./core.js','./quiz.js','./views.js','./public-lib.js',
+  './quiz_analyzer.js','./src/main.js','./src/utils.js','./src/constants.js','./src/state.js','./src/gate.css',
+  './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json',
+  './privacy.html','./terms.html'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));

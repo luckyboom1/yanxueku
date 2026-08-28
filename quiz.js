@@ -52,7 +52,7 @@ function renderQuizHome(){
       </div>
       <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:14px" onclick="startQuiz()">🚀 开始自测</button>
       ${renderQuizAnalysis()}
-      <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:12px">答错的题目会自动进入错题本</div>
+      <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:12px">答错的题目会自动进入错题本 · 快捷键：数字键选答案，Enter 下一题</div>
     </div>`;
 }
 function startQuiz(){

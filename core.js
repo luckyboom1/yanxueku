@@ -78,7 +78,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.2';   // v2.3.2: 实时同步时间戳修复 / 日期健壮性 / 洗牌公平性 / 快捷键
+const APP_VERSION = 'v2.3.3';   // v2.3.3: PWA 离线补全 / 收藏云同步 / 刷题快捷键 / 日期时区
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -274,12 +274,12 @@ function seedData(){
 
   const studyLog = [];
   const quizRecords = [];
-  return {_schemaVersion: DATA_VERSION, subjects, knowledge, questions, quizRecords, studyLog};
+  return {_schemaVersion: DATA_VERSION, subjects, knowledge, questions, quizRecords, studyLog, stars: []};
 }
 
 /* 空白数据骨架：全新账号/登出后的干净状态，不预置任何演示内容 */
 function blankDb(){
-  return {_schemaVersion: DATA_VERSION, subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
+  return {_schemaVersion: DATA_VERSION, subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[], stars:[]};
 }
 
 /* 判断内存数据是否仍是未动过的内置演示种子。
@@ -309,6 +309,8 @@ const _dbReady = new Promise(r => { _loadResolve = r; });
 /* 数据迁移：确保数据格式与当前版本兼容 */
 function migrateData(data) {
   const ver = data._schemaVersion || 0;
+  // stars（收藏 id 列表）为 v3 期新增字段：对新旧数据都幂等补齐，云端旧数据接管后不至于丢收藏
+  if (!Array.isArray(data.stars)) data.stars = [];
   if (ver >= DATA_VERSION) return data;
 
   // v0 → v1：确保基础结构存在
@@ -858,6 +860,8 @@ function sanitizeImport(d){
       };
     });
   }
+  // 收藏 id 列表：此前只存 localStorage，换设备即丢失；随数据一起备份/恢复
+  out.stars = (Array.isArray(d.stars)?d.stars:[]).slice(0,20000).map(cleanId).filter(Boolean);
   return out;
 }
 let _pendingImportData = null;
@@ -1131,6 +1135,21 @@ document.addEventListener('keydown', e=>{
     const fc = document.getElementById('fcard');
     if(fc && fc.classList.contains('flipped')){ e.preventDefault(); grade(parseInt(e.key,10)-1, {stopPropagation(){}}); }
   }
+  // 刷题快捷键：1-9 选择选项；解析出现后 Enter 进入下一题
+  if(curView==='quiz' && quiz && !e.target.matches('input,textarea')){
+    if(/^[1-9]$/.test(e.key)){
+      const opt = document.querySelectorAll('#q-opts .q-opt')[parseInt(e.key,10)-1];
+      if(opt && !opt.classList.contains('locked')){ e.preventDefault(); opt.click(); }
+    } else if(e.key==='Enter'){
+      const nextBtn = document.querySelector('#q-feedback .q-foot .btn');
+      if(nextBtn){ e.preventDefault(); nextBtn.click(); }
+    }
+  }
+  // 知识库 "/" 快速聚焦搜索框
+  if(e.key==='/' && curView==='library' && !e.target.matches('input,textarea')){
+    const si = document.getElementById('lib-search');
+    if(si){ e.preventDefault(); si.focus(); }
+  }
 });
 
 /* ================= 启动 ================= */
@@ -1301,7 +1320,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.2 · MIT License</span>'+
+            '<span>研学库 v2.3.3 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1376,10 +1395,13 @@ function startActivityTracking(){
 _dbReady.then(function(){
   try{ startTimer(); }catch(e){}
   try{ startActivityTracking(); }catch(e){}
-  // 首次使用引导
-  if(!localStorage.getItem('yanxueku_guided')){
-    setTimeout(showFirstGuide, 800);
-  }
+  // 遗留收藏迁移：老版本的 ⭐ 只存 localStorage，数据里没有 stars 字段时搬进 db 随云端同步
+  try{
+    if(!db.stars || !db.stars.length){
+      var legacyStars = JSON.parse(localStorage.getItem('yanxueku_stars') || '[]');
+      if(Array.isArray(legacyStars) && legacyStars.length){ db.stars = legacyStars; }
+    }
+  }catch(e){}
 });
 
 
@@ -1446,7 +1468,11 @@ function getDecemberThirdSaturday(year){
 }
 function getCountdownDate(){
   const saved = localStorage.getItem('yanxueku_exam_date');
-  if(saved) return new Date(saved);
+  // 存储的是本地日期字符串，按本地零点解析：new Date('YYYY-MM-DD') 走 UTC，负偏移时区会错一天
+  if(saved && /^\d{4}-\d{2}-\d{2}$/.test(saved)){
+    const p = saved.split('-');
+    return new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  }
   // 默认：当前年份12月第三个周六；若已过则用明年
   const now = new Date();
   let exam = getDecemberThirdSaturday(now.getFullYear());
@@ -1625,6 +1651,8 @@ function setupAuthListener(){
       }
       hideGate();
       setupRealtimeSync();
+      // 首次使用引导：登录进入应用后再展示（此前在登录墙页就弹出，指向的侧栏按钮根本不可用）
+      if(!localStorage.getItem('yanxueku_guided')){ setTimeout(showFirstGuide, 900); }
     }else{ _currentUser=null; _profile=null; renderGate(); }
     _scheduleRender();
     hideLoading(); // SDK 确认 session 后统一隐藏 loading，避免 SDK 加载慢时 loading 先消失露出 gate
@@ -1646,7 +1674,13 @@ async function renderLeaderboard(){
     panel.innerHTML=rows||'<div style="text-align:center;padding:20px;color:var(--text-3)">暂无数据</div>';
   }catch(e){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>'; }
 }
-function toggleStar(kwId, ev){ if(ev)ev.stopPropagation(); if(_starred.has(kwId))_starred.delete(kwId); else _starred.add(kwId); localStorage.setItem('yanxueku_stars', JSON.stringify([..._starred])); renderLibrary(); }
+function toggleStar(kwId, ev){
+  if(ev)ev.stopPropagation();
+  if(_starred.has(kwId))_starred.delete(kwId); else _starred.add(kwId);
+  db.stars = Array.from(_starred);            // 收藏随云端数据同步，跨设备不丢
+  try{ localStorage.setItem('yanxueku_stars', JSON.stringify(db.stars)); }catch(e){}
+  save(); renderLibrary();
+}
 // 仪表盘 Top3 排行榜（异步加载，复用 leaderboard view）
 async function loadDashLeader(){
   if(!sb||!_currentUser) return;
