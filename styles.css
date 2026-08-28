@@ -174,6 +174,7 @@ input,textarea,[contenteditable],.fc-content,.plib-kw-preview .content{
 .g-forgot{background:#ef4444}
 .g-blur{background:#f59e0b}
 .g-good{background:#10b981}
+.g-easy{background:#6366f1}
 .empty-state{text-align:center;padding:70px 20px;color:var(--text-2)}
 .empty-state .big{font-size:52px;margin-bottom:14px}
 .empty-state h3{font-size:18px;color:var(--text);margin-bottom:6px}

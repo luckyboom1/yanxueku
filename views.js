@@ -136,7 +136,7 @@ function openKwDetail(id){
     <h3><span class="subj-dot" style="background:${safeColor(s?s.color:'#6366f1')};width:11px;height:11px"></span>${esc(k.title)}</h3>
     <div class="review-info">
       <span>📖 ${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
-      <span>🧠 记忆阶段：${EBB_LABEL[Math.min(k.stage,6)]}</span>
+      <span>🧠 ${cardStageLabel(k)}${k.fsrs&&k.fsrs.s?'（强度 '+k.fsrs.s.toFixed(1)+' 天）':''}</span>
       <span>📅 下次复习：${k.nextReview}</span>
       <span>📈 掌握度：${MASTERY_NAMES[masteryLevel(k)]}</span>
     </div>
@@ -279,9 +279,9 @@ function renderFlashcard(){
       <div class="flashcard" id="fcard" onclick="this.classList.toggle('flipped')">
         <div class="fc-inner">
           <div class="fc-face fc-front">
-            <span class="fc-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)} · ${EBB_LABEL[Math.min(k.stage,6)]}</span>
+            <span class="fc-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)} · ${cardStageLabel(k)}</span>
             <div class="fc-title">${esc(k.title)}</div>
-            <div class="fc-hint">👆 点击卡片查看答案（翻卡后可按 1/2/3 评分）</div>
+            <div class="fc-hint">👆 点击卡片查看答案（翻卡后可按 1/2/3/4 评分）</div>
           </div>
           <div class="fc-face fc-back">
             <span class="fc-chapter" style="align-self:center">${esc(k.title)}</span>
@@ -290,9 +290,10 @@ function renderFlashcard(){
         </div>
       </div>
       <div class="grade-row">
-        <button class="grade-btn g-forgot" onclick="grade(0,event)">😵 忘记了<small>明天重新复习</small></button>
-        <button class="grade-btn g-blur" onclick="grade(1,event)">🤔 有点模糊<small>缩短间隔再巩固</small></button>
-        <button class="grade-btn g-good" onclick="grade(2,event)">😎 记得牢固<small>进入下一记忆阶段</small></button>
+        <button class="grade-btn g-forgot" onclick="grade(0,event)">😵 忘记了<small>${engineMode()==='fsrs'?'重置进度':'明天重新复习'}</small></button>
+        <button class="grade-btn g-blur" onclick="grade(1,event)">🤔 有点模糊<small>缩短间隔巩固</small></button>
+        <button class="grade-btn g-good" onclick="grade(2,event)">😎 记得牢固<small>正常推进</small></button>
+        ${engineMode()==='fsrs'?'<button class="grade-btn g-easy" onclick="grade(3,event)">🚀 轻松<small>大幅拉长间隔</small></button>':''}
       </div>
     </div>`;
 }
@@ -306,9 +307,14 @@ function grade(level, ev){
     return;
   }
   const today = todayStr();
-  if(level===0){ k.stage = 0; k.nextReview = addDays(today, 1); }
-  else if(level===1){ const iv = Math.max(1, Math.round(EBB[Math.min(k.stage,6)]/2)); k.nextReview = addDays(today, iv); }
-  else { k.stage = Math.min(k.stage+1, EBB.length-1); k.nextReview = addDays(today, EBB[k.stage]); }
+  if(engineMode()==='fsrs'){
+    applyFsrsGrade(k, Math.min(level,3), today);
+  } else {
+    level = Math.min(level,2);   // 经典引擎只有三档
+    if(level===0){ k.stage = 0; k.nextReview = addDays(today, 1); }
+    else if(level===1){ const iv = Math.max(1, Math.round(EBB[Math.min(k.stage,6)]/2)); k.nextReview = addDays(today, iv); }
+    else { k.stage = Math.min(k.stage+1, EBB.length-1); k.nextReview = addDays(today, EBB[k.stage]); }
+  }
   k.lastReview = today;
   reviewDone++;
   addStudy(2);
@@ -843,6 +849,8 @@ function renderMine(){
     <div class="panel">
       <div class="panel-title">🎛 偏好设置</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+        <button class="btn btn-ghost" onclick="toggleEngine()" id="engine-btn">🧠 记忆引擎：${engineMode()==='fsrs'?'FSRS 自适应':'经典艾宾浩斯'}</button>
+        <button class="btn btn-ghost" onclick="cycleRetention()" id="retention-btn">🎯 记忆目标：${Math.round(fsrsRetention()*100)}%</button>
         <button class="btn btn-ghost" onclick="openGoalSetter()">🎯 每日复习目标</button>
         <button class="btn btn-ghost" onclick="openExamDatePicker()">📅 考研日期</button>
         <button class="btn btn-ghost" onclick="openHotkeyHelp()">⌨️ 快捷键</button>
@@ -1016,7 +1024,7 @@ function importPubLibSubject(subjectId){
 }
 
 // ===== Post-boot wrappers（在目标函数定义后执行） =====
-// 翻卡后默认开启挖空模式
+// 卡片背面提供"挖空模式"开关按钮（是否自动开启由用户点击决定）
 if(typeof renderFlashcard === 'function'){
   const _origRF = renderFlashcard;
   renderFlashcard = function(){
@@ -1026,17 +1034,10 @@ if(typeof renderFlashcard === 'function'){
     _deferRaf(function(){
       var fc = document.getElementById('fcard');
       var back = document.querySelector('.fc-back');
-      if(fc){
-        fc.addEventListener('click', function autoBlanks(){
-          if(fc.classList.contains('flipped')){
-            toggleBlanksMode();
-            fc.removeEventListener('click', autoBlanks);
-          }
-        }, {once: false});
-      }
       if(back && !back.querySelector('.blanks-toggle')){
         var btn = document.createElement('div');
-        btn.className = 'blank-count';
+        // 类名必须含 blanks-toggle：与下方防重查寻一致，否则每次渲染会插出重复按钮
+        btn.className = 'blank-count blanks-toggle';
         btn.style.cssText = 'cursor:pointer;color:var(--primary);font-weight:600;margin-bottom:8px';
         btn.textContent = '🔍 挖空模式（关闭）';
         btn.onclick = function(e){

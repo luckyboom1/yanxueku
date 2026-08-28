@@ -26,6 +26,86 @@ const _deferRaf = function(fn){
   const id = requestAnimationFrame(function(){ _rafIds = _rafIds.filter(function(r){ return r !== id; }); fn(); });
   _rafIds.push(id); return id;
 };
+
+/* ==================================================================
+   FSRS 记忆引擎（Free Spaced Repetition Scheduler, FSRS-4.5 内核）
+   每张卡维护独立记忆状态 { d:难度(1-10), s:稳定性(天), lastReviewDate, reps }，
+   按用户评分逐卡拟合个人遗忘曲线，取代共享的固定艾宾浩斯间隔。
+   评分映射：忘记=Again(1) 模糊=Hard(2) 记牢=Good(3) 轻松=Easy(4)
+   ================================================================== */
+var FSRS_W = [0.4872,1.4003,3.7145,13.8206,5.1618,1.2298,0.8975,0.031,1.6474,0.1367,1.0461,2.1072,0.0793,0.3246,1.587,0.2272,2.8755];
+var FSRS_DECAY = -0.5, FSRS_FACTOR = 19/81;
+var FSRS_MAX_INTERVAL = 365;
+function engineMode(){ try{ return localStorage.getItem('yanxueku_engine') || 'fsrs'; }catch(e){ return 'fsrs'; } }
+function setEngine(m){ try{ localStorage.setItem('yanxueku_engine', m==='fsrs'?'fsrs':'ebb'); }catch(e){} }
+function fsrsRetention(){ try{ var r = parseFloat(localStorage.getItem('yanxueku_retention')); if(r>=0.8 && r<=0.97) return r; }catch(e){} return 0.9; }
+function setRetention(r){ try{ localStorage.setItem('yanxueku_retention', String(r)); }catch(e){} }
+function toggleEngine(){
+  setEngine(engineMode()==='fsrs'?'ebb':'fsrs');
+  toast(engineMode()==='fsrs'?'已切换 FSRS 自适应记忆引擎 🧠':'已切换经典艾宾浩斯引擎','ok');
+  if(curView) render();
+}
+var RETENTION_CYCLE = [0.9, 0.85, 0.95];
+function cycleRetention(){
+  var cur = fsrsRetention();
+  var idx = RETENTION_CYCLE.indexOf(Math.round(cur*100)/100);
+  var next = RETENTION_CYCLE[(idx+1) % RETENTION_CYCLE.length];
+  setRetention(next);
+  toast('目标保持率调整为 '+Math.round(next*100)+'%（间隔将相应'+(next<cur?'变长':'变短')+'）','info');
+  if(curView) render();
+}
+function fsrsClampD(d){ return Math.max(1, Math.min(10, d)); }
+function fsrsInitD(G){ return fsrsClampD(FSRS_W[4] - (G-3)*FSRS_W[5]); }
+function fsrsInit(G){ return { d: fsrsInitD(G), s: FSRS_W[G-1], reps: 1 }; }
+function fsrsRetrievability(t, s){
+  if(s <= 0) return 0;
+  return Math.max(0, Math.min(1, Math.pow(1 + FSRS_FACTOR * t / s, FSRS_DECAY)));
+}
+function fsrsNext(st, G, elapsed){
+  var d = st.d, s = st.s;
+  var R = fsrsRetrievability(elapsed, s);
+  if(G === 1){
+    s = FSRS_W[11] * Math.pow(d, -FSRS_W[12]) * (Math.pow(s+1, FSRS_W[13]) - 1) * Math.exp(FSRS_W[14] * (1-R));
+  } else {
+    var hardPenalty = (G===2) ? FSRS_W[15] : 1;
+    var easyBonus  = (G===4) ? FSRS_W[16] : 1;
+    s = s * (1 + Math.exp(FSRS_W[8]) * (11-d) * Math.pow(s, -FSRS_W[9]) * (Math.exp(FSRS_W[10]*(1-R)) - 1) * hardPenalty * easyBonus);
+  }
+  s = Math.max(0.1, Math.min(s, FSRS_MAX_INTERVAL * 2));
+  d = fsrsClampD(FSRS_W[7]*fsrsInitD(4) + (1-FSRS_W[7])*(d - FSRS_W[6]*(G-3)));
+  return { d: d, s: s };
+}
+function fsrsInterval(s){
+  var r = fsrsRetention();
+  return s * (Math.pow(r, 1/FSRS_DECAY) - 1) / FSRS_FACTOR;
+}
+function applyFsrsGrade(k, level, today){
+  var G = level + 1;
+  var st = k.fsrs;
+  if(!st || !st.s){
+    st = k.fsrs = fsrsInit(G);
+  } else {
+    var elapsed = Math.max(0, diffDays(today, st.lastReviewDate || today));
+    var nxt = fsrsNext(st, G, elapsed);
+    st.d = nxt.d; st.s = nxt.s;
+    st.reps = (st.reps||0) + 1;
+  }
+  st.lastReviewDate = today;
+  k.stage = fsrsStageBucket(st.s);
+  k.nextReview = addDays(today, Math.min(FSRS_MAX_INTERVAL, Math.max(1, Math.round(fsrsInterval(st.s)))));
+}
+function fsrsStageBucket(s){
+  if(s < 1) return 0; if(s < 3) return 1; if(s < 10) return 2;
+  if(s < 21) return 3; if(s < 45) return 4; if(s < 90) return 5; return 6;
+}
+function cardStageLabel(k){
+  if(engineMode()==='fsrs'){
+    if(!k.fsrs || !k.fsrs.s) return '新学';
+    var t = Math.max(0, diffDays(todayStr(), k.fsrs.lastReviewDate || k.nextReview));
+    return '记忆保持 ~' + Math.round(fsrsRetrievability(t, k.fsrs.s)*100) + '%';
+  }
+  return EBB_LABEL[Math.min(k.stage,6)];
+}
 // 统计数字滚动：只动首个文本节点里的整数，保留 <small> 等子节点；尊重系统"减少动态效果"
 function animateStatNums(scope){
   try{
@@ -101,8 +181,8 @@ if(!sb){
 // === 数据模型（EBB 遗忘曲线、主题、日期工具） ===
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
-const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.7';   // v2.3.7: 排行榜周榜/总榜 / 编辑草稿自动保存 / 快捷键帮助 / PWA深链
+const DATA_VERSION = 4;
+const APP_VERSION = 'v2.4.0';   // v2.4.0: FSRS 记忆引擎（四级评分/个人遗忘曲线/引擎可回退）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -373,6 +453,16 @@ function migrateData(data) {
     });
   }
 
+  // v3 → v4：接入 FSRS 记忆引擎。已入学卡片从艾宾浩斯阶段近似换算初始稳定性，
+  // 新卡（stage=0）保持无 fsrs 状态，首次评分时初始化。
+  if (ver < 4) {
+    data.knowledge.forEach(function(k){
+      if (!k.fsrs && (k.stage||0) > 0){
+        k.fsrs = { d: 5, s: EBB[Math.min(k.stage,6)], lastReviewDate: k.lastReview || k.nextReview, reps: 1 };
+      }
+    });
+  }
+
   data._schemaVersion = DATA_VERSION;
   return data;
 }
@@ -478,7 +568,13 @@ function addStudy(min){
 }
 function isDue(k){ return k.nextReview <= todayStr(); }
 function dueList(){ return db.knowledge.filter(isDue).sort((a,b)=> a.nextReview < b.nextReview ? -1 : 1); }
-function masteryLevel(k){ if(k.stage<=0) return 0; if(k.stage<=2) return 1; if(k.stage<=4) return 2; return 3; }
+function masteryLevel(k){
+  if(engineMode()==='fsrs' && k.fsrs && k.fsrs.s){
+    var s = k.fsrs.s;
+    if(s < 1) return 0; if(s < 3) return 1; if(s < 10) return 2; return 3;
+  }
+  if(k.stage<=0) return 0; if(k.stage<=2) return 1; if(k.stage<=4) return 2; return 3;
+}
 const MASTERY_NAMES = ['未掌握','初学','熟练','掌握'];
 const MASTERY_COLORS = ['#94a3b8','#f59e0b','#0ea5e9','#10b981'];
 function wrongList(){
@@ -1181,8 +1277,8 @@ document.addEventListener('keydown', e=>{
     const fc = document.getElementById('fcard');
     if(fc){ e.preventDefault(); fc.classList.toggle('flipped'); }
   }
-  // 复习评分快捷键：翻卡后 1=忘记了 2=有点模糊 3=记得牢固（与按钮顺序一致）
-  if(curView==='review' && (e.key==='1'||e.key==='2'||e.key==='3') && reviewQueue.length
+  // 复习评分快捷键：翻卡后 1=忘记了 2=有点模糊 3=记得牢固 4=轻松（FSRS 引擎四档）
+  if(curView==='review' && (e.key==='1'||e.key==='2'||e.key==='3'||e.key==='4') && reviewQueue.length
      && reviewIdx < reviewQueue.length && !e.target.matches('input,textarea')){
     const fc = document.getElementById('fcard');
     if(fc && fc.classList.contains('flipped')){ e.preventDefault(); grade(parseInt(e.key,10)-1, {stopPropagation(){}}); }
@@ -1372,7 +1468,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.7 · MIT License</span>'+
+            '<span>研学库 v2.4.0 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
