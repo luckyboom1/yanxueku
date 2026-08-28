@@ -44,7 +44,23 @@ SELECT
     0
   ) AS total_minutes
 FROM profiles p
-LEFT JOIN app_state a ON a.user_id = p.user_id;
+LEFT JOIN app_state a ON a.user_id = p.user_id
+ORDER BY total_minutes DESC;
+
+-- 周榜视图：近 7 天学习时长（前端 v2.3.7+ 提供"近7天/累计"切换；
+-- 未执行本段 SQL 时前端查询失败会自动回退累计榜）
+CREATE OR REPLACE VIEW leaderboard_week AS
+SELECT
+  p.display_name,
+  p.avatar_color,
+  COALESCE((
+    SELECT SUM(CASE WHEN x->>'minutes' ~ '^[0-9]+$' THEN (x->>'minutes')::int ELSE 0 END)
+    FROM jsonb_array_elements(a.data->'studyLog') AS x
+    WHERE x->>'date' >= to_char(now() - interval '7 day', 'YYYY-MM-DD')
+  ), 0) AS week_minutes
+FROM profiles p
+LEFT JOIN app_state a ON a.user_id = p.user_id
+ORDER BY week_minutes DESC;
 
 -- ===== 可选加固（v2.3.1+）：排行榜防刷 =====
 -- 客户端已对单日 studyLog.minutes 限幅 1440，但客户端可被绕过；

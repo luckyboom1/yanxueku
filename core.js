@@ -102,7 +102,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.6';   // v2.3.6: 知识库增量渲染 / 统计数字滚动 / 公共库骨架屏
+const APP_VERSION = 'v2.3.7';   // v2.3.7: 排行榜周榜/总榜 / 编辑草稿自动保存 / 快捷键帮助 / PWA深链
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -517,6 +517,12 @@ const VIEW_META = {
   mine:{title:'我的', sub:'账号信息 · 偏好设置 · 数据管理'},
   'public-library':{title:'公共课程库', sub:'十大热门考研专业课 · 一键导入到个人科目'},
 };
+// PWA 快捷方式深链（manifest shortcuts）：登录后自动跳转目标视图
+var _wantView = null;
+try{
+  var _qv = new URLSearchParams(location.search).get('view');
+  if(_qv && VIEW_META[_qv]) _wantView = _qv;
+}catch(e){}
 
 // === 视图状态管理 ===
 let curView = 'dashboard';
@@ -1152,10 +1158,25 @@ function toast(msg, type){
   el.className = 'toast '+(type||'info');
   el.textContent = msg;
   root.appendChild(el);
+  while(root.children.length >= 4) root.removeChild(root.firstChild);   // 队列上限，防刷屏堆叠
   setTimeout(()=>{ el.classList.add('out'); setTimeout(()=>el.remove(), 300); }, 2600);
+}
+// 快捷键帮助面板：? 键或"我的"页入口
+function openHotkeyHelp(){
+  openModal({
+    title: '⌨️ 键盘快捷键',
+    body: '<div style="font-size:13.5px;line-height:2.3;color:var(--text-2)">'+
+      '<div>📘 知识库：<kbd>/</kbd> 聚焦搜索框</div>'+
+      '<div>🧠 记忆复习：<kbd>空格</kbd> 翻卡；翻卡后 <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> = 忘记 / 模糊 / 记牢</div>'+
+      '<div>✍️ 刷题自测：<kbd>1</kbd>-<kbd>9</kbd> 选择选项；解析出现后 <kbd>Enter</kbd> 下一题</div>'+
+      '<div>🪟 任意界面：<kbd>Esc</kbd> 关闭弹窗；<kbd>?</kbd> 打开本帮助</div>'+
+      '</div>',
+    actions: [{text: '知道了', class: 'btn btn-primary', onclick: 'closeModal()'}]
+  });
 }
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape') closeModal();
+  if((e.key==='?'||e.key==='？') && !e.target.matches('input,textarea')){ openHotkeyHelp(); return; }
   if(e.key===' ' && curView==='review' && reviewQueue.length && !e.target.matches('input,textarea')){
     const fc = document.getElementById('fcard');
     if(fc){ e.preventDefault(); fc.classList.toggle('flipped'); }
@@ -1351,7 +1372,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.6 · MIT License</span>'+
+            '<span>研学库 v2.3.7 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1684,26 +1705,41 @@ function setupAuthListener(){
       setupRealtimeSync();
       // 首次使用引导：登录进入应用后再展示（此前在登录墙页就弹出，指向的侧栏按钮根本不可用）
       if(!localStorage.getItem('yanxueku_guided')){ setTimeout(showFirstGuide, 900); }
+      // PWA 快捷方式深链
+      if(_wantView){ var _wv = _wantView; _wantView = null; switchView(_wv); }
     }else{ _currentUser=null; _profile=null; renderGate(); }
     _scheduleRender();
     hideLoading(); // SDK 确认 session 后统一隐藏 loading，避免 SDK 加载慢时 loading 先消失露出 gate
   });
 }
 setupAuthListener();
-async function renderLeaderboard(){
+var _lbMode = 'total';   // 排行榜窗口：total=累计，week=近7天（需服务端 leaderboard_week 视图，缺失时自动回退）
+async function renderLeaderboard(mode){
+  if(mode) _lbMode = mode;
   var panel=document.getElementById('leaderboard-panel'); if(!panel) return;
   panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载中…</div>';
   if(!sb||!_currentUser){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">登录后可见</div>'; return; }
+  var isWeek = _lbMode==='week';
   try{
-    var x=await sb.from('leaderboard').select('*').limit(20);
-    var data=x.data||[], rows='';
+    var x=await sb.from(isWeek?'leaderboard_week':'leaderboard').select('*').limit(20);
+    if(x.error) throw x.error;
+    var data=(x.data||[]).map(function(r){
+      var raw = isWeek
+        ? (r.week_minutes!=null ? r.week_minutes : r.total_minutes)
+        : (r.total_minutes!=null ? r.total_minutes : (function(){ var n=0; try{ JSON.parse(r.study_log||'[]').forEach(function(s){ n+=s.minutes||0; }); }catch(e){} return n; })());
+      return { name:r.display_name||'考研人', color:r.avatar_color, m:parseInt(raw,10)||0 };
+    });
+    data.sort(function(a,b){ return b.m-a.m; });   // 视图不带 ORDER BY，客户端排序保证名次
+    var rows='';
     data.forEach(function(r,i){
-      // 兼容新旧 view：新 view 返回 total_minutes；SQL 未执行前旧 view 只有 study_log
-      var m = r.total_minutes != null ? (parseInt(r.total_minutes, 10) || 0) : (function(){ var n=0; try{ JSON.parse(r.study_log||'[]').forEach(function(x){n+=x.minutes||0}); }catch(e){} return n; })();
-      rows+='<div class="leader-row"><div class="rank '+(i<3?'t'+(i+1):'t')+'">'+(i+1)+'</div><div class="avatar" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:'+safeColor(r.avatar_color)+'">'+(r.display_name||'?').charAt(0)+'</div><div class="ld-name">'+esc(r.display_name||'考研人')+'</div><div class="ld-time">'+Math.floor(m/60)+'h '+m%60+'m</div></div>';
+      var m=r.m;
+      rows+='<div class="leader-row"><div class="rank '+(i<3?'t'+(i+1):'t')+'">'+(i+1)+'</div><div class="avatar" style="width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;background:'+safeColor(r.color)+'">'+(r.name||'?').charAt(0)+'</div><div class="ld-name">'+esc(r.name)+'</div><div class="ld-time">'+(isWeek?'':'')+Math.floor(m/60)+'h '+m%60+'m</div></div>';
     });
     panel.innerHTML=rows||'<div style="text-align:center;padding:20px;color:var(--text-3)">暂无数据</div>';
-  }catch(e){ panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>'; }
+  }catch(e){
+    if(isWeek){ _lbMode='total'; renderLeaderboard(); toast('周榜需要执行最新 UPGRADE_SQL，已为你显示累计榜','info'); return; }
+    panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text-3)">加载失败</div>';
+  }
 }
 function toggleStar(kwId, ev){
   if(ev)ev.stopPropagation();
@@ -1718,6 +1754,7 @@ async function loadDashLeader(){
   try{
     const x = await sb.from('leaderboard').select('*').limit(3);
     const data = x.data||[];
+    data.sort(function(a,b){ return (parseInt(b.total_minutes,10)||0) - (parseInt(a.total_minutes,10)||0); });
     const wrap = document.getElementById('dash-leader-wrap');
     const panel = document.getElementById('dash-leader-panel');
     if(!wrap||!panel) return;

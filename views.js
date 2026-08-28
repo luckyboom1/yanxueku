@@ -150,25 +150,48 @@ function openKwDetail(id){
 }
 function openKwModal(id){
   const k = id? db.knowledge.find(x=>x.id===id) : null;
+  var kid = k? k.id : 'new';
   openModal(`
     <button class="modal-close" onclick="closeModal()">✕</button>
     <h3>${k?'✏️ 编辑知识点':'＋ 新建知识点'}</h3>
     <div class="form-2col">
       <div class="form-row"><label>所属科目</label>
-        <select id="f-subject">${db.subjects.map(s=>`<option value="${s.id}" ${k&&k.subjectId===s.id?'selected':''}>${esc(s.name)}（${esc(s.exam)}）</option>`).join('')}</select>
+        <select id="f-subject" onchange="saveKwDraft('${kid}')">${db.subjects.map(s=>`<option value="${s.id}" ${k&&k.subjectId===s.id?'selected':''}>${esc(s.name)}（${esc(s.exam)}）</option>`).join('')}</select>
       </div>
       <div class="form-row"><label>章节</label>
-        <input id="f-chapter" placeholder="如：树与二叉树" value="${k?esc(k.chapter):''}">
+        <input id="f-chapter" placeholder="如：树与二叉树" value="${k?esc(k.chapter):''}" oninput="saveKwDraft('${kid}')">
       </div>
     </div>
-    <div class="form-row"><label>标题</label><input id="f-title" placeholder="一句话概括这个知识点" value="${k?esc(k.title):''}"></div>
-    <div class="form-row"><label>内容（支持 **加粗** 和 \`代码\`）</label><textarea id="f-content" rows="7" placeholder="用自己的话记录考点，记得更牢…">${k?esc(k.content):''}</textarea></div>
-    <div class="form-row"><label>标签（用逗号分隔）</label><input id="f-tags" placeholder="如：高频考点, 计算题" value="${k?esc(k.tags.join(', ')):''}"></div>
+    <div class="form-row"><label>标题</label><input id="f-title" placeholder="一句话概括这个知识点" value="${k?esc(k.title):''}" oninput="saveKwDraft('${kid}')"></div>
+    <div class="form-row"><label>内容（支持 **加粗** 和 \`代码\`）</label><textarea id="f-content" rows="7" placeholder="用自己的话记录考点，记得更牢…" oninput="saveKwDraft('${kid}')">${k?esc(k.content):''}</textarea></div>
+    <div class="form-row"><label>标签（用逗号分隔）</label><input id="f-tags" placeholder="如：高频考点, 计算题" value="${k?esc(k.tags.join(', ')):''}" oninput="saveKwDraft('${kid}')"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">取消</button>
       <button class="btn btn-primary" onclick="saveKw('${k?k.id:''}')">${k?'保存修改':'创建并加入复习计划'}</button>
     </div>`);
+  // 恢复上次未保存的草稿（误触关闭不丢内容）
+  try{
+    var d = JSON.parse(localStorage.getItem('yanxueku_draft_kw_'+kid)||'null');
+    if(d && (d.title || d.content)){
+      if(d.title != null) document.getElementById('f-title').value = d.title;
+      if(d.content != null) document.getElementById('f-content').value = d.content;
+      if(d.chapter != null) document.getElementById('f-chapter').value = d.chapter;
+      if(d.tags != null) document.getElementById('f-tags').value = d.tags;
+      if(d.subjectId) document.getElementById('f-subject').value = d.subjectId;
+      toast('已恢复上次未保存的草稿','info');
+    }
+  }catch(e){}
 }
+// 草稿存取：任何字段输入即落 localStorage，保存成功后清除
+function saveKwDraft(kid){
+  try{
+    var g = function(fid){ var e2 = document.getElementById(fid); return e2 ? e2.value : ''; };
+    localStorage.setItem('yanxueku_draft_kw_'+(kid||'new'), JSON.stringify({
+      subjectId: g('f-subject'), chapter: g('f-chapter'), title: g('f-title'), content: g('f-content'), tags: g('f-tags')
+    }));
+  }catch(e){}
+}
+function clearKwDraft(kid){ try{ localStorage.removeItem('yanxueku_draft_kw_'+(kid||'new')); }catch(e){} }
 function saveKw(id){
   const subjectId = document.getElementById('f-subject').value;
   const chapter = document.getElementById('f-chapter').value.trim() || '未分章';
@@ -187,7 +210,7 @@ function saveKw(id){
     _analytics.kwCreated(subjectId, tags.length > 0);
     toast('已创建并加入今日复习 🎉','ok');
   }
-  save(); closeModal(); render();
+  save(); closeModal(); clearKwDraft(id||'new'); render();
 }
 function delKw(id){
   const k = db.knowledge.find(x=>x.id===id);
@@ -369,7 +392,7 @@ function renderStats(){
     const el = document.getElementById('view-stats');
     if(el && !el.querySelector('#leaderboard-panel')){
       const div = document.createElement('div');
-      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub" onclick="renderLeaderboard()" style="cursor:pointer;color:var(--primary)">刷新</span></div><div id="leaderboard-panel"></div></div>';
+      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub"><span class="chip'+(_lbMode==='week'?' active':'')+'" style="padding:3px 14px" onclick="renderLeaderboard(\'week\')">近7天</span> <span class="chip'+(_lbMode==='total'?' active':'')+'" style="padding:3px 14px" onclick="renderLeaderboard(\'total\')">累计</span></span></div><div id="leaderboard-panel"></div></div>';
       el.appendChild(div); renderLeaderboard();
     }
   }, 60);
@@ -822,6 +845,7 @@ function renderMine(){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
         <button class="btn btn-ghost" onclick="openGoalSetter()">🎯 每日复习目标</button>
         <button class="btn btn-ghost" onclick="openExamDatePicker()">📅 考研日期</button>
+        <button class="btn btn-ghost" onclick="openHotkeyHelp()">⌨️ 快捷键</button>
       </div>
     </div>
     <div class="panel">
