@@ -78,7 +78,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 3;
-const APP_VERSION = 'v2.3.4';   // v2.3.4: 性能——搜索就地过滤/索引缓存/预览先切后转义/仪表盘单遍计数
+const APP_VERSION = 'v2.3.5';   // v2.3.5: 视觉打磨层——深度光感/入场错峰/微交互/Toast图标/昵称问候/标签页标题
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -506,6 +506,7 @@ function switchView(name){
   const meta = VIEW_META[name];
   document.getElementById('page-title').textContent = meta.title;
   document.getElementById('page-sub').textContent = meta.sub;
+  document.title = meta.title + ' · 研学库';
   render();
   document.getElementById('content').scrollTop = 0;
   _analytics.page(name);
@@ -602,7 +603,7 @@ function renderDashboard(){
     
     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
       <div>
-        <h2 style="font-size:22px;font-weight:800">${greet}，考研人 💪</h2>
+        <h2 style="font-size:22px;font-weight:800">${greet}，${esc(_profile && _profile.display_name || '考研人')} 💪</h2>
         <div style="color:var(--text-3);font-size:13px">${dateStr} · 今天的每一点积累，都是上岸的底气</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap" id="dash-header-right"></div>
@@ -1325,7 +1326,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.3.4 · MIT License</span>'+
+            '<span>研学库 v2.3.5 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+

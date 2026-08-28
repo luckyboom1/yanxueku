@@ -471,3 +471,102 @@ body.modal-open #content{overflow:hidden}
   color:#fff;font-size:22px;font-weight:700;
   margin:0 auto 10px;box-shadow:0 6px 18px rgba(99,102,241,.3);
 }
+
+/* ==================================================================
+   v2.3.5 视觉打磨层：深度与光感 / 入场错峰 / 微交互 / 细节一致性
+   ================================================================== */
+:root{
+  --shadow-sm:0 1px 2px rgba(27,30,46,.04),0 4px 14px rgba(27,30,46,.045);
+  --shadow-md:0 6px 24px rgba(27,30,46,.09),0 2px 6px rgba(27,30,46,.05);
+  --shadow-lg:0 20px 60px rgba(27,30,46,.16);
+  --radius:18px;
+}
+
+/* 视图切换：轻微失焦到清晰的入场 */
+@keyframes viewIn{from{opacity:0;transform:translateY(10px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+
+/* 卡片入场错峰（前 8 张依次浮现，其余即入，避免长列表拖沓） */
+@keyframes cardIn{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
+.kw-grid>.kw-card{animation:cardIn .45s cubic-bezier(.16,1,.3,1) both}
+.kw-grid>.kw-card:nth-child(2){animation-delay:.045s}
+.kw-grid>.kw-card:nth-child(3){animation-delay:.09s}
+.kw-grid>.kw-card:nth-child(4){animation-delay:.135s}
+.kw-grid>.kw-card:nth-child(5){animation-delay:.18s}
+.kw-grid>.kw-card:nth-child(6){animation-delay:.225s}
+.kw-grid>.kw-card:nth-child(7){animation-delay:.27s}
+.kw-grid>.kw-card:nth-child(8){animation-delay:.315s}
+.kw-grid>.kw-card:nth-child(n+9){animation-delay:0s}
+
+/* 卡片顶部高光细线 + 悬浮加深 */
+.kw-card::before{content:"";position:absolute;top:0;left:14px;right:14px;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);opacity:.7;pointer-events:none}
+.kw-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+
+/* 统计卡：角落光晕 + 悬浮抬升 */
+.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.stat-card::after{content:"";position:absolute;right:-34px;top:-34px;width:100px;height:100px;border-radius:50%;
+  background:var(--sc,var(--grad));opacity:.07;filter:blur(8px);pointer-events:none;transition:opacity .3s}
+.stat-card:hover::after{opacity:.13}
+
+/* 侧栏：当前项左侧渐变指示条 */
+.nav-item{position:relative}
+.nav-item.active::before{content:"";position:absolute;left:-14px;top:22%;bottom:22%;width:3px;border-radius:3px;background:var(--grad)}
+.nav-item .ico{transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.nav-item:hover .ico{transform:scale(1.18)}
+
+/* 主按钮：渐变流动 */
+.btn-primary{background-size:160% 100%;background-position:0% 0}
+.btn-primary:hover{background-position:100% 0}
+.btn:active,.btn-ghost:active{transform:translateY(0) scale(.97)}
+
+/* 仪表盘问候渐变字 */
+#view-dashboard h2{background:linear-gradient(120deg,var(--text) 30%,var(--primary));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* 闪卡悬浮厚度 */
+.flashcard{transition:transform .2s}
+.flashcard:hover .fc-face{box-shadow:var(--shadow-lg)}
+.fc-face{border-radius:22px}
+
+/* 刷题：答对轻弹、答错摆头 */
+@keyframes optPop{0%{transform:scale(.97)}55%{transform:scale(1.014)}100%{transform:none}}
+@keyframes optShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}70%{transform:translateX(4px)}}
+.q-opt.correct{animation:optPop .35s cubic-bezier(.16,1,.3,1)}
+.q-opt.wrong{animation:optShake .4s cubic-bezier(.36,.07,.19,.97)}
+.q-opt .key{transition:all .25s}
+
+/* Toast：类型图标（补齐缺失的 warn 态） */
+.toast.warn{border-color:rgba(245,158,11,.45);color:var(--warn)}
+.toast.ok::before{content:"✓";font-weight:800}
+.toast.err::before{content:"✕";font-weight:800}
+.toast.info::before{content:"i";font-style:italic;font-weight:800}
+.toast.warn::before{content:"!";font-weight:800}
+
+/* 弹窗：关闭钮旋转、表列聚焦即亮 */
+.modal-close{transition:all .25s cubic-bezier(.16,1,.3,1)}
+.modal-close:hover{transform:rotate(90deg)}
+.search-box:focus-within .s-ico{color:var(--primary)}
+
+/* 空状态：呼吸浮动 */
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.empty-state .big{display:inline-block;animation:floaty 3.2s ease-in-out infinite}
+
+/* 收藏星标：悬停浮现，已收藏常显 */
+.kw-star{opacity:0;transition:opacity .2s,transform .2s}
+.kw-card:hover .kw-star,.kw-star.on,.kw-star:focus-visible{opacity:1}
+@media(hover:none){.kw-star{opacity:1}}
+
+/* 行与排行：悬浮反馈 */
+.row-item:hover{transform:translateY(-1px)}
+.leader-row{border-radius:8px;transition:background .2s;padding-left:10px}
+.leader-row:hover{background:var(--surface-2)}
+
+/* 倒计时与目标条 */
+.goal-fill{background:linear-gradient(90deg,#6366f1,#8b5cf6)}
+.countdown-badge{transition:transform .2s,box-shadow .2s}
+.countdown-badge:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(239,68,68,.15)}
+
+/* 搜索命中高亮不可行（就地过滤），但 chip 激活阴影微调 */
+.chip.active{box-shadow:0 3px 12px rgba(99,102,241,.32)}
+
+/* 暗色：高光线不可见改为微亮描边 */
+html[data-theme="dark"] .kw-card::before{background:linear-gradient(90deg,transparent,rgba(255,255,255,.09),transparent)}
