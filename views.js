@@ -390,7 +390,8 @@ function renderStats(){
           <div class="subj-bar"><i style="width:${Math.round(avg)}%;background:${safeColor(s.color)}"></i></div>
         </div>`;
       }).join('')}
-    </div>`;
+    </div>
+    ${renderHeatmap()}`;
   drawBarChart(days);
   _deferRaf(function(){ animateStatNums(el); });
   // 完整排行榜（仪表盘 Top3 的"查看完整排行"入口指向这里）
@@ -402,6 +403,58 @@ function renderStats(){
       el.appendChild(div); renderLeaderboard();
     }
   }, 60);
+}
+/* ================= 知识掌握热力图 ================= */
+function heatCellStyle(v){
+  if(v < 20) return 'background:var(--surface-2);color:var(--text-3)';
+  if(v < 40) return 'background:rgba(239,68,68,.14);color:#dc2626';
+  if(v < 60) return 'background:rgba(245,158,11,.16);color:#b45309';
+  if(v < 80) return 'background:rgba(132,204,22,.2);color:#4d7c0f';
+  return 'background:rgba(16,185,129,.22);color:#047857';
+}
+function renderHeatmap(){
+  if(!db || !db.knowledge || !db.knowledge.length){
+    return '<div class="panel"><div class="panel-title">🔥 知识掌握热力图</div><div class="empty-state" style="padding:30px 10px"><p>先在知识库里添加知识点，这里会按章节展示掌握强弱</p></div></div>';
+  }
+  var bySubject = {};
+  db.knowledge.forEach(function(k){
+    if(!bySubject[k.subjectId]) bySubject[k.subjectId] = [];
+    bySubject[k.subjectId].push(k);
+  });
+  var html = '<div class="panel" onclick="heatmapClick(event)"><div class="panel-title">🔥 知识掌握热力图 <span class="sub">记得程度 × 记忆强度 · 点击章节直达</span></div>';
+  html += '<div style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text-3);margin-bottom:14px"><span>弱</span>' +
+    [15,35,55,75,95].map(function(v){ return '<span style="width:28px;height:12px;border-radius:4px;display:inline-block;'+heatCellStyle(v)+'"></span>'; }).join('') +
+    '<span>强</span></div>';
+  var any = false;
+  db.subjects.forEach(function(s){
+    var ks = bySubject[s.id];
+    if(!ks || !ks.length) return;
+    any = true;
+    var chapters = {};
+    ks.forEach(function(k){ var c = k.chapter || '未分章'; (chapters[c] = chapters[c] || []).push(k); });
+    var subjAvg = Math.round(ks.reduce(function(sum,k){ return sum + cardHeat(k); },0) / ks.length);
+    html += '<div class="heat-block"><div class="heat-head"><b>' + esc(s.name) + '</b>' +
+      '<span style="font-size:11px;color:var(--text-3)">' + ks.length + ' 张 · 均 ' + subjAvg + '</span></div>';
+    html += '<div class="heat-grid" data-sid="'+escAttr(s.id)+'">';
+    Object.keys(chapters).forEach(function(c){
+      var arr = chapters[c];
+      var avg = Math.round(arr.reduce(function(sum,k){ return sum + cardHeat(k); },0) / arr.length);
+      html += '<div class="heat-cell" style="'+heatCellStyle(avg)+'" data-ch="'+escAttr(c)+'" title="'+esc(c)+' · '+arr.length+' 张 · 平均掌握 '+avg+'">' +
+        '<div class="h-val">'+avg+'</div><div class="h-name">'+esc(c)+'</div></div>';
+    });
+    html += '</div></div>';
+  });
+  if(!any) return '';
+  return html + '</div>';
+}
+function heatmapClick(ev){
+  var cell = ev.target.closest('.heat-cell'); if(!cell) return;
+  var grid = cell.closest('.heat-grid'); if(!grid) return;
+  openChapter(grid.getAttribute('data-sid'), cell.getAttribute('data-ch'));
+}
+function openChapter(sid, ch){
+  libFilter.subject = sid; libFilter.search = ch || ''; libFilter.tag = '';
+  switchView('library');
 }
 function donutSVG(dist){
   const total = dist.reduce((a,b)=>a+b,0) || 1;

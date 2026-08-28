@@ -106,6 +106,18 @@ function cardStageLabel(k){
   }
   return EBB_LABEL[Math.min(k.stage,6)];
 }
+// 热力图分值（0-100）：FSRS 下 = 50% 当前记得程度(R) + 50% 记忆强度(S/21天封顶)；
+// 经典引擎降级为掌握度分桶。新卡恒为 0。
+function cardHeat(k){
+  if(engineMode()==='fsrs'){
+    if(!k.fsrs || !k.fsrs.s) return 0;
+    var t = Math.max(0, diffDays(todayStr(), k.fsrs.lastReviewDate || k.nextReview));
+    var R = fsrsRetrievability(t, k.fsrs.s);
+    var sf = Math.min(1, k.fsrs.s / 21);
+    return Math.round(100 * (0.5*R + 0.5*sf));
+  }
+  return [0,33,66,100][masteryLevel(k)] || 0;
+}
 // 统计数字滚动：只动首个文本节点里的整数，保留 <small> 等子节点；尊重系统"减少动态效果"
 function animateStatNums(scope){
   try{
@@ -182,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.0';   // v2.4.0: FSRS 记忆引擎（四级评分/个人遗忘曲线/引擎可回退）
+const APP_VERSION = 'v2.4.1';   // v2.4.1: 知识掌握热力图（章节×记得程度×强度，点击直达）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1468,7 +1480,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.0 · MIT License</span>'+
+            '<span>研学库 v2.4.1 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
