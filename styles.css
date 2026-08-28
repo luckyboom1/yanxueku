@@ -592,3 +592,33 @@ kbd{display:inline-block;min-width:22px;padding:1px 8px;border-radius:6px;border
 .heat-cell:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm)}
 .heat-cell .h-val{font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
 .heat-cell .h-name{font-size:11px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ==================================================================
+   v2.4.5 扁平统一层：与登录页（Apple/Xiaomi 质感）同语言
+   更平的表面 · 更大的字重 · 移除装饰光效 · 暗色底色衔接登录页
+   ================================================================== */
+:root{
+  --shadow-sm:0 1px 2px rgba(23,24,28,.04);
+  --shadow-md:0 8px 28px rgba(23,24,28,.08);
+  --shadow-lg:0 24px 70px rgba(23,24,28,.16);
+  --border:#eceef4;
+}
+html[data-theme="dark"]{
+  --bg:#0b0c14;
+  --bg-grad:radial-gradient(1100px 480px at 50% -14%, rgba(99,102,241,.14), transparent 62%), #0b0c14;
+}
+/* 移除装饰性光效，回归纯平面 */
+.stat-card::after{content:none}
+.stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.kw-card::before{content:none}
+/* 排版：更大更重的层级 */
+#page-title{font-size:20px;font-weight:800;letter-spacing:-.4px}
+#page-sub{color:var(--text-3)}
+.panel-title{font-size:16px;font-weight:750;letter-spacing:-.2px}
+.stat-num{font-size:32px;font-weight:800;letter-spacing:-1.5px}
+.logo{font-size:18px;font-weight:800;letter-spacing:.2px}
+/* 主按钮：静态渐变（去掉流动动画） */
+.btn-primary{background-size:100% 100%}
+.btn-primary:hover{background-position:0 0}
+/* 侧栏：更干净的当前态 */
+.nav-item.active{font-weight:650}
