@@ -194,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.2';   // v2.4.2: 登录页闪烁指引箭头（平滑滚动/自动淡出/键盘可达）
+const APP_VERSION = 'v2.4.3';   // v2.4.3: 登录页未来科技美学重构（网格地板/扫描线/HUD/能量流光）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1378,14 +1378,17 @@ function renderGate(){
       '<div class="gate-particle" style="right:20%;top:60%;width:3px;height:3px;animation-delay:0.7s"></div>'+
       '<div class="gate-particle" style="left:60%;top:80%;width:4px;height:4px;animation-delay:1.8s"></div>'+
       '<div class="gate-particle" style="right:30%;top:12%;width:5px;height:5px;animation-delay:3.1s"></div>'+
+      '<div class="gate-grid-floor"></div>'+
+      '<div class="gate-scanlines"></div>'+
       // 首屏：Hero 卡片 + 滚动箭头（占满一整屏）
       '<div class="gate-hero">'+
       '<div class="gate-card">'+
         '<div class="gate-logo gate-stagger">研</div>'+
         '<h2 class="gate-stagger">研学库 · 考研专业课学习系统</h2>'+
-        '<div class="gate-subtitle gate-stagger">基于艾宾浩斯遗忘曲线的智能复习工具<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
+        '<div class="gate-subtitle gate-stagger">FSRS 自适应记忆引擎 · 科学排期到每一天<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
+        '<div class="gate-hud gate-stagger">SYS.ONLINE <span>//</span> FSRS <span>//</span> 13 SUBJECTS · 616 CARDS</div>'+
         '<div class="gate-features gate-stagger">'+
-          '<div class="gate-feat" data-tip="基于艾宾浩斯遗忘曲线\n智能排期，在遗忘临界点\n精准推送复习卡片">'+
+          '<div class="gate-feat" data-tip="FSRS 自适应引擎\n按你的评分拟合\n个人遗忘曲线">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
           '<div class="gate-feat" data-tip="13大热门考研专业课\n616张真实知识点卡片\n打开即用，无需手动录入">'+
             '<div class="gf-icon">📚</div><span>13科616卡片</span></div>'+
@@ -1406,15 +1409,16 @@ function renderGate(){
       '</div>'+ // 关闭 gate-hero
       // 功能展示区（第二屏）
       '<div class="gate-features-section">'+
+        '<div class="gate-kicker">[ YANXUEKU // FEATURE MATRIX ]</div>'+
         '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
         '<div class="gate-section-divider"></div>'+
         '<div class="gate-showcase">'+
           // 功能1: 科学记忆
           '<div class="gate-showcase-card" style="--i:0">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">🧠</div>'+
-            '<h3>艾宾浩斯智能复习</h3>'+
-            '<p>基于遗忘曲线科学排期，在记忆临界点精准推送复习。1-2-4-7-15-30-60天七轮强化，从短期记忆到长期掌握。</p>'+
-            '<ul><li>自动计算每张卡片的复习时间</li><li>翻卡评分：难/一般/简单，动态调整间隔</li><li>可视化今日待复习数量</li></ul>'+
+            '<h3>科学记忆引擎</h3>'+
+            '<p>FSRS 自适应算法逐卡拟合你的个人遗忘曲线，在记忆临界点精准推送，越用越懂你。</p>'+
+            '<ul><li>难度/稳定性双参数记忆建模</li><li>评分即时更新间隔（忘记→重置，轻松→跃进）</li><li>可视化今日待复习数量</li></ul>'+
           '</div>'+
           // 功能2: 知识库
           '<div class="gate-showcase-card" style="--i:1">'+
@@ -1482,7 +1486,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.2 · MIT License</span>'+
+            '<span>研学库 v2.4.3 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
