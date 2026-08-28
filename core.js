@@ -194,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.3';   // v2.4.3: 登录页未来科技美学重构（网格地板/扫描线/HUD/能量流光）
+const APP_VERSION = 'v2.4.4';   // v2.4.4: 登录页扁平高级感重构（Apple/Xiaomi 质感）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1378,15 +1378,12 @@ function renderGate(){
       '<div class="gate-particle" style="right:20%;top:60%;width:3px;height:3px;animation-delay:0.7s"></div>'+
       '<div class="gate-particle" style="left:60%;top:80%;width:4px;height:4px;animation-delay:1.8s"></div>'+
       '<div class="gate-particle" style="right:30%;top:12%;width:5px;height:5px;animation-delay:3.1s"></div>'+
-      '<div class="gate-grid-floor"></div>'+
-      '<div class="gate-scanlines"></div>'+
       // 首屏：Hero 卡片 + 滚动箭头（占满一整屏）
       '<div class="gate-hero">'+
       '<div class="gate-card">'+
         '<div class="gate-logo gate-stagger">研</div>'+
         '<h2 class="gate-stagger">研学库 · 考研专业课学习系统</h2>'+
         '<div class="gate-subtitle gate-stagger">FSRS 自适应记忆引擎 · 科学排期到每一天<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
-        '<div class="gate-hud gate-stagger">SYS.ONLINE <span>//</span> FSRS <span>//</span> 13 SUBJECTS · 616 CARDS</div>'+
         '<div class="gate-features gate-stagger">'+
           '<div class="gate-feat" data-tip="FSRS 自适应引擎\n按你的评分拟合\n个人遗忘曲线">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
@@ -1409,7 +1406,6 @@ function renderGate(){
       '</div>'+ // 关闭 gate-hero
       // 功能展示区（第二屏）
       '<div class="gate-features-section">'+
-        '<div class="gate-kicker">[ YANXUEKU // FEATURE MATRIX ]</div>'+
         '<h2 class="gate-section-title">为什么选择研学库？</h2>'+
         '<div class="gate-section-divider"></div>'+
         '<div class="gate-showcase">'+
@@ -1486,7 +1482,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.3 · MIT License</span>'+
+            '<span>研学库 v2.4.4 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
