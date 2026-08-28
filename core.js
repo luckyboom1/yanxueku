@@ -194,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.1';   // v2.4.1: 知识掌握热力图（章节×记得程度×强度，点击直达）
+const APP_VERSION = 'v2.4.2';   // v2.4.2: 登录页闪烁指引箭头（平滑滚动/自动淡出/键盘可达）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1400,7 +1400,9 @@ function renderGate(){
         '</div>'+
         '<button class="gate-btn gate-stagger" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
-      '<div class="gate-scroll-indicator" onclick="document.querySelector(\'.gate-features-section\').scrollIntoView({behavior:\'smooth\'})" title="向下滚动"></div>'+
+      '<div class="gate-scroll-hint" id="gateScrollHint" role="button" tabindex="0" title="向下探索" aria-label="向下滚动查看功能介绍" onclick="gateScrollDown()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gateScrollDown()}">'+
+        '<span class="gsh-text">向下滑动</span><span class="gsh-chevron"></span>'+
+      '</div>'+
       '</div>'+ // 关闭 gate-hero
       // 功能展示区（第二屏）
       '<div class="gate-features-section">'+
@@ -1480,16 +1482,38 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.1 · MIT License</span>'+
+            '<span>研学库 v2.4.2 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
         '</div>'+
       '</div>';
     document.body.appendChild(g);
+    // 指引箭头：滚动到功能区（点击或手动滚动）后自动淡出，回到顶部再出现
+    try{
+      var gateSec = g.querySelector('.gate-features-section');
+      if(gateSec && 'IntersectionObserver' in window){
+        new IntersectionObserver(function(entries){
+          entries.forEach(function(en){
+            var hint = document.getElementById('gateScrollHint');
+            if(hint) hint.classList.toggle('gsh-done', en.isIntersecting);
+          });
+        }, {root: g, threshold: 0.12}).observe(gateSec);
+      }
+    }catch(e){}
   }
   g.style.display = 'block';
   g.style.overflowY = 'auto';
+}
+// 指引点击：平滑滚动到功能区
+function gateScrollDown(){
+  var sec = document.querySelector('.gate-features-section');
+  if(sec && sec.scrollIntoView){
+    try{ sec.scrollIntoView({behavior:'smooth', block:'start'}); }
+    catch(e){ sec.scrollIntoView(); }
+  }
+  var hint = document.getElementById('gateScrollHint');
+  if(hint) hint.classList.add('gsh-done');
 }
 function hideGate(){
   const g = document.getElementById('login-gate');

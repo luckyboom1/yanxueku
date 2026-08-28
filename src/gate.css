@@ -232,21 +232,30 @@
 #login-gate .gate-card.loading{animation:none;opacity:.6;pointer-events:none}
 #login-gate .gate-card.loading .gate-btn{opacity:.5;pointer-events:none}
 
-/* ---------- 滚动指示器 ---------- */
-.gate-scroll-indicator{
-  flex-shrink:0;width:28px;height:28px;margin:0 auto 16px;cursor:pointer;
-  border-right:2px solid rgba(255,255,255,.25);
-  border-bottom:2px solid rgba(255,255,255,.25);
-  border-radius:2px;
-  transform:rotate(45deg);
-  animation:gateChevron 2.2s var(--ease-out-expo) infinite;
-  transition:border-color .2s;
+/* ---------- 滚动指引：闪烁胶囊按钮 ---------- */
+.gate-scroll-hint{
+  flex-shrink:0;display:inline-flex;align-items:center;gap:9px;margin:6px auto 18px;
+  padding:9px 22px;border-radius:999px;cursor:pointer;user-select:none;
+  border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);
+  backdrop-filter:blur(8px);color:rgba(255,255,255,.88);
+  font-size:12.5px;font-weight:600;letter-spacing:1.5px;
+  animation:gateHintBlink 2.4s ease-in-out infinite;
+  transition:border-color .2s,background .2s,transform .2s;
 }
-.gate-scroll-indicator:hover{border-color:rgba(255,255,255,.6)}
-.gate-scroll-indicator:active{border-color:rgba(129,140,248,.7);transform:rotate(45deg) scale(.92);transition:transform .1s}
-@keyframes gateChevron{
-  0%,100%{transform:rotate(45deg) translate(0,0);opacity:.3}
-  50%{transform:rotate(45deg) translate(4px,4px);opacity:.7}
+.gate-scroll-hint:hover{border-color:rgba(129,140,248,.85);background:rgba(99,102,241,.2);transform:translateY(-2px)}
+.gate-scroll-hint:active{transform:translateY(0) scale(.97)}
+.gate-scroll-hint:focus-visible{outline:2px solid #a5b4fc;outline-offset:2px}
+.gate-scroll-hint.gsh-done{opacity:0;pointer-events:none;transition:opacity .5s}
+.gsh-text{line-height:1}
+.gsh-chevron{width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+  border-radius:1px;transform:rotate(45deg) translate(-2px,-2px);animation:gateChevronBob 1.6s ease-in-out infinite}
+@keyframes gateHintBlink{
+  0%,100%{opacity:.5;box-shadow:0 0 0 0 rgba(129,140,248,0)}
+  50%{opacity:1;box-shadow:0 0 20px 2px rgba(129,140,248,.4)}
+}
+@keyframes gateChevronBob{
+  0%,100%{transform:rotate(45deg) translate(-2px,-2px)}
+  50%{transform:rotate(45deg) translate(2px,2px)}
 }
 
 /* ---------- 功能展示区 ---------- */
