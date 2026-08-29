@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.4';   // v3.0.0-beta.4: 功能/动画审计修复——搜索动画闪烁、暗色热力图对比度、文案一致性   // v3.0.0-beta.3: 红队修复——migrateData 深度消毒（全来源 XSS 注入向量）   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
+const APP_VERSION = 'v3.0.0-beta.5';   // v3.0.0-beta.5: 修复弹窗关闭→新开竞态导致的闪退（AI 去配置等）   // v3.0.0-beta.4: 功能/动画审计修复——搜索动画闪烁、暗色热力图对比度、文案一致性   // v3.0.0-beta.3: 红队修复——migrateData 深度消毒（全来源 XSS 注入向量）   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1326,8 +1326,11 @@ function buildSafeModal(opts){
     title + body +
     (actions ? `<div class="modal-actions">${actions}</div>` : '');
 }
+var _modalGen = 0;   // 弹窗代际：关闭动画的延迟清理只对"代际未变"的容器生效，
+                     // 修复"关闭后立刻开新弹窗被延迟清理误删"的闪退（如 AI 建卡 → 去配置）
 function openModal(html){
   const root = document.getElementById('modal-root');
+  _modalGen++;
   // 支持对象式安全调用：openModal({title, body, actions})
   const content = typeof html === 'object' && html !== null ? buildSafeModal(html) : html;
   root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal">${content}</div>`;
@@ -1337,9 +1340,14 @@ function openModal(html){
 function closeModal(){
   const root = document.getElementById('modal-root');
   const modal = root.querySelector('.modal');
+  const gen = _modalGen;
   if(modal && !modal.classList.contains('closing')){
     modal.classList.add('closing');
-    _defer(function(){ root.classList.remove('open'); root.innerHTML = ''; document.body.classList.remove('modal-open'); }, 180);
+    _defer(function(){
+      if(gen !== _modalGen) return;   // 期间已打开新弹窗：跳过清理，保留新弹窗
+      root.classList.remove('open'); root.innerHTML = '';
+      document.body.classList.remove('modal-open');
+    }, 180);
     return;
   }
   root.classList.remove('open'); root.innerHTML = '';
