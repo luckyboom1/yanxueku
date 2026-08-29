@@ -4,3 +4,7 @@ _*.js
 _*.json
 _*.md
 commit_msg.txt
+
+# 本地运行时配置与工作区数据（勿提交）
+config.js
+.workbuddy/

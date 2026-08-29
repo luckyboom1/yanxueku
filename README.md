@@ -25,9 +25,8 @@ quiz.js + quiz_analyzer.js   刷题引擎与题库智能分析
 ai.js                AI 能力层（建卡生成 / 语义批改 / 连接管理）
 public-lib.js         公共课程库视图
 styles.css            应用样式（扁平高级感设计语言）
-src/                  ES Modules 入口与工具（过渡期双体系，见技术债）
-src/gate.css          登录页样式
-sw.js                 Service Worker（network-first，预缓存 v11）
+gate.css              登录页样式
+sw.js                 Service Worker（network-first，预缓存 v18）
 public-library.json   公共课程库数据（13 科 616 卡）
 tools/                数据构建脚本与历史补丁（运行时不需要）
 UPGRADE_SQL.sql       Supabase 建表 / 视图 / 防刷触发器
@@ -64,7 +63,6 @@ python -m http.server 8080
 
 ## 已知技术债
 
-- **双模块体系**：`src/*`（ESM）与经典脚本并存，常量存在两份实现（以经典脚本为准），待合并
 - **单行 JSONB**：用户数据整包存于 `app_state.data`，全量 upsert；结构化拆表是多人大功能的前提
 - **内联 onclick**：事件处理器以字符串拼接为主（id 已做白名单加固），长期应迁移事件委托
 
