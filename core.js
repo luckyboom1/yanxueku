@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.3';   // v3.0.0-beta.3: 红队修复——migrateData 深度消毒（全来源 XSS 注入向量）   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
+const APP_VERSION = 'v3.0.0-beta.4';   // v3.0.0-beta.4: 功能/动画审计修复——搜索动画闪烁、暗色热力图对比度、文案一致性   // v3.0.0-beta.3: 红队修复——migrateData 深度消毒（全来源 XSS 注入向量）   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -695,7 +695,7 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=
 const VIEW_META = {
   dashboard:{title:'学习仪表盘', sub:''},
   library:{title:'知识库', sub:'按科目与章节组织你的专业课笔记'},
-  review:{title:'记忆复习', sub:'基于艾宾浩斯遗忘曲线智能排期'},
+  review:{title:'记忆复习', sub:'FSRS 记忆引擎 · 按你的遗忘曲线智能排期'},
   quiz:{title:'刷题自测', sub:'随机组卷 · 即时判分 · 解析回顾'},
   wrong:{title:'错题本', sub:'答错自动收录，重做正确后移除'},
   stats:{title:'学习统计', sub:'用数据看见自己的进步'},
@@ -1567,7 +1567,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v3.0.0-beta.3 · MIT License</span>'+
+            '<span>研学库 v3.0.0-beta.4 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+

@@ -86,7 +86,7 @@ function renderLibrary(){
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
       ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" onclick="libFilter.tag = libFilter.tag===this.dataset.tag ? '' : this.dataset.tag; renderLibrary()">${esc(t)}</div>`).join('')}
     </div>`:''}
-    ${list.length? `<div class="kw-grid" id="kw-grid">${shown.map(kwCard).join('')}</div>`
+    ${list.length? `<div class="kw-grid${searching?' no-anim':''}" id="kw-grid">${shown.map(kwCard).join('')}</div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
   if(searchCaret != null){
     var newSearch = document.getElementById('lib-search');
@@ -1105,7 +1105,7 @@ if(typeof renderFlashcard === 'function'){
         btn.onclick = function(e){
           e.stopPropagation();
           toggleBlanksMode();
-          this.textContent = blanksMode ? '🔍 挖空模式（开启中）' : '🔍 挖空模式（关闭）';
+          this.textContent = blanksMode ? '🔍 挖空模式（开启）' : '🔍 挖空模式（关闭）';
         };
         back.insertBefore(btn, back.firstChild);
       }
