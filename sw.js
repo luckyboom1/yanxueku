@@ -1,7 +1,7 @@
 /* 研学库 Service Worker — network-first with smart fallback
  * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
  */
-const CACHE = 'yanxueku-v13';
+const CACHE = 'yanxueku-v14';
 // 预缓存必须完整覆盖 index.html 引用的全部资源：此前缺 src/*.js、gate.css、quiz_analyzer.js，
 // 离线时模块加载失败整个应用打不开；法律页一并缓存供离线查看
 const ASSETS = ['./','./index.html','./styles.css','./core.js','./quiz.js','./views.js','./public-lib.js',

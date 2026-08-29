@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.6';   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.7';   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1481,7 +1481,7 @@ function renderGate(){
           '<div class="gate-feat" data-tip="FSRS 自适应引擎\n按你的评分拟合\n个人遗忘曲线">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
           '<div class="gate-feat" data-tip="13大热门考研专业课\n616张真实知识点卡片\n打开即用，无需手动录入">'+
-            '<div class="gf-icon">📚</div><span>14科832卡片</span></div>'+
+            '<div class="gf-icon">📚</div><span>15科1084卡片</span></div>'+
           '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
             '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
           '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
@@ -1514,7 +1514,7 @@ function renderGate(){
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#10b981,#14b8a6)">📚</div>'+
             '<h3>结构化知识库</h3>'+
             '<p>按科目 → 章节 → 标签三层组织专业课笔记。支持 Markdown 排版、代码高亮、挖空记忆。</p>'+
-            '<ul><li>14大热门考研专业 · 832张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
+            '<ul><li>15大热门考研专业 · 1084张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
           '</div>'+
           // 功能3: 刷题自测
           '<div class="gate-showcase-card" style="--i:2">'+

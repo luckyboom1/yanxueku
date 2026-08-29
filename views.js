@@ -948,7 +948,7 @@ function loadPublicLibrary(cb){
     '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'public-library.json?v=3.0.0-beta.6', true);
+  xhr.open('GET', 'public-library.json?v=3.0.0-beta.7', true);
   xhr.onload = function(){
     _pubLibLoading = false;
     if(xhr.status >= 200 && xhr.status < 300){
