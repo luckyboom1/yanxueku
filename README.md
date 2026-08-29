@@ -1,76 +1,69 @@
 # 研学库 · 考研专业课高效学习
 
-一个面向考研专业课的在线学习工具，支持艾宾浩斯记忆复习、刷题自测、错题本、学习统计与多人排行榜。
+一个面向考研专业课的在线学习工具：**FSRS 自适应记忆引擎**驱动的复习排期、刷题自测、错题本、知识掌握热力图、学习统计与多人排行榜。纯静态前端 + Supabase 云同步，无需构建工具。
 
 ## 功能特性
 
-- 📚 **知识库**：按科目与章节组织专业课笔记，支持 Markdown 加粗/代码
-- 🧠 **记忆复习**：基于艾宾浩斯遗忘曲线自动排期
-- ✍️ **刷题自测**：单选/判断题随机组卷，答错自动收录
-- 📕 **错题本**：重做正确后自动移除
-- 📊 **学习统计**：近 14 天学习时长、知识点掌握度分布、排行榜
-- ☁️ **云端同步**：登录后数据同步到 Supabase，跨设备访问
-- 🌓 **主题切换**：浅色/深色/跟随系统
-- 🔒 **一人一号**：专属账户，数据安全隔离
+- 🧠 **FSRS 记忆引擎**：每张卡片独立建模难度/稳定性，按你的评分逐卡拟合个人遗忘曲线（可在设置中切回经典艾宾浩斯）
+- 📚 **知识库**：按科目/章节/标签组织笔记，支持 Markdown 加粗/代码、挖空记忆、批量导入、卡包分享
+- ✍️ **刷题自测**：单选/判断/填空/简答随机组卷，智能选题与弱项章节分析，答错自动收录
+- 📕 **错题本**：重做正确自动移出
+- 🔥 **知识掌握热力图**：章节 × 记得程度 × 记忆强度，点击直达复习
+- 📊 **学习统计**：近 14 天时长、掌握度分布、考研倒计时、周榜/累计排行榜
+- ☁️ **云端同步**：Supabase 实时同步 + 会话验真（过期令牌自动清除，杜绝假登录）
+- 📱 **PWA**：可安装到桌面，支持"开始复习/刷题"快捷方式，离线可用
+- ⌨️ **键盘友好**：空格翻卡、1-4 评分、数字键答题、`/` 聚焦搜索、`?` 快捷键速查
+
+## 仓库结构
+
+```
+index.html            入口（含运行时配置注入）
+core.js               数据层 / 认证 / FSRS 引擎 / 仪表盘（经典脚本主文件）
+views.js              渲染层：知识库 / 复习 / 统计 / 排行榜 / 认证 UI
+quiz.js + quiz_analyzer.js   刷题引擎与题库智能分析
+public-lib.js         公共课程库视图
+styles.css            应用样式（扁平高级感设计语言）
+src/                  ES Modules 入口与工具（过渡期双体系，见技术债）
+src/gate.css          登录页样式
+sw.js                 Service Worker（network-first，预缓存 v11）
+public-library.json   公共课程库数据（13 科 616 卡）
+tools/                数据构建脚本与历史补丁（运行时不需要）
+UPGRADE_SQL.sql       Supabase 建表 / 视图 / 防刷触发器
+config.template.js    配置模板 → 复制为 config.js（本地开发用）
+```
 
 ## 本地运行
-
-本项目是纯静态前端，无需构建工具。
 
 ```bash
 git clone https://github.com/luckyboom1/yanxueku.git
 cd yanxueku
-
-# 复制配置模板并填入真实配置
-cp config.template.js config.js
-# 编辑 config.js，填入你的 Supabase 与 Turnstile 配置
-
-# 任意静态服务器启动
+cp config.template.js config.js   # 填入 Supabase 与 Turnstile 配置
 python -m http.server 8080
-# 或 npx serve .
 ```
 
-然后访问 `http://localhost:8080`。
-
-## 配置说明
-
-复制 `config.template.js` 为 `config.js`，并填入以下配置：
-
-```javascript
-window.__YANXUEKU_CONFIG__ = {
-  SUPABASE_URL: 'https://your-project.supabase.co',
-  SUPABASE_KEY: 'your-anon-key',
-  TURNSTILE_SITE_KEY: '' // 可选，留空则关闭注册人机验证
-};
-```
-
-> 📌 本项目部署在 GitHub Pages（纯静态托管，文件仅来自 git 仓库），故 `config.js` 随仓库提交以保证线上可用。其中仅含 **公开凭据**（anon key / Turnstile Site Key，前端每次请求都会携带），提交无安全风险；真正的敏感凭据（service_role、Turnstile secret）**绝不**出现在前端。
+线上（GitHub Pages）的配置直接内联在 `index.html` 中，与 `config.js` 需同步维护（anon key 属公开凭据）。
 
 ## Supabase 后端配置
 
-1. 在 Supabase 中创建项目。
-2. 执行 `UPGRADE_SQL.sql` 中的 SQL（注意先单独跑 `DROP TABLE IF EXISTS app_state CASCADE;`）。
-3. 在 Authentication → Settings 中配置邮箱确认策略。
-4. 若启用 Cloudflare Turnstile，请在 Auth → Protection 中关闭 Supabase 自带 CAPTCHA 强制校验（本应用采用尽力而为模式）。
+1. 创建 Supabase 项目，执行 `UPGRADE_SQL.sql`（注意按文件头部说明先单独跑 `DROP TABLE`）
+2. **执行文件尾部两段可选加固**：`leaderboard_week` 周榜视图（缺省时前端自动回退累计榜）与学习时长防刷触发器
+3. Authentication 中配置邮箱确认策略；若启用 Turnstile，请在 Auth → Protection 关闭 Supabase 自带 CAPTCHA
 
-## 部署
+## 安全模型
 
-本项目可直接部署到 GitHub Pages、Vercel、Netlify、Cloudflare Pages 等静态托管平台。
+- 前端仅持有公开凭据（anon key / Turnstile Site Key）；RLS 保证每人只能读写自己的行
+- 启动时对会话做服务端验真，过期/无效令牌自动清除并回到登录墙
+- 导入数据（备份/卡包）经结构校验、长度限制、id 字符集白名单消毒
 
-部署前请确保：
+## 已知技术债
 
-- `config.js` 随仓库提交（仅含公开凭据，见上文说明）；若改用 Vercel/Netlify 等支持环境变量的托管，可改为在平台配置 `SUPABASE_URL`/`SUPABASE_KEY`/`TURNSTILE_SITE_KEY`。
-- 已轮换 Supabase anon key，且旧 key 不再使用（若曾暴露在 Git 历史中）。
-
-## 安全提示
-
-- 不要在前端源码中硬编码 Supabase anon key、Turnstile secret key 等敏感信息。
-- 生产环境建议在 Supabase 中开启邮箱确认、使用强密码策略。
-- 定期审查 RLS 策略与视图字段，避免泄露用户敏感标识（如 `user_id`）。
+- **双模块体系**：`src/*`（ESM）与经典脚本并存，常量存在两份实现（以经典脚本为准），待合并
+- **单行 JSONB**：用户数据整包存于 `app_state.data`，全量 upsert；结构化拆表是多人大功能的前提
+- **内联 onclick**：事件处理器以字符串拼接为主（id 已做白名单加固），长期应迁移事件委托
 
 ## 贡献
 
-欢迎提交 Issue 与 Pull Request。修改涉及安全或数据格式时，请优先在 PR 中说明影响范围。
+欢迎 Issue 与 PR。涉及安全或数据格式的修改请先在 PR 中说明影响范围。
 
 ## License
 

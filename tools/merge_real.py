@@ -1,6 +1,6 @@
 import json
 
-with open('public-library.json','r',encoding='utf-8') as f:
+with open('../public-library.json','r',encoding='utf-8') as f:
     data = json.load(f)
 
 # Remove all placeholder cards
@@ -21,7 +21,7 @@ s_xw['cardCount'] = len(s_xw['cards'])
 s_xw['chapters'] = list(dict.fromkeys(c['chapter'] for c in s_xw['cards']))
 
 data['_version'] = 4
-with open('public-library.json','w',encoding='utf-8') as f:
+with open('../public-library.json','w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False)
 
 for s in data['subjects']:

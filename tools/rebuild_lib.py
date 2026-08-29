@@ -1,6 +1,6 @@
 import json
 
-with open('public-library.json','r',encoding='utf-8') as f:
+with open('../public-library.json','r',encoding='utf-8') as f:
     data = json.load(f)
 
 # 1. 提取原新闻传播学
@@ -102,7 +102,7 @@ data['_description'] = '十三大热门考研专业课知识卡片，点击即�
 data['_version'] = 2
 total_cards = sum(len(s['cards']) for s in new_subjects)
 
-with open('public-library.json','w',encoding='utf-8') as f:
+with open('../public-library.json','w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False)
 
 print("=== 拆分/新增结果 ===")

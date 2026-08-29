@@ -3,7 +3,7 @@ import json, sys
 subject_id = sys.argv[1]
 patch_file = sys.argv[2]
 
-with open('public-library.json','r',encoding='utf-8') as f:
+with open('../public-library.json','r',encoding='utf-8') as f:
     data = json.load(f)
 
 with open(patch_file,'r',encoding='utf-8') as f:
@@ -21,5 +21,5 @@ for s in data['subjects']:
         print(f'{s["name"]}: +{added} = {s["cardCount"]} total')
         break
 
-with open('public-library.json','w',encoding='utf-8') as f:
+with open('../public-library.json','w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False)

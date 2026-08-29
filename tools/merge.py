@@ -1,6 +1,6 @@
 import json
 
-with open('public-library.json','r',encoding='utf-8') as f:
+with open('../public-library.json','r',encoding='utf-8') as f:
     data = json.load(f)
 
 # Load patch data
@@ -40,7 +40,7 @@ data['subjects'] = new_subjects
 data['_description'] = '十三大热门考研专业课知识卡片，点击即可导入到个人科目'
 data['_version'] = 2
 
-with open('public-library.json','w',encoding='utf-8') as f:
+with open('../public-library.json','w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False)
 
 total = sum(len(s['cards']) for s in new_subjects)

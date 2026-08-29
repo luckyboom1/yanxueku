@@ -1,6 +1,6 @@
 import json
 
-with open('public-library.json','r',encoding='utf-8') as f:
+with open('../public-library.json','r',encoding='utf-8') as f:
     data = json.load(f)
 subjects = data['subjects']
 
@@ -38,7 +38,7 @@ add('pub-xwsw', bulk('新闻实务补充', 83, '新闻实务'))
 data['_version'] = 3
 data['_description'] = '十三大热门考研专业课知识卡片，每科100+张，总计850+张'
 
-with open('public-library.json','w',encoding='utf-8') as f:
+with open('../public-library.json','w',encoding='utf-8') as f:
     json.dump(data, f, ensure_ascii=False)
 
 total = sum(len(s['cards']) for s in subjects)
