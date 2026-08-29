@@ -4,7 +4,7 @@
  * v20: 性能优化——移除 public-library.json（2.2MB）预缓存改运行时缓存；
  *      静态资源 network-first → stale-while-revalidate（资源均带 ?v= 版本戳，URL 变即缓存失效）
  */
-const CACHE = 'yanxueku-v20';
+const CACHE = 'yanxueku-v21';
 // 预缓存仅覆盖首屏关键资源（~0.4MB）：公共库数据 2.2MB 只有进入公共库页才需要，
 // 且 views.js 有独立的 localStorage 缓存，预缓存它会让 PWA 首装流量膨胀 85%。
 // 它改为运行时缓存：首次在线访问后由 fetch handler 存入缓存，离线可用。

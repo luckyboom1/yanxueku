@@ -7,15 +7,21 @@
 
 var AI_CFG_KEY = 'yanxueku_ai_cfg';
 var _aiPendingCards = null;   // AI 建卡的待导入预览数据
+var _aiCfgCache = null;       // aiCfg() 内存缓存，saveAiCfg 时失效（避免每次调用同步读 localStorage + JSON.parse）
 
 function aiCfg(){
+  if(_aiCfgCache) return _aiCfgCache;
+  var out = { base:'', model:'', key:'' };
   try{
     var c = JSON.parse(localStorage.getItem(AI_CFG_KEY) || '{}');
-    return { base: String(c.base||'').replace(/\/+$/,''), model: String(c.model||''), key: String(c.key||'') };
-  }catch(e){ return { base:'', model:'', key:'' }; }
+    out = { base: String(c.base||'').replace(/\/+$/,''), model: String(c.model||''), key: String(c.key||'') };
+  }catch(e){}
+  _aiCfgCache = out;
+  return out;
 }
 function aiConfigured(){ var c = aiCfg(); return !!(c.base && c.model && c.key); }
 function saveAiCfg(base, model, key){
+  _aiCfgCache = null;   // 配置变更立即使缓存失效，否则保存后仍读到旧配置
   try{ localStorage.setItem(AI_CFG_KEY, JSON.stringify({ base: base, model: model, key: key })); }catch(e){}
 }
 
@@ -46,7 +52,10 @@ async function aiChat(messages, opts){
       signal: ctrl.signal
     });
   }catch(e){
-    throw new Error(e.name === 'AbortError' ? '请求超时' : '网络请求失败（检查地址与跨域设置）');
+    // AbortError 只可能是超时；TypeError 通常是 CSP/CORS 拦截，与真实网络故障分开提示，减少误判排查
+    if(e.name === 'AbortError') throw new Error('请求超时');
+    if(e instanceof TypeError) throw new Error('请求被拦截，检查跨域(CORS)或本机网络策略');
+    throw new Error('网络请求失败（检查地址与网络连接）');
   } finally {
     clearTimeout(timer);
   }
@@ -55,17 +64,24 @@ async function aiChat(messages, opts){
     try{ body = (await res.text()).slice(0, 140); }catch(e){}
     throw new Error('HTTP ' + res.status + (body ? ' · ' + body : ''));
   }
-  // 响应体读取也受超时控制：此前仅 fetch 阶段有超时，慢速滴流的响应体会让调用方远超预期时限
-  var j;
+  // 响应体读取同样受超时控制：此前仅 fetch 阶段有超时，慢速滴流的响应体会让调用方远超预期时限。
+  // 超时时复用同一个 controller 真正中止底层连接（而不是"放弃等待但连接仍在读"），
+  // 且无论成功与超时都清理该定时器，避免悬挂 15 秒。
+  var bodyTimer = null;
+  var payload;
   try{
-    j = await Promise.race([
+    payload = await Promise.race([
       res.json(),
-      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, 15000); })
+      new Promise(function(_, rej){
+        bodyTimer = setTimeout(function(){ ctrl.abort(); rej(new Error('timeout')); }, 15000);
+      })
     ]);
   }catch(e){
     throw new Error('AI 响应读取失败（非 JSON 响应或连接中断）');
+  } finally {
+    if(bodyTimer){ clearTimeout(bodyTimer); bodyTimer = null; }
   }
-  var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
+  var content = payload && payload.choices && payload.choices[0] && payload.choices[0].message && payload.choices[0].message.content;
   if(!content) throw new Error('AI 响应缺少内容');
   return content;
 }
@@ -75,9 +91,20 @@ function aiParseJson(content){
   var s = String(content || '').replace(/```json|```/gi, '').trim();
   var i = s.indexOf('{'), j = s.lastIndexOf('}');
   if(i === -1 || j <= i) throw new Error('AI 返回内容无法解析');
-  var obj = JSON.parse(s.slice(i, j + 1));
+  var obj;
+  try{
+    obj = JSON.parse(s.slice(i, j + 1));
+  }catch(e){
+    // AI 输出不受控：解析失败必须转成中文提示，否则用户看到的是英文 SyntaxError
+    throw new Error('AI 返回内容不是合法 JSON，请重试或换个素材');
+  }
   if(!obj || typeof obj !== 'object') throw new Error('AI 返回结构异常');
   return obj;
+}
+
+/* 组合调用：发消息 → 解析 JSON（内部复用，不新增对外接口） */
+async function aiChatJson(messages, opts){
+  return aiParseJson(await aiChat(messages, opts));
 }
 
 /* 连接测试：返回延迟 ms */
@@ -89,14 +116,15 @@ async function testAiConnectionReq(){
 
 /* ============ AI 建卡：素材 → 结构化知识卡片 ============ */
 async function aiGenerateCardsReq(source, count, subjectName){
-  var content = await aiChat([
+  var parsed = await aiChatJson([
     { role:'system', content:'你是考研专业课辅导老师，把素材整理成便于记忆的知识卡片。content 用**加粗**突出关键点，200-400字。只输出严格 JSON，不要任何多余文字：{"cards":[{"chapter":"章节名","title":"标题(不超过20字)","content":"正文","tags":["标签1","标签2"]}]}' },
     { role:'user', content:'科目：' + (subjectName||'考研专业课') + '\n生成数量：' + count + '\n素材：\n' + String(source).slice(0, 6000) }
   ], { temperature:0.4, timeoutMs:90000 });
-  var j = aiParseJson(content);
-  var arr = j.cards || j.knowledge || [];
+  var arr = parsed.cards || parsed.knowledge || [];
   if(!Array.isArray(arr)) throw new Error('AI 返回结构异常');
-  return arr.slice(0, count).map(function(c){
+  // count 收敛：slice(0, NaN) 与 slice(0,0) 等价（故此处不改变既有行为），显式化意图并补上界
+  var limit = (count > 0) ? Math.min(Math.floor(count), 50) : 0;
+  return arr.slice(0, limit).map(function(c){
     return {
       chapter: String(c.chapter || '未分章').slice(0, 100),
       title: String(c.title || '').slice(0, 200),
@@ -108,13 +136,12 @@ async function aiGenerateCardsReq(source, count, subjectName){
 
 /* ============ AI 阅卷：简答题语义评分 ============ */
 async function gradeShortWithAi(q, userAnswer){
-  var content = await aiChat([
+  var parsed = await aiChatJson([
     { role:'system', content:'你是考研专业课阅卷老师。对比学生答案与参考答案，按要点覆盖度打分。只输出严格 JSON，不要多余文字：{"score":0到100的整数,"comment":"一句话点评，先说答对的要点，再指出遗漏"}' },
-    { role:'user', content:'题目：' + (q.question || '') + '\n参考答案：' + String(q.answer || '') + '\n学生答案：' + userAnswer }
+    { role:'user', content:'题目：' + ((q && q.question) || '') + '\n参考答案：' + String((q && q.answer) || '') + '\n学生答案：' + userAnswer }
   ], { temperature:0.2, timeoutMs:45000 });
-  var j = aiParseJson(content);
   return {
-    score: Math.max(0, Math.min(100, parseInt(j.score, 10) || 0)),
-    comment: String(j.comment || '').slice(0, 200) || '完成批改'
+    score: Math.max(0, Math.min(100, parseInt(parsed.score, 10) || 0)),
+    comment: String(parsed.comment || '').slice(0, 200) || '完成批改'
   };
 }
