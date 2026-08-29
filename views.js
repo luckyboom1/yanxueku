@@ -138,7 +138,7 @@ function openKwDetail(id){
     <div class="review-info">
       <span>📖 ${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
       <span>🧠 ${cardStageLabel(k)}${k.fsrs&&k.fsrs.s?'（强度 '+k.fsrs.s.toFixed(1)+' 天）':''}</span>
-      <span>📅 下次复习：${k.nextReview}</span>
+      <span>📅 下次复习：${esc(k.nextReview)}</span>
       <span>📈 掌握度：${MASTERY_NAMES[masteryLevel(k)]}</span>
     </div>
     <div class="detail-content">${md(k.content)}</div>
@@ -636,8 +636,9 @@ function confirmCardsImport(){
     const tags = ['真经笔记'];
     if(c.star) tags.push(c.star);
     db.knowledge.push({
-      id: uid(), subjectId: subj.id, chapter: c.chapter, title, content: c.content,
-      tags, stage: 0, nextReview: t, lastReview: null, createdAt: t
+      id: uid(), subjectId: subj.id, chapter: String(c.chapter || '未分章').slice(0,100),
+      title: title.slice(0,200), content: String(c.content || '').slice(0,20000),
+      tags: tags.slice(0,20), stage: 0, nextReview: t, lastReview: null, createdAt: t
     });
     added++;
   });

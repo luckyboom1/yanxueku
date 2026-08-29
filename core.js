@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.2';   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
+const APP_VERSION = 'v3.0.0-beta.3';   // v3.0.0-beta.3: 红队修复——migrateData 深度消毒（全来源 XSS 注入向量）   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -239,7 +239,7 @@ let _svgIdCounter = 0;
 function uniqueSvgId(prefix){ return (prefix||'sg') + '-' + (++_svgIdCounter) + '-' + Date.now().toString(36); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // HTML 属性值安全转义：用于 data-* 属性，防止属性值中引号撕裂属性边界
-function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // 安全色值校验：仅允许 #hex，防止颜色字段被注入恶意 CSS（存储型 CSS 注入防护）
 function safeColor(c){ var s = String(c==null?'':c); return /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(s) ? s : '#6366f1'; }
 function md(s){
@@ -426,10 +426,83 @@ let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中�
 const _dbReady = new Promise(r => { _loadResolve = r; });
 
 /* 数据迁移：确保数据格式与当前版本兼容 */
+/* 深度消毒（红队修复）：对【所有来源】的数据做边界清洗。
+ * 此前只有导入路径走 sanitizeImport，云端拉取与 localStorage 缓存绕过了消毒——
+ * 红队探针证实 subject/knowledge 的 id 会被拼进内联事件处理器造成注入。
+ * 规则与 sanitizeImport 对齐：id 字符集+保留键、日期格式校验、字符串限长。 */
+function __deepSanitize(data){
+  var idClean = function(v){
+    var s = String(v==null?'':v).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40);
+    if(s === '__proto__' || s === 'constructor' || s === 'prototype') return '';
+    return s;
+  };
+  var dateClean = function(v, fb){
+    var s = String(v==null?'':v).slice(0,10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : fb;
+  };
+  var str = function(v, max){ return String(v==null?'':v).slice(0,max); };
+  if(!Array.isArray(data.subjects)) data.subjects = [];
+  if(!Array.isArray(data.knowledge)) data.knowledge = [];
+  if(!Array.isArray(data.questions)) data.questions = [];
+  if(!Array.isArray(data.quizRecords)) data.quizRecords = [];
+  if(!Array.isArray(data.studyLog)) data.studyLog = [];
+  data.subjects = data.subjects.slice(0,200).map(function(s){
+    if(!s || typeof s !== 'object') return {id:'', name:'未命名', color:'', exam:''};
+    return { id: idClean(s.id), name: str(s.name, 50) || '未命名', color: String(s.color||''), exam: str(s.exam, 100) };
+  });
+  data.knowledge = data.knowledge.slice(0,20000).map(function(k){
+    if(!k || typeof k !== 'object') return null;
+    if(!Array.isArray(k.tags)) k.tags = [];
+    return { id: idClean(k.id), subjectId: idClean(k.subjectId),
+      chapter: str(k.chapter, 100) || '未分章', title: str(k.title, 200),
+      content: str(k.content, 20000),
+      tags: k.tags.slice(0,50).map(function(t){ return str(t, 50); }),
+      stage: Math.max(0, Math.min(6, parseInt(k.stage)||0)),
+      nextReview: dateClean(k.nextReview, todayStr()),
+      lastReview: k.lastReview ? dateClean(k.lastReview, null) : null,
+      createdAt: dateClean(k.createdAt, todayStr()),
+      fsrs: (k.fsrs && typeof k.fsrs === 'object') ? { d: Math.max(1,Math.min(10,parseFloat(k.fsrs.d)||5)), s: Math.max(0.1,Math.min(730,parseFloat(k.fsrs.s)||0.1)), lastReviewDate: dateClean(k.fsrs.lastReviewDate, todayStr()), reps: Math.max(0,parseInt(k.fsrs.reps)||0) } : null };
+  }).filter(Boolean);
+  data.questions = data.questions.slice(0,10000).map(function(q){
+    if(!q || typeof q !== 'object') return null;
+    var qType = q.type;
+    if(['single','judge','fill','short'].indexOf(qType) === -1) qType = (q.options === null || q.options === undefined) ? 'judge' : 'single';
+    var answer = (qType==='fill'||qType==='short') ? str(q.answer, 2000) : (parseInt(q.answer)||0);
+    return { id: idClean(q.id), subjectId: idClean(q.subjectId),
+      chapter: str(q.chapter, 100), type: qType,
+      question: str(q.question, 2000),
+      options: (Array.isArray(q.options) ? q.options.slice(0,10).map(function(o){ return str(o, 1000); }) : null),
+      answer: answer, explanation: str(q.explanation || q.explain, 5000) };
+  }).filter(Boolean);
+  data.quizRecords = data.quizRecords.slice(0,20000).map(function(r){
+    if(!r || typeof r !== 'object') return null;
+    return { qid: idClean(r.qid), correct: !!r.correct, date: dateClean(r.date, todayStr()) };
+  }).filter(function(r){ return r.qid; });
+  data.studyLog = data.studyLog.slice(0,5000).map(function(r){
+    if(!r || typeof r !== 'object') return null;
+    return { date: dateClean(r.date, todayStr()), minutes: Math.min(Math.max(0,parseInt(r.minutes)||0), 1440) };
+  }).filter(Boolean);
+  if(data.quizStats && typeof data.quizStats === 'object' && !Array.isArray(data.quizStats)){
+    var qs = {};
+    Object.keys(data.quizStats).slice(0,20000).forEach(function(k){
+      var key = idClean(k);
+      if(!key) return;
+      var st = data.quizStats[k] || {};
+      qs[key] = { times_asked: Math.max(0,parseInt(st.times_asked)||0),
+                  times_correct: Math.max(0,parseInt(st.times_correct)||0),
+                  streak_wrong: Math.max(0,parseInt(st.streak_wrong)||0),
+                  last_asked_at: dateClean(st.last_asked_at, null) };
+    });
+    data.quizStats = qs;
+  } else { data.quizStats = {}; }
+  return data;
+}
 function migrateData(data) {
   const ver = data._schemaVersion || 0;
   // stars（收藏 id 列表）为 v3 期新增字段：对新旧数据都幂等补齐，云端旧数据接管后不至于丢收藏
   if (!Array.isArray(data.stars)) data.stars = [];
+  // 深度消毒对所有来源生效（云/本地/旧版本），且必须在版本早退之前执行
+  __deepSanitize(data);
   if (ver >= DATA_VERSION) return data;
 
   // v0 → v1：确保基础结构存在
@@ -1494,7 +1567,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v3.0.0-beta.2 · MIT License</span>'+
+            '<span>研学库 v3.0.0-beta.3 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+

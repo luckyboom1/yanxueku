@@ -10,7 +10,7 @@ let _svgIdCounter = 0;
 export function uniqueSvgId(prefix){ return (prefix||'sg')+'-'+(++_svgIdCounter)+'-'+Date.now().toString(36); }
 
 export function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-export function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+export function escAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 export function safeColor(c){ var s=String(c==null?'':c); return /^#[0-9a-fA-F]{3}$|^#[0-9a-fA-F]{6}$/.test(s)?s:'#6366f1'; }
 
 export function md(s){
