@@ -1,14 +1,16 @@
-/* 研学库 Service Worker — network-first with smart fallback
+/* 研学库 Service Worker — 导航 network-first，静态资源 stale-while-revalidate
  * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
- * v19: beta.14 修复版（core/ai/views 变更）
  * v18: 移除 src/ ESM 过渡层（双模块体系已合并，gate.css 提升至根目录）
+ * v20: 性能优化——移除 public-library.json（2.2MB）预缓存改运行时缓存；
+ *      静态资源 network-first → stale-while-revalidate（资源均带 ?v= 版本戳，URL 变即缓存失效）
  */
-const CACHE = 'yanxueku-v19';
-// 预缓存必须完整覆盖 index.html 引用的全部资源：gate.css、quiz_analyzer.js 等，
-// 离线时任一资源加载失败整个应用打不开；法律页一并缓存供离线查看
+const CACHE = 'yanxueku-v20';
+// 预缓存仅覆盖首屏关键资源（~0.4MB）：公共库数据 2.2MB 只有进入公共库页才需要，
+// 且 views.js 有独立的 localStorage 缓存，预缓存它会让 PWA 首装流量膨胀 85%。
+// 它改为运行时缓存：首次在线访问后由 fetch handler 存入缓存，离线可用。
 const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js','./public-lib.js',
   './quiz_analyzer.js','./ai.js',
-  './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png','./public-library.json',
+  './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png',
   './privacy.html','./terms.html'];
 
 self.addEventListener('install', e => {
@@ -39,17 +41,25 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 静态资源：network-first
-  e.respondWith(
-    caches.open(CACHE).then(cache =>
-      fetch(e.request).then(netRes => {
-        if (netRes && netRes.status === 200) {
-          cache.put(e.request, netRes.clone());
-        }
-        return netRes;
-      }).catch(() =>
-        cache.match(e.request).then(hit => hit || caches.match('./index.html'))
+  // 同源静态资源：stale-while-revalidate —— 缓存命中立即返回（零网络等待），
+  // 后台静默拉新版本更新缓存；未命中才等网络。
+  // 正确性依据：所有静态资源引用都带 ?v= 版本查询串，发版后 URL 变化，
+  // 旧缓存键自然失效，不会用旧资源渲染新页面；离线时命中缓存照常工作。
+  if (new URL(e.request.url).origin === self.location.origin) {
+    e.respondWith(
+      caches.open(CACHE).then(cache =>
+        cache.match(e.request).then(hit => {
+          const net = fetch(e.request).then(netRes => {
+            if (netRes && netRes.status === 200) {
+              cache.put(e.request, netRes.clone());
+            }
+            return netRes;
+          }).catch(() => hit);
+          return hit || net;
+        })
       )
-    )
-  );
+    );
+    return;
+  }
+  // 跨域请求（CDN SDK 等）：不拦截，走浏览器默认缓存行为
 });
