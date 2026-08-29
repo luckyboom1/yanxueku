@@ -194,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.6';   // v2.4.6: 假登录修复——启动会话验真，过期令牌彻底清除
+const APP_VERSION = 'v3.0.0-beta.1';   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1482,7 +1482,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.6 · MIT License</span>'+
+            '<span>研学库 v3.0.0-beta · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+

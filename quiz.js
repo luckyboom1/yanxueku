@@ -148,7 +148,7 @@ function answerQ(i){
   renderBadges();
 }
 
-/* 填空/简答题：输入文本后提交判分 */
+/* 填空/简答题：输入文本后提交判分；简答题在已配置 AI 时走语义阅卷，失败回退关键词评分 */
 function answerInputQ(){
   const q = quiz.list[quiz.idx];
   const inputId = q.type === 'fill' ? 'q-fill-input' : 'q-short-input';
@@ -158,28 +158,50 @@ function answerInputQ(){
 
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
-  var correct = scoreUserAnswer(userAnswer, q);
-  var stdAnswer = String(q.answer || '');
 
-  // 锁定输入
-  inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
+  if (q.type === 'short' && typeof aiConfigured === 'function' && aiConfigured()) {
+    inputEl.classList.add('locked');
+    if(btnEl) btnEl.disabled = true;
+    var fbEl = document.getElementById('q-feedback');
+    if(fbEl) fbEl.innerHTML = '<div class="q-explain">🤖 AI 阅卷中，请稍候…</div>';
+    gradeShortWithAi(q, userAnswer).then(function(r){
+      finalizeInputAnswer(q, userAnswer, r.score >= 60, r.score + ' 分 · ' + r.comment);
+    }).catch(function(e){
+      toast('AI 阅卷失败，已改用关键词评分','warn');
+      finalizeInputAnswer(q, userAnswer, scoreUserAnswer(userAnswer, q), '');
+    });
+    return;
+  }
+  finalizeInputAnswer(q, userAnswer, scoreUserAnswer(userAnswer, q), '');
+}
+
+/* 判分落点：记录、解析、反馈与"下一题"按钮（自测与 AI 阅卷共用） */
+function finalizeInputAnswer(q, userAnswer, correct, aiNote){
+  const inputEl = document.getElementById(q.type === 'fill' ? 'q-fill-input' : 'q-short-input');
+  const btnEl = document.querySelector('#q-opts .q-submit-btn');
+  var stdAnswer = String(q.answer || '');
+  if (inputEl) inputEl.classList.add(correct ? 'locked' : 'wrong-locked');
   if(btnEl) btnEl.disabled = true;
 
-  db.quizRecords.push({qid:q.id, correct, date:todayStr()});
+  db.quizRecords.push({qid:q.id, correct:correct, date:todayStr()});
   recordAnswer(q.id, correct);
   addStudy(2);
   save();
-  if(correct) quiz.right++;
-  var isLast = quiz.idx+1 >= quiz.list.length;
+  if(correct && quiz) quiz.right++;
+  var isLast = quiz && quiz.idx+1 >= quiz.list.length;
 
   var feedbackHtml = '<div class="q-explain"><b>📖 解析：</b>' + md(q.explanation) + '</div>';
+  if (aiNote) {
+    feedbackHtml += '<div class="q-explain" style="margin-top:8px;background:rgba(34,211,238,.05);border-color:rgba(34,211,238,.2)"><b>🤖 AI 阅卷：</b>' + esc(aiNote) + '</div>';
+  }
   if (q.type === 'short') {
     feedbackHtml += '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 参考答案：</b>' + esc(stdAnswer.replace(/;/g,'；')) + '</div>';
   } else if (q.type === 'fill') {
     feedbackHtml += '<div class="q-explain" style="margin-top:8px;background:rgba(99,102,241,.04);border-color:rgba(99,102,241,.15)"><b>📋 正确答案：</b>' + esc(stdAnswer) + '</div>';
   }
 
-  document.getElementById('q-feedback').innerHTML = feedbackHtml +
+  var fb = document.getElementById('q-feedback');
+  if (fb) fb.innerHTML = feedbackHtml +
     '<div class="q-foot">' +
       '<span class="q-result-badge ' + (correct?'ok':'no') + '">' + (correct?'✅ 回答正确':'❌ 回答错误，已加入错题本') + '</span>' +
       '<button class="btn btn-primary" onclick="nextQ()">'+(isLast?'查看成绩 🏁':'下一题 →')+'</button>' +

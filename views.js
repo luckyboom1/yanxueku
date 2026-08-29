@@ -80,6 +80,7 @@ function renderLibrary(){
       <button class="btn btn-ghost" style="padding:9px 14px" onclick="exportCardPack()">📦 导出卡包</button>
       <button class="btn btn-ghost" style="padding:9px 14px" onclick="document.getElementById('import-pack-file').click()">📥 导入卡包</button>
       <button class="btn btn-primary" onclick="openKwModal()">＋ 新建知识点</button>
+      <button class="btn btn-ghost" onclick="openAiCardModal()">🤖 AI 建卡</button>
     </div>
     ${tags.length?`<div class="filter-bar" style="margin-top:-6px">
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
@@ -906,6 +907,8 @@ function renderMine(){
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
         <button class="btn btn-ghost" onclick="toggleEngine()" id="engine-btn">🧠 记忆引擎：${engineMode()==='fsrs'?'FSRS 自适应':'经典艾宾浩斯'}</button>
         <button class="btn btn-ghost" onclick="cycleRetention()" id="retention-btn">🎯 记忆目标：${Math.round(fsrsRetention()*100)}%</button>
+        <button class="btn btn-ghost" onclick="openAiCardModal()">🤖 AI 建卡</button>
+        <button class="btn btn-ghost" onclick="openAiSettings()">⚙️ AI 设置${aiConfigured()?'（已启用）':''}</button>
         <button class="btn btn-ghost" onclick="openGoalSetter()">🎯 每日复习目标</button>
         <button class="btn btn-ghost" onclick="openExamDatePicker()">📅 考研日期</button>
         <button class="btn btn-ghost" onclick="openHotkeyHelp()">⌨️ 快捷键</button>
@@ -1114,4 +1117,124 @@ if(typeof kwCard === 'function'){
     var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
     return _origKC(k).replace('>', '>' + star);
   };
+}
+
+/* ================= AI 建卡 / AI 设置（能力实现在 ai.js） ================= */
+function openAiSettings(){
+  var c = aiCfg();
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>⚙️ AI 能力设置</h3>'+
+    '<div style="font-size:12px;color:var(--text-3);line-height:1.7;margin-bottom:12px">'+
+    '连接任意 OpenAI 兼容接口（DeepSeek / 智谱 / Kimi / OpenAI 等）。密钥仅保存在本机浏览器 localStorage，'+
+    '由浏览器直连提供商，研学库服务器不经手密钥与内容。</div>'+
+    '<div class="form-row"><label>接口地址（Base URL，https）</label><input id="ai-base" placeholder="如：https://api.deepseek.com" value="'+esc(c.base)+'"></div>'+
+    '<div class="form-row"><label>模型</label><input id="ai-model" placeholder="如：deepseek-chat / glm-4-flash" value="'+esc(c.model)+'"></div>'+
+    '<div class="form-row"><label>API Key</label><input id="ai-key" type="password" placeholder="sk-…" value="'+esc(c.key)+'"></div>'+
+    '<div class="modal-actions">'+
+      '<button class="btn btn-ghost" id="ai-test-btn" onclick="aiTestConnectionBtn(this)">测试连接</button>'+
+      '<button class="btn btn-ghost" onclick="closeModal()">取消</button>'+
+      '<button class="btn btn-primary" onclick="saveAiSettings()">保存</button>'+
+    '</div>');
+}
+function saveAiSettings(){
+  var b = document.getElementById('ai-base').value.trim().replace(/\/+$/,'');
+  var m = document.getElementById('ai-model').value.trim();
+  var k = document.getElementById('ai-key').value.trim();
+  if(b && !/^https:\/\//.test(b)){ toast('接口地址必须为 https://','err'); return; }
+  saveAiCfg(b, m, k);
+  toast(aiConfigured() ? 'AI 能力已启用 ✅' : '已保存（信息不完整时 AI 功能停用）','ok');
+  closeModal(); render();
+}
+async function aiTestConnectionBtn(btn){
+  var b = document.getElementById('ai-base').value.trim().replace(/\/+$/,'');
+  var m = document.getElementById('ai-model').value.trim();
+  var k = document.getElementById('ai-key').value.trim();
+  if(!b || !m || !k){ toast('请先完整填写三项','warn'); return; }
+  saveAiCfg(b, m, k);
+  btn.disabled = true; var old = btn.textContent; btn.textContent = '连接中…';
+  try{
+    var ms = await testAiConnectionReq();
+    toast('连接成功，延迟 ' + ms + 'ms ✅','ok');
+  }catch(e){ toast('连接失败：' + e.message,'err'); }
+  btn.disabled = false; btn.textContent = old;
+}
+function openAiCardModal(){
+  if(!db || !db.subjects || !db.subjects.length){ toast('请先创建至少一个科目','err'); return; }
+  if(!aiConfigured()){
+    openModal({
+      title: '🤖 AI 建卡',
+      body: '<div style="color:var(--text-2);line-height:1.9;font-size:13px">AI 建卡需要先配置一个 OpenAI 兼容接口'+
+            '（DeepSeek / 智谱 / Kimi / OpenAI 等）。密钥仅保存在本机浏览器，直连提供商。</div>',
+      actions: [
+        { text:'去配置', class:'btn btn-primary', onclick:'closeModal(); openAiSettings();' },
+        { text:'取消', class:'btn btn-ghost', onclick:'closeModal();' }
+      ]
+    });
+    return;
+  }
+  var opts = db.subjects.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('');
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>🤖 AI 建卡</h3>'+
+    '<div class="form-2col">'+
+      '<div class="form-row"><label>导入科目</label><select id="ai-subject">'+opts+'</select></div>'+
+      '<div class="form-row"><label>生成数量</label><select id="ai-count"><option>3</option><option selected>5</option><option>8</option></select></div>'+
+    '</div>'+
+    '<div class="form-row"><label>素材（粘贴教材 / 讲义 / 笔记片段，至少 50 字）</label>'+
+    '<textarea id="ai-source" rows="9" placeholder="把教材段落粘贴到这里，AI 会整理成结构化知识卡片，预览后可勾选导入…"></textarea></div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button>'+
+    '<button class="btn btn-primary" id="ai-gen-btn" onclick="aiGenerateCardsBtn(this)">开始生成</button></div>');
+}
+async function aiGenerateCardsBtn(btn){
+  var srcText = document.getElementById('ai-source').value.trim();
+  if(srcText.length < 50){ toast('素材太短，至少 50 字','warn'); return; }
+  var subjectId = document.getElementById('ai-subject').value;
+  var count = parseInt(document.getElementById('ai-count').value, 10) || 5;
+  btn.disabled = true; var old = btn.textContent; btn.textContent = 'AI 整理中…（约 10-30 秒）';
+  try{
+    var subjectName = (getSubject(subjectId) || {}).name || '';
+    var cards = await aiGenerateCardsReq(srcText, count, subjectName);
+    if(!cards.length) throw new Error('未能解析出有效卡片，请换个素材或稍后再试');
+    _aiPendingCards = cards.map(function(c){ c.subjectId = subjectId; return c; });
+    renderAiCardPreview(cards);
+  }catch(e){
+    toast('生成失败：' + e.message, 'err');
+    btn.disabled = false; btn.textContent = old;
+  }
+}
+function renderAiCardPreview(cards){
+  var list = cards.map(function(c, i){
+    return '<label class="ai-pick-row" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;padding:12px 14px;margin-bottom:8px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2)">'+
+      '<input type="checkbox" class="ai-pick" checked style="margin-top:3px">'+
+      '<span style="flex:1;min-width:0"><b style="font-size:13.5px">'+esc(c.title)+'</b>'+
+      '<span style="font-size:11px;color:var(--text-3);margin-left:8px">'+esc(c.chapter)+'</span>'+
+      '<div style="font-size:12px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(String(c.content).slice(0,150))+'</div></span></label>';
+  }).join('');
+  openModal(
+    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<h3>🤖 生成预览（'+cards.length+' 张，勾选后导入）</h3>'+
+    '<div style="max-height:46vh;overflow-y:auto">'+list+'</div>'+
+    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal(); _aiPendingCards=null;">取消</button>'+
+    '<button class="btn btn-primary" onclick="aiImportSelected()">导入选中卡片</button></div>');
+}
+function aiImportSelected(){
+  var boxes = document.querySelectorAll('.ai-pick');
+  var cards = (_aiPendingCards || []).filter(function(c, i){ return boxes[i] && boxes[i].checked; });
+  if(!cards.length){ toast('请至少勾选一张卡片','warn'); return; }
+  var t = todayStr(), used = new Set(), added = 0;
+  cards.forEach(function(c){
+    var title = deduplicateTitle(c.title, used);
+    db.knowledge.push({
+      id: uid(), subjectId: c.subjectId, chapter: c.chapter || '未分章', title: title,
+      content: c.content, tags: c.tags || [], stage: 0,
+      nextReview: t, lastReview: null, createdAt: t
+    });
+    added++;
+  });
+  _aiPendingCards = null;
+  save(); closeModal();
+  libFilter.subject = 'all'; libFilter.search = '';
+  switchView('library');
+  toast('已导入 ' + added + ' 张 AI 卡片，全部进入今日复习队列 ✅', 'ok');
 }
