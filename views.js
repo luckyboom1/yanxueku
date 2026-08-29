@@ -976,9 +976,11 @@ var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
 /* 公共课程库加载：版本化本地缓存（stale-while-revalidate）+ 进度骨架。
  * 数据已达 1.1MB：首次走网络（骨架显示进度），成功后缓存到 localStorage；
  * 再次进入秒开，后台静默校验新版本。数据更新时 bump PLIB_VER 使缓存失效。 */
-var PLIB_URL = 'public-library.json?v=3.0.0-beta.12';
-var PLIB_VER = '3.0.0-beta.12';
-var PLIB_RAW_KEY = 'yanxueku_plib_raw';
+/* 数据拆分：首屏只加载索引（科目元数据，约 6KB），卡片按科目在 plib/<id>.json 中按需加载。
+ * 整包 2.29MB 只在用户真的下钻某科目时才下载对应部分。 */
+var PLIB_URL = 'public-library-index.json?v=3.0.0-beta.19';
+var PLIB_VER = '3.0.0-beta.19';
+var PLIB_RAW_KEY = 'yanxueku_plib_raw';      // 旧整包缓存键：拆分后仅用于清理
 var PLIB_VER_KEY = 'yanxueku_plib_ver';
 var PLIB_ETAG_KEY = 'yanxueku_plib_etag';   // 远端 ETag 基准：静默校验只发 HEAD 比对，避免全量重下 2.2MB
 var _plibCbs = [];
@@ -998,6 +1000,41 @@ function savePlibCache(lib){
 /* 记录远端 ETag 基准（供下次静默校验比对） */
 function savePlibEtag(etag){
   try{ if(etag) localStorage.setItem(PLIB_ETAG_KEY, etag); }catch(e){}
+}
+/* 拆分后旧整包缓存（2.2MB）已无用，写新格式时顺手释放配额 */
+function dropLegacyPlibCache(){
+  try{ localStorage.removeItem(PLIB_RAW_KEY); }catch(e){}
+}
+
+/* ===== 按科目按需加载卡片 ===== */
+var _plibCards = {};                       // subjectId -> cards（内存缓存）
+function plibCardsKey(id){ return 'yanxueku_plib_c_' + id; }
+/* 取某科目的卡片：内存 → localStorage → 网络。cb(cards) 保证以数组回调，失败回调空数组。 */
+function loadSubjectCards(id, cb){
+  if(!id) { if(cb) cb([]); return; }
+  if(_plibCards[id]){ if(cb) cb(_plibCards[id]); return; }
+  try{
+    var raw = localStorage.getItem(plibCardsKey(id));
+    if(raw){
+      var arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length){ _plibCards[id] = arr; if(cb) cb(arr); return; }
+    }
+  }catch(e){}
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'plib/' + encodeURIComponent(id) + '.json?v=' + PLIB_VER, true);
+  xhr.onload = function(){
+    if(xhr.status >= 200 && xhr.status < 300){
+      try{
+        var d = JSON.parse(xhr.responseText);
+        var cards = (d && Array.isArray(d.cards)) ? d.cards : [];
+        _plibCards[id] = cards;
+        try{ localStorage.setItem(plibCardsKey(id), JSON.stringify(cards)); }catch(e){}   // 配额不足时停留在内存缓存
+        if(cb) cb(cards);
+      }catch(e){ if(cb) cb([]); }
+    } else if(cb) cb([]);
+  };
+  xhr.onerror = function(){ if(cb) cb([]); };
+  xhr.send();
 }
 
 /* 静默校验是否有新版本：只发 HEAD 比对 ETag（约 300 字节），
@@ -1041,10 +1078,14 @@ function _pubLibFetch(done, silent, withProgress){
     if(xhr.status >= 200 && xhr.status < 300){
       try{
         var next = plibNormalize(JSON.parse(xhr.responseText));
-        // 静默校验且内容未变时跳过写入：JSON.stringify(2.2MB) 会明显阻塞主线程
+        // 静默校验且内容未变时跳过写入：避免每次校验都 stringify 整份数据阻塞主线程
         var changed = !_pubLib || next._total !== _pubLib._total || next.subjects.length !== _pubLib.subjects.length;
         _pubLib = next;
-        if(changed || !silent){ savePlibCache(_pubLib); savePlibEtag(xhr.getResponseHeader('ETag')); }
+        if(changed || !silent){
+          dropLegacyPlibCache();   // 拆分前的旧整包缓存（2.2MB）释放配额
+          savePlibCache(_pubLib);
+          savePlibEtag(xhr.getResponseHeader('ETag'));
+        }
         if(done) done(_pubLib);
         while(_plibCbs.length) _plibCbs.shift()(_pubLib);
       }catch(e){
@@ -1147,9 +1188,23 @@ function renderPubLibDetail(subjectId){
     if(!s){ _pubLibSubject = null; renderPublicLibrary(); return; }
     var el = document.getElementById('view-public-library');
 
+    // 卡片按需加载：先出骨架，数据到位后再渲染（用户可能已返回列表，重渲染前需再次确认停留在本科目）
+    if(!_plibCards[s.id]){
+      el.innerHTML = '<div class="plib-detail-back" onclick="_pubLibSubject=null;renderPublicLibrary()">← 返回课程列表</div>'+
+        '<div class="plib-header"><h2>'+esc(s.name)+'</h2></div>'+
+        '<div style="text-align:center;font-size:12.5px;color:var(--text-3);margin:12px 0" id="plib-cards-progress">正在加载该科目卡片…</div>'+
+        '<div class="plib-kw-list"><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
+      el.scrollTop = 0;
+      loadSubjectCards(s.id, function(cards){
+        if(!cards.length){ toast('该科目卡片加载失败，请检查网络','err'); }
+        if(_pubLibSubject === subjectId) renderPubLibDetail(subjectId);
+      });
+      return;
+    }
+
     // Group cards by chapter
     var chapterMap = {};
-    s.cards.forEach(function(c){
+    _plibCards[s.id].forEach(function(c){
       if(!chapterMap[c.chapter]) chapterMap[c.chapter] = [];
       chapterMap[c.chapter].push(c);
     });
@@ -1204,28 +1259,35 @@ function importPubLibSubject(subjectId){
   loadPublicLibrary(function(lib){
     var s = (lib.subjects || []).find(function(x){ return x.id === subjectId; });
     if(!s){ toast('科目数据未找到','err'); return; }
-    var appSubj = findOrCreateSubject(s.name, s.exam);
-
-    var addedKw = 0, skippedKw = 0;
-    var titleCount = {};
-    s.cards.forEach(function(c){
-      titleCount[c.title] = (titleCount[c.title] || 0) + 1;
-      var finalTitle = titleCount[c.title] > 1 ? c.title + ' (' + titleCount[c.title] + ')' : c.title;
-      var exists = db.knowledge.some(function(k){ return k.title === finalTitle; });
-      if(exists){ skippedKw++; return; }
-      db.knowledge.push({
-        id: uid(), subjectId: appSubj.id,
-        chapter: c.chapter, title: finalTitle,
-        content: c.content, tags: (c.tags || []).slice(0,20),
-        stage: 0, nextReview: todayStr(), lastReview: null, createdAt: todayStr()
-      });
-      addedKw++;
+    // 卡片现在按需加载：网格页直接点"导入"时也会先取该科目卡片
+    loadSubjectCards(s.id, function(cards){
+      if(!cards.length){ toast('科目卡片加载失败，请检查网络','err'); return; }
+      doImportPubLibCards(s, cards);
     });
-
-    save(); render();
-    _analytics.packImported(addedKw, 0);
-    toast('导入完成 ✅ 新增 '+addedKw+' 张卡片'+(skippedKw?'，跳过 '+skippedKw+' 张重复':'')+'，已加入今日复习队列','ok');
   });
+}
+function doImportPubLibCards(s, cards){
+  var appSubj = findOrCreateSubject(s.name, s.exam);
+
+  var addedKw = 0, skippedKw = 0;
+  var titleCount = {};
+  cards.forEach(function(c){
+    titleCount[c.title] = (titleCount[c.title] || 0) + 1;
+    var finalTitle = titleCount[c.title] > 1 ? c.title + ' (' + titleCount[c.title] + ')' : c.title;
+    var exists = db.knowledge.some(function(k){ return k.title === finalTitle; });
+    if(exists){ skippedKw++; return; }
+    db.knowledge.push({
+      id: uid(), subjectId: appSubj.id,
+      chapter: c.chapter, title: finalTitle,
+      content: c.content, tags: (c.tags || []).slice(0,20),
+      stage: 0, nextReview: todayStr(), lastReview: null, createdAt: todayStr()
+    });
+    addedKw++;
+  });
+
+  save(); render();
+  _analytics.packImported(addedKw, 0);
+  toast('导入完成 ✅ 新增 '+addedKw+' 张卡片'+(skippedKw?'，跳过 '+skippedKw+' 张重复':'')+'，已加入今日复习队列','ok');
 }
 
 // ===== Post-boot wrappers（在目标函数定义后执行） =====

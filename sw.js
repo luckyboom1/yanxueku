@@ -3,13 +3,13 @@
  * v18: 移除 src/ ESM 过渡层（双模块体系已合并，gate.css 提升至根目录）
  * v20: 性能优化——移除 public-library.json（2.2MB）预缓存改运行时缓存；
  *      静态资源 network-first → stale-while-revalidate（资源均带 ?v= 版本戳，URL 变即缓存失效）
+ * v24: 公共库数据拆分——索引（6KB）进预缓存，卡片按科目 plib/<id>.json 走运行时缓存
  */
-const CACHE = 'yanxueku-v23';
-// 预缓存仅覆盖首屏关键资源（~0.4MB）：公共库数据 2.2MB 只有进入公共库页才需要，
-// 且 views.js 有独立的 localStorage 缓存，预缓存它会让 PWA 首装流量膨胀 85%。
-// 它改为运行时缓存：首次在线访问后由 fetch handler 存入缓存，离线可用。
+const CACHE = 'yanxueku-v24';
+// 预缓存只放首屏关键资源 + 公共库索引（6KB）。卡片按科目拆分在 plib/<id>.json，
+// 单个最大 745KB，只在用户下钻该科目时才由 fetch handler 运行时缓存。
 const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js','./public-lib.js',
-  './quiz_analyzer.js','./ai.js',
+  './quiz_analyzer.js','./ai.js','./public-library-index.json',
   './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png',
   './privacy.html','./terms.html'];
 

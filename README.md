@@ -26,8 +26,10 @@ ai.js                AI 能力层（建卡生成 / 语义批改 / 连接管理�
 public-lib.js         公共课程库视图
 styles.css            应用样式（扁平高级感设计语言）
 gate.css              登录页样式
-sw.js                 Service Worker（network-first，预缓存 v18）
-public-library.json   公共课程库数据（13 科 616 卡）
+sw.js                 Service Worker（导航 network-first，静态资源 stale-while-revalidate）
+public-library-index.json   公共课程库索引（16 科 1591 卡的元数据，约 6KB）
+plib/<subjectId>.json       单个科目的卡片，下钻/导入时按需加载（单科最大 745KB）
+public-library.json   公共课程库数据源（16 科 1591 卡，仅 tools/ 构建用，运行时不加载）
 tools/                数据构建脚本与历史补丁（运行时不需要）
 UPGRADE_SQL.sql       Supabase 建表 / 视图 / 防刷触发器
 config.template.js    配置模板 → 复制为 config.js（本地开发用）
