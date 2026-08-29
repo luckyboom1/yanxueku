@@ -802,6 +802,7 @@ async function doLogin(){
     const r = await sb.auth.signInWithPassword({email:e, password:p}); // 登录无需验证码
     if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
     loginOk = true;
+    _sessionVerified = true;   // 刚用真实凭据登录，无需再验
     toast('登录成功 ✅','ok');
   }catch(err){
     // signInWithPassword 可能已建立 session 但 promise 抛异常（如 session 持久化失败），
@@ -838,6 +839,7 @@ async function doSignUp(){
     const r = await sb.auth.signUp({email:e, password:p, options:{data:{display_name:n}, captchaToken:_captchaToken||undefined}});
     if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
     signupOk = true;
+    _sessionVerified = true;   // 刚用真实凭据注册，无需再验
     toast(r.data.session?'注册成功 ✅':'注册成功！请到邮箱确认 📧','ok');
   }catch(err){
     console.warn('[auth] signUp threw:', err && err.message);
@@ -849,7 +851,7 @@ async function doSignUp(){
 }
 async function signOut(){
   if(!sb) return;
-  _currentUser=null; _profile=null;
+  _currentUser=null; _profile=null; _sessionVerified=false;
   if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel=null; }
   try{ await sb.auth.signOut(); }catch(e){}
   // 清空本机该账号的痕迹（云端副本仍安全保留），防止同浏览器下一个账号注册/登录时被误同步

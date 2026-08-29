@@ -194,7 +194,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v2.4.5';   // v2.4.5: 扁平高级感语言延伸统一到应用内页
+const APP_VERSION = 'v2.4.6';   // v2.4.6: 假登录修复——启动会话验真，过期令牌彻底清除
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1482,7 +1482,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v2.4.5 · MIT License</span>'+
+            '<span>研学库 v2.4.6 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1810,6 +1810,31 @@ async function changeEmail(){
 }
 let _authListenerReady = false;
 let _renderPending = false; // onAuthStateChange 多次事件的 render 合并防抖
+let _sessionVerified = false;  // 本次启动的 session 是否已通过服务端验真
+// 鉴别"令牌确实失效"与"只是网络不通"：只有前者才清除登录态
+function isAuthError(err){
+  var code = String((err && (err.error_code || err.code || err.status)) || '');
+  var msg = String((err && err.message) || '');
+  // 归一化：去掉分隔符再匹配，兼容 "refresh_token" 与 "Invalid Refresh Token" 两种写法
+  var s = (code + ' ' + msg).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return s.indexOf('badjwt') !== -1 || s.indexOf('invalidjwt') !== -1 ||
+         s.indexOf('jwt') !== -1 || s.indexOf('expired') !== -1 ||
+         s.indexOf('refreshtoken') !== -1 || s.indexOf('usernotfound') !== -1 ||
+         s.indexOf('sessionmissing') !== -1 ||
+         code === '401' || code === '403';
+}
+// 假登录修复：清掉过期会话与本机数据缓存，回登录墙
+async function purgeInvalidSession(reason){
+  _currentUser = null; _profile = null; _sessionVerified = false;
+  if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel = null; }
+  try{ await sb.auth.signOut(); }catch(e){}
+  try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('yanxueku_v1'); }catch(e){}
+  db = blankDb();
+  renderGate();
+  toast(reason || '登录已过期，请重新登录','warn');
+  _scheduleRender();
+  hideLoading();
+}
 function _scheduleRender(){
   if(_renderPending) return;
   _renderPending = true;
@@ -1820,11 +1845,25 @@ function setupAuthListener(){
   _authListenerReady = true;
   sb.auth.onAuthStateChange(async function(ev,session){
     if(session && session.user){
+      // 假登录修复：SDK 交出的 session 可能只是本地缓存的过期令牌（隔天访问的典型场景）。
+      // 先用 getUser() 到服务端验真：失败且属鉴权错误 → 彻底清除；网络不通 → 保留会话但明确警示
+      if(!_sessionVerified){
+        _sessionVerified = true;   // 防重入：验证未完成期间到达的后续事件不再重复验证
+        var vu;
+        try{ vu = await sb.auth.getUser(); }catch(e){ vu = { error: e }; }
+        if(vu && vu.error){
+          if(isAuthError(vu.error)){ purgeInvalidSession('登录已过期，请重新登录'); return; }
+          _setSync('网络异常，暂用本机缓存数据', true);
+        }
+      }
       _currentUser = session.user;
       var r=await sb.from('profiles').select('*').eq('user_id', _currentUser.id).single();
-      _profile = r.data || {display_name:'考研人', avatar_color:'#6366f1'};
+      _profile = (r && r.data) || {display_name:'考研人', avatar_color:'#6366f1'};
       var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
-      if(rd && rd.data && rd.data.data && rd.data.data.subjects){
+      if(rd && rd.error){
+        // 云端读取失败（非鉴权）：保留本机数据继续用，别把旧本地数据上传覆盖云端
+        _setSync('云端读取失败，正在使用本机数据', true);
+      }else if(rd && rd.data && rd.data.data && rd.data.data.subjects){
         db = migrateData(rd.data.data);                     // 云端有数据 → 用云端（旧字段名先迁移成统一格式）
       }else if(db && db.subjects && db.subjects.length && !isPureSeed(db)){
         // 云端无数据 → 仅当本地确有用户自己产生的内容才上传（首次同步）。
