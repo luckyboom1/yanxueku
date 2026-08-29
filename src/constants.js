@@ -9,7 +9,7 @@ export const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天',
 export const MASTERY_NAMES = ['初学', '熟悉', '熟练', '精通'];
 export const MASTERY_COLORS = ['#ef4444', '#f59e0b', '#10b981', '#6366f1'];
 
-export const APP_VERSION = 'v3.0.0-beta.9';
+export const APP_VERSION = 'v3.0.0-beta.10';
 
 export const VIEW_META = {
   dashboard: { name:'学习仪表盘', icon:'🏠' },
