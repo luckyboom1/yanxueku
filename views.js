@@ -234,13 +234,43 @@ function doDelKw(id){
 
 // === 复习队列 ===
 let reviewQueue = [], reviewIdx = 0, reviewDone = 0;
+var _reviewSubject = 'all';   // 复习范围：'all' 或科目 id（复习页顶部 chips 可切换，切换即重开本轮）
+function scopedDueList(){
+  var q = dueList();
+  if(_reviewSubject !== 'all') q = q.filter(function(k){ return k.subjectId === _reviewSubject; });
+  return q;
+}
+function reviewScopeChips(){
+  var due = dueList();
+  var counts = {};
+  due.forEach(function(k){ counts[k.subjectId] = (counts[k.subjectId]||0)+1; });
+  var chips = '<div class="chip'+(_reviewSubject==='all'?' active':'')+'" onclick="setReviewSubject(\'all\')">全部 · '+due.length+'</div>';
+  db.subjects.forEach(function(s){
+    var n = counts[s.id]||0;
+    chips += '<div class="chip'+(_reviewSubject===s.id?' active':'')+'" onclick="setReviewSubject(\''+s.id+'\')">'+esc(s.name)+' · '+n+'</div>';
+  });
+  return '<div class="review-scope">'+chips+'</div>';
+}
+function setReviewSubject(id){
+  if(_reviewSubject === id) return;
+  _reviewSubject = id;
+  reviewQueue = []; reviewIdx = 0; reviewDone = 0;   // 切换范围即重开本轮
+  if(curView === 'review') renderReviewHome();
+}
 function startReview(focusId){
-  let q = dueList();
+  let q = scopedDueList();
   if(focusId){
     const k = db.knowledge.find(x=>x.id===focusId);
     q = k? [k] : [];
   }
-  if(!q.length){ toast('今日没有待复习内容，太棒了！🎉','ok'); return; }
+  if(!q.length){
+    if(!focusId && _reviewSubject !== 'all' && dueList().length){
+      toast('该科目今日没有待复习内容，试试其他科目','info');
+    }else{
+      toast('今日没有待复习内容，太棒了！🎉','ok');
+    }
+    return;
+  }
   const total = q.length;
   if(!focusId && q.length > 10) q = q.slice(0,10); // 逾期积压分批：先复习最旧的 10 张，完成后自动继续
   reviewQueue = q; reviewIdx = 0; reviewDone = 0;
@@ -248,21 +278,24 @@ function startReview(focusId){
   switchView('review');
   if(focusId){ toast('开始复习该知识点','info'); }
   else if(total > q.length){ toast(`今日待复习 ${total} 张，先复习最旧的 ${q.length} 张，完成后自动继续`,'info'); }
-  else { toast(`本轮共 ${q.length} 张，预计约 ${Math.ceil(q.length*1.5)} 分钟`,'info'); }
+  else { toast(`本轮共 ${q.length} 张${_reviewSubject!=='all'?'（仅所选科目）':''}，预计约 ${Math.ceil(q.length*1.5)} 分钟`,'info'); }
 }
 function renderReviewHome(){
   if(!db||!db.knowledge) return;
   const el = document.getElementById('view-review');
   if(!reviewQueue.length || reviewIdx>=reviewQueue.length){
-    const due = dueList();
+    const due = scopedDueList();
     if(!due.length){
-      el.innerHTML = `<div class="empty-state"><div class="big">🎉</div><h3>今日复习任务全部完成</h3><p>保持节奏，艾宾浩斯会帮你把知识焊在脑子里</p>
-        <button class="btn btn-primary" style="margin-top:18px" onclick="switchView('dashboard')">回到仪表盘</button></div>`;
-    }else{
-      reviewQueue = due; reviewIdx = 0; reviewDone = 0;
-      renderFlashcard(); return;
+      const anyDue = dueList().length > 0;
+      el.innerHTML = reviewScopeChips() +
+        (anyDue
+          ? '<div class="empty-state"><div class="big">🗂️</div><h3>所选科目今日没有待复习</h3><p>切换上方科目范围，或看看其他科目</p></div>'
+          : '<div class="empty-state"><div class="big">🎉</div><h3>今日复习任务全部完成</h3><p>保持节奏，FSRS 会帮你把知识焊在脑子里</p></div>') +
+        '<div style="text-align:center;margin-top:14px"><button class="btn btn-primary" onclick="switchView(\'dashboard\')">回到仪表盘</button></div>';
+      return;
     }
-    return;
+    reviewQueue = due; reviewIdx = 0; reviewDone = 0;
+    renderFlashcard(); return;
   }
   renderFlashcard();
 }
@@ -272,6 +305,7 @@ function renderFlashcard(){
   const s = getSubject(k.subjectId);
   el.innerHTML = `
     <div class="review-wrap">
+      ${reviewScopeChips()}
       <div class="review-progress">
         <span class="rp-text">进度 ${reviewIdx+1} / ${reviewQueue.length}</span>
         <div class="rp-bar"><div class="rp-fill" style="width:${Math.round(reviewIdx/reviewQueue.length*100)}%"></div></div>

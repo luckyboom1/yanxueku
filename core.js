@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.7';   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.8';   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 

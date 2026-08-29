@@ -631,3 +631,7 @@ html[data-theme="dark"] .heat-cell[style*="rgba(239,68,68"]{background:rgba(239,
 html[data-theme="dark"] .heat-cell[style*="rgba(245,158,11"]{background:rgba(245,158,11,.28)!important;color:#fcd34d!important}
 html[data-theme="dark"] .heat-cell[style*="rgba(132,204,22"]{background:rgba(132,204,22,.32)!important;color:#d9f99d!important}
 html[data-theme="dark"] .heat-cell[style*="rgba(16,185,129"]{background:rgba(16,185,129,.32)!important;color:#a7f3d0!important}
+
+/* 复习范围选择行 */
+.review-scope{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.review-scope .chip{padding:6px 14px;font-size:12px}
