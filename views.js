@@ -1014,6 +1014,7 @@ function _pubLibFetch(done, silent, withProgress){
       try{
         _pubLib = plibNormalize(JSON.parse(xhr.responseText));
         savePlibCache(_pubLib);
+        if(done) done(_pubLib);
         while(_plibCbs.length) _plibCbs.shift()(_pubLib);
       }catch(e){
         toast('课程库数据解析失败','err');
@@ -1032,6 +1033,11 @@ function _pubLibFetch(done, silent, withProgress){
   xhr.onerror = function(){
     _pubLibLoading = false; _plibCbs.length = 0;
     if(!silent) toast('课程库加载失败','err');
+    var el = document.getElementById('view-public-library');
+    if(el && curView === 'public-library' && !_pubLibSubject){
+      el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载失败</h3><p>请检查网络后重试</p>'+
+        '<button class="btn btn-primary" style="margin-top:14px" onclick="renderPublicLibrary()">重试</button></div>';
+    }
   };
   xhr.send();
 }
@@ -1047,11 +1053,12 @@ function loadPublicLibrary(cb, silent){
         _pubLib = plibNormalize(JSON.parse(raw));
         _pubLibLoading = false;
         while(_plibCbs.length) _plibCbs.shift()(_pubLib);
-        // 后台静默校验新版本
+        // 后台静默校验新版本（快照预取：fetch 完成时 _pubLib 已被改写，必须对照旧快照）
+        var beforeTotal = _pubLib._total, beforeSubjects = _pubLib.subjects.length;
         _pubLibLoading = true;
         _pubLibFetch(function(fresh){
           _pubLibLoading = false;
-          var changed = fresh._total !== _pubLib._total || fresh.subjects.length !== _pubLib.subjects.length;
+          var changed = fresh._total !== beforeTotal || fresh.subjects.length !== beforeSubjects;
           if(changed){ toast('课程库已更新','info'); if(curView === 'public-library' && !_pubLibSubject) renderPublicLibrary(); }
         }, true);
         return;
