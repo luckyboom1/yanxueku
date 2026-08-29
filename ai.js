@@ -89,17 +89,68 @@ async function aiChat(messages, opts){
 /* 从 AI 回复中稳健地提取 JSON 对象（容忍 ``` 围栏与前后缀文字） */
 function aiParseJson(content){
   var s = String(content || '').replace(/```json|```/gi, '').trim();
-  var i = s.indexOf('{'), j = s.lastIndexOf('}');
-  if(i === -1 || j <= i) throw new Error('AI 返回内容无法解析');
-  var obj;
-  try{
-    obj = JSON.parse(s.slice(i, j + 1));
-  }catch(e){
-    // AI 输出不受控：解析失败必须转成中文提示，否则用户看到的是英文 SyntaxError
-    throw new Error('AI 返回内容不是合法 JSON，请重试或换个素材');
+  var r = tryParseJson(s);
+  if(r !== undefined){
+    if(r === null) throw new Error('AI 返回结构异常');
+    return r;
   }
-  if(!obj || typeof obj !== 'object') throw new Error('AI 返回结构异常');
-  return obj;
+  var start = s.indexOf('{');
+  if(start === -1) throw new Error('AI 返回内容无法解析');
+  var end = matchBrace(s, start);
+  if(end > start){
+    r = tryParseJson(s.slice(start, end + 1));
+    if(r !== undefined){
+      if(r === null) throw new Error('AI 返回结构异常');
+      return r;
+    }
+  }
+  // 一个闭合括号都没有：不是"解析失败"，而是根本没返回结构化内容，与旧行为保持一致
+  var last = s.lastIndexOf('}');
+  if(last <= start) throw new Error('AI 返回内容无法解析');
+  r = tryParseJson(s.slice(start, last + 1));
+  if(r !== undefined){
+    if(r === null) throw new Error('AI 返回结构异常');
+    return r;
+  }
+  // AI 输出不受控：解析失败必须转成中文提示，否则用户看到的是英文 SyntaxError
+  throw new Error('AI 返回内容不是合法 JSON，请重试或换个素材');
+}
+
+/* 解析尝试：undefined = 解析失败；null = 解析成功但不是对象；其余 = 结果 */
+function tryParseJson(text){
+  try{
+    var o = JSON.parse(text);
+    return (o && typeof o === 'object') ? o : null;
+  }catch(e){ return undefined; }
+}
+
+/* 从 s[start] 处的 '{' 出发找配对的 '}'，跳过字符串字面量与转义，
+ * 否则正文中出现的 { } 会让深度算错（AI 常在正文里写 {"x":1} 之类的示例）。 */
+function matchBrace(s, start){
+  var depth = 0, inStr = false, esc = false;
+  for(var i = start; i < s.length; i++){
+    var ch = s.charAt(i);
+    if(inStr){
+      if(esc) esc = false;
+      else if(ch === '\\') esc = true;
+      else if(ch === '"') inStr = false;
+      continue;
+    }
+    if(ch === '"'){ inStr = true; }
+    else if(ch === '{'){ depth++; }
+    else if(ch === '}'){ depth--; if(depth === 0) return i; }
+  }
+  return -1;
+}
+
+/* AI 内容清洗：去控制字符 + 中性化危险 URL scheme。
+ * 渲染侧已有 esc() 兜底（并非漏洞），这里是纵深防御——这些内容还会进入导出 JSON、
+ * 剪贴板、第三方导入等脱离 esc() 的上下文。正常中英文内容不受影响。 */
+function aiCleanText(s, maxLen){
+  var out = String(s == null ? '' : s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')   // 保留 \n / \r / \t
+    .replace(/(javascript|vbscript|data)\s*:/gi, function(m){ return m.slice(0, -1) + '：'; });
+  return maxLen ? out.slice(0, maxLen) : out;
 }
 
 /* 组合调用：发消息 → 解析 JSON（内部复用，不新增对外接口） */
@@ -126,10 +177,10 @@ async function aiGenerateCardsReq(source, count, subjectName){
   var limit = (count > 0) ? Math.min(Math.floor(count), 50) : 0;
   return arr.slice(0, limit).map(function(c){
     return {
-      chapter: String(c.chapter || '未分章').slice(0, 100),
-      title: String(c.title || '').slice(0, 200),
-      content: String(c.content || '').slice(0, 20000),
-      tags: (Array.isArray(c.tags) ? c.tags : []).slice(0, 20).map(function(t){ return String(t || '').slice(0, 50); })
+      chapter: aiCleanText(c.chapter || '未分章', 100),
+      title: aiCleanText(c.title || '', 200),
+      content: aiCleanText(c.content || '', 20000),
+      tags: (Array.isArray(c.tags) ? c.tags : []).slice(0, 20).map(function(t){ return aiCleanText(t || '', 50); })
     };
   }).filter(function(c){ return c.title && c.content; });
 }
@@ -142,6 +193,6 @@ async function gradeShortWithAi(q, userAnswer){
   ], { temperature:0.2, timeoutMs:45000 });
   return {
     score: Math.max(0, Math.min(100, parseInt(parsed.score, 10) || 0)),
-    comment: String(parsed.comment || '').slice(0, 200) || '完成批改'
+    comment: aiCleanText(parsed.comment || '', 200) || '完成批改'
   };
 }
