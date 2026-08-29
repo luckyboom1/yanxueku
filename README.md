@@ -57,6 +57,10 @@ python -m http.server 8080
 - 启动时对会话做服务端验真，过期/无效令牌自动清除并回到登录墙
 - 导入数据（备份/卡包）经结构校验、长度限制、id 字符集白名单消毒
 - AI 功能使用用户自配的第三方接口：CSP connect-src 已放行 https 出站；API Key 仅存本机 localStorage，不经过研学库服务器
+- Supabase SDK 锁定精确版本（`@2.112.4`，jsdelivr 版本化路径不可变）+ fastly 官方镜像回退，规避浮动 `@2` 的供应链风险；未使用 SRI 是因为该 UMD 文件由 jsdelivr 动态生成（官方明确不建议）
+- 内置防点击劫持 framebuster；外链均带 `rel="noopener"`
+- 导入映射键（如 quizStats）拒绝 `__proto__`/`constructor`/`prototype` 保留键，读取侧有 hasOwnProperty 守卫
+- 登录失败连续 5 次触发 30 秒客户端冷却（服务端另有 Supabase 速率限制兜底）
 
 ## 已知技术债
 

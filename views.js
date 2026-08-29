@@ -669,6 +669,8 @@ var __orig_rs = renderSidebar; renderSidebar = function(){ __orig_rs(); renderSi
 // === 认证 UI 状态 ===
 let _authMode = 'login';        // login / signup
 let _authSubmitting = false;    // 防重复提交
+let _loginFails = 0;            // 登录失败计数（内存级，仅本标签页生效）
+let _loginLockUntil = 0;        // 连续失败后的临时锁定截止时间
 function validateEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s==null?'':s).trim()); }
 function cleanEmail(s){ return String(s==null?'':s).replace(/[\u200B-\u200D\uFEFF\u00A0\u3000]/g,'').trim(); }
 // Supabase/GoTrue 错误中文化：避免用户看到英文错误码（如 invalid / rate limit exceeded）
@@ -796,13 +798,14 @@ async function doLogin(){
   if(!validateEmail(e)){ toast('请输入有效的邮箱地址','err'); return; }
   if(!validatePassword(p)){ toast('密码长度至少 8 位','err'); return; }
   if(!sb){ toast(_supabaseFailed ? '云服务加载失败，请检查网络后刷新重试' : '正在连接云服务，请稍后再试','err'); return; }
+  if(Date.now() < _loginLockUntil){ toast('尝试过于频繁，请 ' + Math.ceil((_loginLockUntil - Date.now())/1000) + ' 秒后再试','warn'); return; }
   if(_authSubmitting) return;
   _authSubmitting = true; setAuthLoading(true);
   let loginOk = false;
   try{
     const r = await sb.auth.signInWithPassword({email:e, password:p}); // 登录无需验证码
-    if(r.error){ resetTurnstile(); toast(authErrorMsg(r.error),'err'); return; }
-    loginOk = true;
+    if(r.error){ resetTurnstile(); _loginFails++; if(_loginFails >= 5){ _loginLockUntil = Date.now() + 30000; _loginFails = 0; toast('失败次数过多，已临时锁定 30 秒','warn'); } else { toast(authErrorMsg(r.error),'err'); } return; }
+    loginOk = true; _loginFails = 0;
     _sessionVerified = true;   // 刚用真实凭据登录，无需再验
     toast('登录成功 ✅','ok');
   }catch(err){
@@ -1138,10 +1141,10 @@ function openAiSettings(){
     '</div>');
 }
 function saveAiSettings(){
-  var b = document.getElementById('ai-base').value.trim().replace(/\/+$/,'');
+  var b = sanitizeAiBase(document.getElementById('ai-base').value);
   var m = document.getElementById('ai-model').value.trim();
   var k = document.getElementById('ai-key').value.trim();
-  if(b && !/^https:\/\//.test(b)){ toast('接口地址必须为 https://','err'); return; }
+  if(b === null){ toast('接口地址必须是 https://（本机自建模型可用 http://localhost），且不能包含用户名密码','err'); return; }
   saveAiCfg(b, m, k);
   toast(aiConfigured() ? 'AI 能力已启用 ✅' : '已保存（信息不完整时 AI 功能停用）','ok');
   closeModal(); render();

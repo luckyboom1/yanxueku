@@ -19,11 +19,22 @@ function saveAiCfg(base, model, key){
   try{ localStorage.setItem(AI_CFG_KEY, JSON.stringify({ base: base, model: model, key: key })); }catch(e){}
 }
 
+/* 端点加固：必须 https（本机自建模型允许 http://localhost / 127.0.0.1），拒绝 user:pass@ 形式 */
+function sanitizeAiBase(b){
+  b = String(b || '').trim().replace(/\/+$/, '');
+  if(!b) return '';
+  var localOk = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(b);
+  if(!/^https:\/\//i.test(b) && !localOk) return null;
+  if(/^[a-z]+:\/\/[^\/]*@/i.test(b)) return null;
+  return b;
+}
+
 /* 核心调用：OpenAI 兼容 /chat/completions，返回首个 message.content */
 async function aiChat(messages, opts){
   opts = opts || {};
   var c = aiCfg();
-  if(!c.base || !c.model || !c.key) throw new Error('AI 未配置');
+  c.base = sanitizeAiBase(c.base);
+  if(!c.base || !c.model || !c.key) throw new Error('AI 未配置或接口地址不安全');
   var ctrl = new AbortController();
   var timer = setTimeout(function(){ ctrl.abort(); }, opts.timeoutMs || 60000);
   var res;

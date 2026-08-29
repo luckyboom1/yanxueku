@@ -8,7 +8,8 @@
 /** 初始化题目统计记录（如果不存在则创建） */
 function _ensureStats(qid) {
   if (!db.quizStats) db.quizStats = {};
-  if (!db.quizStats[qid]) {
+  // 原型链污染防护：__proto__ 等键不从原型链读取
+  if (!Object.prototype.hasOwnProperty.call(db.quizStats, qid)) {
     db.quizStats[qid] = { times_asked: 0, times_correct: 0, last_asked_at: null, streak_wrong: 0 };
   }
   return db.quizStats[qid];

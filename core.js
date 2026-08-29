@@ -173,19 +173,23 @@ function tryInitSupabase(){
 }
 tryInitSupabase();
 if(!sb){
-  // 动态异步加载 SDK（不阻塞首屏）：jsdelivr 优先，失败换 unpkg 兜底
-  var _s = document.createElement('script');
-  _s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-  _s.crossOrigin = 'anonymous';
-  _s.onload = function(){ tryInitSupabase(); setupAuthListener(); };
-  _s.onerror = function(){
-    var _s2 = document.createElement('script');
-    _s2.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js';
-    _s2.onload = function(){ tryInitSupabase(); setupAuthListener(); };
-    document.head.appendChild(_s2);
+  // SDK 供应链加固：锁定精确版本（jsdelivr 版本化路径不可变，规避浮动 @2 的未知版本风险）。
+  // 注意：该 UMD 文件由 jsdelivr 动态生成（官方明确不建议对其使用 SRI），
+  // 故以"精确版本 + 官方 fastly 镜像回退"替代完整性校验；
+  // 原 unpkg 回退已失效（新版包不再提供 dist/umd 路径，一直 404）。
+  var SDK_PATH = '/npm/@supabase/supabase-js@2.112.4/dist/umd/supabase.min.js';
+  var SDK_SRCS = ['https://cdn.jsdelivr.net' + SDK_PATH, 'https://fastly.jsdelivr.net' + SDK_PATH];
+  var _sdkIdx = 0;
+  var _loadSdk = function(){
+    if(_sdkIdx >= SDK_SRCS.length){ _supabaseFailed = true; return; }
+    var s = document.createElement('script');
+    s.src = SDK_SRCS[_sdkIdx++];
+    s.crossOrigin = 'anonymous';
+    s.onload = function(){ if(tryInitSupabase()){ setupAuthListener(); } else { _loadSdk(); } };
+    s.onerror = _loadSdk;
+    document.head.appendChild(s);
   };
-
-  document.head.appendChild(_s);
+  _loadSdk();
   // 8 秒仍未就绪 → 标记失败（登录/注册提示可区分"连接中"与"加载失败"）
   setTimeout(function(){ if(!sb) _supabaseFailed = true; }, 8000);
 }
@@ -194,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.1';   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
+const APP_VERSION = 'v3.0.0-beta.2';   // v3.0.0-beta.2: 安全加固——SDK 版本锁定/原型链污染防护/AI 端点加固/防点击劫持   // v3.0 beta: AI 能力框架——建卡生成 / 简答语义批改 / 自带 OpenAI 兼容 Key
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -953,7 +957,13 @@ function sanitizeImport(d){
   if(!d || typeof d !== 'object') return null;
   if(!Array.isArray(d.subjects) || !Array.isArray(d.knowledge)) return null;
   // id 只允许 [A-Za-z0-9_-]：id 会被拼进内联事件处理器，单引号/反斜杠可能撕裂 JS 字符串造成注入
-  var cleanId = function(v){ return String(v==null?'':v).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40); };
+  // id 只允许 [A-Za-z0-9_-]：id 会被拼进内联事件处理器，单引号/反斜杠可能撕裂 JS 字符串造成注入
+  var cleanId = function(v){
+    var s = String(v==null?'':v).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,40);
+    // 原型链污染防护：这些键用作 quizStats 等映射的键时会产生危险语义
+    if(s === '__proto__' || s === 'constructor' || s === 'prototype') return '';
+    return s;
+  };
   // 日期统一校验 YYYY-MM-DD：日期字段用字符串比较排期，垃圾值会破坏排序与到期判断
   var cleanDate = function(v){ var s = String(v==null?'':v).slice(0,10); return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''; };
   var out = {subjects:[], knowledge:[], questions:[], quizRecords:[], studyLog:[]};
@@ -996,8 +1006,10 @@ function sanitizeImport(d){
   out.quizStats = {};
   if(d.quizStats && typeof d.quizStats === 'object' && !Array.isArray(d.quizStats)){
     Object.keys(d.quizStats).slice(0,20000).forEach(function(k){
+      var key = cleanId(k);
+      if(!key) return;
       var st = d.quizStats[k] || {};
-      out.quizStats[cleanId(k)] = {
+      out.quizStats[key] = {
         times_asked: Math.max(0, parseInt(st.times_asked) || 0),
         times_correct: Math.max(0, parseInt(st.times_correct) || 0),
         streak_wrong: Math.max(0, parseInt(st.streak_wrong) || 0),
@@ -1396,7 +1408,7 @@ function renderGate(){
         '</div>'+
         '<div class="gate-legal gate-stagger">'+
           '<label><input type="checkbox" id="gate-agree">'+
-          '我已阅读并同意 <a href="terms.html" target="_blank" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" onclick="event.stopPropagation()">隐私政策</a></label>'+
+          '我已阅读并同意 <a href="terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">隐私政策</a></label>'+
         '</div>'+
         '<button class="gate-btn gate-stagger" onclick="gateLogin()">👤 登录 / 注册</button>'+
       '</div>'+
@@ -1468,21 +1480,21 @@ function renderGate(){
             '</div>'+
             '<div class="gate-footer-col">'+
               '<div class="gate-footer-title">资源</div>'+
-              '<a href="public-library.json" target="_blank">公共课程库 JSON</a>'+
+              '<a href="public-library.json" target="_blank" rel="noopener">公共课程库 JSON</a>'+
               '<a href="javascript:void(0)">导出数据备份</a>'+
               '<a href="javascript:void(0)">卡包分享</a>'+
-              '<a href="README.md" target="_blank">项目文档</a>'+
+              '<a href="README.md" target="_blank" rel="noopener">项目文档</a>'+
             '</div>'+
             '<div class="gate-footer-col">'+
               '<div class="gate-footer-title">联系我们</div>'+
-              '<a href="https://github.com/luckyboom1/yanxueku/issues" target="_blank">GitHub Issues · 反馈</a>'+
-              '<a href="https://github.com/luckyboom1/yanxueku" target="_blank">GitHub 仓库 · 开源</a>'+
-              '<a href="privacy.html" target="_blank">隐私政策</a>'+
-              '<a href="terms.html" target="_blank">服务条款</a>'+
+              '<a href="https://github.com/luckyboom1/yanxueku/issues" target="_blank" rel="noopener">GitHub Issues · 反馈</a>'+
+              '<a href="https://github.com/luckyboom1/yanxueku" target="_blank" rel="noopener">GitHub 仓库 · 开源</a>'+
+              '<a href="privacy.html" target="_blank" rel="noopener">隐私政策</a>'+
+              '<a href="terms.html" target="_blank" rel="noopener">服务条款</a>'+
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v3.0.0-beta · MIT License</span>'+
+            '<span>研学库 v3.0.0-beta.2 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
