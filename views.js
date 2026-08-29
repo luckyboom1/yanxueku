@@ -980,6 +980,7 @@ var PLIB_URL = 'public-library.json?v=3.0.0-beta.12';
 var PLIB_VER = '3.0.0-beta.12';
 var PLIB_RAW_KEY = 'yanxueku_plib_raw';
 var PLIB_VER_KEY = 'yanxueku_plib_ver';
+var PLIB_ETAG_KEY = 'yanxueku_plib_etag';   // 远端 ETag 基准：静默校验只发 HEAD 比对，避免全量重下 2.2MB
 var _plibCbs = [];
 
 function savePlibCache(lib){
@@ -993,6 +994,32 @@ function savePlibCache(lib){
   }catch(e){
     try{ localStorage.removeItem(PLIB_RAW_KEY); localStorage.removeItem(PLIB_VER_KEY); }catch(e2){}
   }
+}
+/* 记录远端 ETag 基准（供下次静默校验比对） */
+function savePlibEtag(etag){
+  try{ if(etag) localStorage.setItem(PLIB_ETAG_KEY, etag); }catch(e){}
+}
+
+/* 静默校验是否有新版本：只发 HEAD 比对 ETag（约 300 字节），
+ * 取代此前"全量 GET 2.2MB 再 parse 再比对"的做法。
+ * 结果回调 changed：true=数据已更新（调用方决定是否重渲染），false=无变化。 */
+function plibCheckUpdate(done){
+  var xhr = new XMLHttpRequest();
+  try{ xhr.open('HEAD', PLIB_URL, true); }catch(e){ if(done) done(false); return; }
+  xhr.onload = function(){
+    if(xhr.status < 200 || xhr.status >= 300){ if(done) done(false); return; }
+    var etag = '';
+    try{ etag = xhr.getResponseHeader('ETag') || ''; }catch(e){}
+    var prev = '';
+    try{ prev = localStorage.getItem(PLIB_ETAG_KEY) || ''; }catch(e){}
+    // 首次校验（升级用户）没有基准：只记录，不触发下载——本地缓存版本戳已匹配，无需重拉
+    if(!prev){ savePlibEtag(etag); if(done) done(false); return; }
+    if(!etag || etag === prev){ if(done) done(false); return; }
+    savePlibEtag(etag);
+    _pubLibFetch(function(){ if(done) done(true); }, true);
+  };
+  xhr.onerror = function(){ if(done) done(false); };
+  xhr.send();
 }
 function plibNormalize(lib){
   if(!lib || !lib.subjects) throw new Error('bad data');
@@ -1013,8 +1040,11 @@ function _pubLibFetch(done, silent, withProgress){
     _pubLibLoading = false;
     if(xhr.status >= 200 && xhr.status < 300){
       try{
-        _pubLib = plibNormalize(JSON.parse(xhr.responseText));
-        savePlibCache(_pubLib);
+        var next = plibNormalize(JSON.parse(xhr.responseText));
+        // 静默校验且内容未变时跳过写入：JSON.stringify(2.2MB) 会明显阻塞主线程
+        var changed = !_pubLib || next._total !== _pubLib._total || next.subjects.length !== _pubLib.subjects.length;
+        _pubLib = next;
+        if(changed || !silent){ savePlibCache(_pubLib); savePlibEtag(xhr.getResponseHeader('ETag')); }
         if(done) done(_pubLib);
         while(_plibCbs.length) _plibCbs.shift()(_pubLib);
       }catch(e){
@@ -1054,14 +1084,12 @@ function loadPublicLibrary(cb, silent){
         _pubLib = plibNormalize(JSON.parse(raw));
         _pubLibLoading = false;
         while(_plibCbs.length) _plibCbs.shift()(_pubLib);
-        // 后台静默校验新版本（快照预取：fetch 完成时 _pubLib 已被改写，必须对照旧快照）
-        var beforeTotal = _pubLib._total, beforeSubjects = _pubLib.subjects.length;
-        _pubLibLoading = true;
-        _pubLibFetch(function(fresh){
-          _pubLibLoading = false;
-          var changed = fresh._total !== beforeTotal || fresh.subjects.length !== beforeSubjects;
-          if(changed){ toast('课程库已更新','info'); if(curView === 'public-library' && !_pubLibSubject) renderPublicLibrary(); }
-        }, true);
+        // 后台静默校验：先 HEAD 比对 ETag，只有真的变了才全量拉取
+        plibCheckUpdate(function(changed){
+          if(!changed) return;
+          toast('课程库已更新','info');
+          if(curView === 'public-library' && !_pubLibSubject) renderPublicLibrary();
+        });
         return;
       }
     }

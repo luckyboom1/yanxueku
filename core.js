@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.17';   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.18';   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1944,6 +1944,20 @@ function _scheduleRender(){
   _renderPending = true;
   setTimeout(function(){ _renderPending = false; renderSidebarUser(); if(curView) render(); }, 10);
 }
+/* 公共课程库空闲预热：只在真正空闲时拉数据，且有且仅有一次 */
+var _plibWarmedUp = false;
+function _plibWarmup(){
+  if(_plibWarmedUp) return;
+  _plibWarmedUp = true;
+  var run = function(){
+    try{ if(typeof loadPublicLibrary === 'function') loadPublicLibrary(function(){}, true); }catch(e){}
+  };
+  if(typeof requestIdleCallback === 'function'){
+    requestIdleCallback(run, { timeout: 30000 });   // 30s 兜底：一直繁忙也会最终预热
+  }else{
+    _defer(run, 8000);
+  }
+}
 function setupAuthListener(){
   if(!sb || _authListenerReady) return;
   _authListenerReady = true;
@@ -1984,8 +1998,10 @@ function setupAuthListener(){
       setupRealtimeSync();
       // 首次使用引导：登录进入应用后再展示（此前在登录墙页就弹出，指向的侧栏按钮根本不可用）
       if(!localStorage.getItem('yanxueku_guided')){ setTimeout(showFirstGuide, 900); }
-      // 空闲预热公共课程库数据：用户点进公共库时秒开
-      _defer(function(){ try{ if(typeof loadPublicLibrary === 'function') loadPublicLibrary(function(){}, true); }catch(e){} }, 4000);
+      // 空闲预热公共课程库数据：用户点进公共库时秒开。
+      // 2.2MB 数据不能在登录后固定 4 秒无条件拉取（与首屏渲染、同步抢带宽），
+      // 改为浏览器空闲时执行；不支持 requestIdleCallback 的浏览器再退回延时。
+      _plibWarmup();
       // PWA 快捷方式深链
       if(_wantView){ var _wv = _wantView; _wantView = null; switchView(_wv); }
     }else{ _currentUser=null; _profile=null; renderGate(); }
