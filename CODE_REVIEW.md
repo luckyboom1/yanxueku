@@ -106,18 +106,21 @@ main/master
 
 ### 3.5 sw.js / index.html / manifest.json（发布面）
 
-- 🔴 **版本戳四处核对**（历史事故高发区，beta.10 漏过 sw.js 导致旧缓存打不死）：
+- 🔴 **版本戳五处核对**（历史事故高发区：beta.10 漏过 sw.js、beta.14 漏过 `__APP_VERSION`）：
   1. `core.js` `APP_VERSION` + 行内注释
   2. `index.html` 全部 `?v=x.y.z` 查询串
-  3. `sw.js` `CACHE = 'yanxueku-vN'` +1，且 `ASSETS` 列表与 index.html 引用一一对应（多了会装不上缓存，少了离线打不开）
-  4. `views.js` `PLIB_URL`/`PLIB_VER` —— **仅当 public-library.json 数据变化时才 bump**，勿随 APP_VERSION 走
+  3. `index.html` 第 21 行 `var __APP_VERSION = "x.y.z"`（版本跳变强制刷新开关，漏改时强刷机制静默失效，用户继续用旧缓存）
+  4. `sw.js` `CACHE = 'yanxueku-vN'` +1，且 `ASSETS` 列表与 index.html 引用一一对应（多了会装不上缓存，少了离线打不开）
+  5. `views.js` `PLIB_URL`/`PLIB_VER` —— **仅当 public-library.json 数据变化时才 bump**，勿随 APP_VERSION 走
 - 🔴 CSP 变更（`script-src`/`connect-src`）必须单独说明安全影响，默认拒绝放宽
 - 🟡 新增静态资源必须同时加入 `ASSETS` 预缓存，否则 PWA 离线模式白屏
+- 🟡 缓存策略变更必须说明对"发版即时生效"的影响：静态资源靠 `?v=` 版本戳失效（SWR 安全），**不带版本戳的资源不得进 SWR 路径**
 
 ### 3.6 tools/ 与数据（public-library.json）
 
 - 🟡 数据脚本改动不进运行时，但产出的 JSON 必须结构校验：科目/卡数字数合理、无重复 id、无空 content
-- 🟡 公共库数据变化 → 同步 bump §3.5 第 4 戳，PR 描述给出新增卡数
+- 🟡 公共库数据变化 → 同步 bump §3.5 第 5 戳，PR 描述给出新增卡数
+- 🟡 大文件（>500K）一律不得进入 SW 预缓存：预缓存是"安装即下载"，只有首屏关键资源才配；按需数据走运行时缓存
 
 ### 3.7 SQL（UPGRADE_SQL.sql）
 
@@ -133,6 +136,7 @@ main/master
 [ ] core.js APP_VERSION 已更新，行内注释新版本说明在最前
 [ ] index.html 所有 ?v= 已同步（全局搜索旧版本号应为 0 处）
 [ ] sw.js CACHE 版本 +1，ASSETS 与 index.html 资源清单 diff 为空
+[ ] index.html 第 21 行 __APP_VERSION 已同步（版本跳变强刷）
 [ ] 公共库数据若有变化：views.js PLIB_URL/PLIB_VER 已 bump
 [ ] _audit_test.js / _ref_check.js 全绿
 [ ] 浏览器冒烟（本地）
