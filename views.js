@@ -948,12 +948,13 @@ function loadPublicLibrary(cb){
     '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
 
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'public-library.json?v=2.2', true);
+  xhr.open('GET', 'public-library.json?v=3.0.0-beta.6', true);
   xhr.onload = function(){
     _pubLibLoading = false;
     if(xhr.status >= 200 && xhr.status < 300){
       try {
         _pubLib = JSON.parse(xhr.responseText);
+        _pubLib._total = _pubLib.subjects.reduce(function(n,s){ return n + (s.cardCount||0); }, 0);
         if(cb) cb(_pubLib);
       } catch(e){ toast('课程库数据解析失败','err'); }
     } else {
@@ -970,7 +971,7 @@ function renderPublicLibrary(){
     if(!lib || !lib.subjects) return;
     var el = document.getElementById('view-public-library');
     var html = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div>';
-    html += '<div style="font-size:13px;color:var(--text-3);margin-bottom:16px">十三大热门考研专业课 · 共 <b>'+lib.subjects.length+'</b> 个科目 · 点击科目卡片查看详情并导入</div>';
+    html += '<div style="font-size:13px;color:var(--text-3);margin-bottom:16px">热门考研专业课知识卡 · 共 <b>'+lib.subjects.length+'</b> 科 <b>'+lib._total+'</b> 张 · 点击科目查看详情并导入</div>';
     html += '<div class="plib-subject-grid">';
 
     lib.subjects.forEach(function(s){
