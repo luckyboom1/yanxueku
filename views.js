@@ -975,8 +975,8 @@ var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
 /* 公共课程库加载：版本化本地缓存（stale-while-revalidate）+ 进度骨架。
  * 数据已达 1.1MB：首次走网络（骨架显示进度），成功后缓存到 localStorage；
  * 再次进入秒开，后台静默校验新版本。数据更新时 bump PLIB_VER 使缓存失效。 */
-var PLIB_URL = 'public-library.json?v=3.0.0-beta.10';
-var PLIB_VER = '3.0.0-beta.10';
+var PLIB_URL = 'public-library.json?v=3.0.0-beta.12';
+var PLIB_VER = '3.0.0-beta.12';
 var PLIB_RAW_KEY = 'yanxueku_plib_raw';
 var PLIB_VER_KEY = 'yanxueku_plib_ver';
 var _plibCbs = [];
