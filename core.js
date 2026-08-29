@@ -198,7 +198,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.13';   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.14';   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -588,6 +588,7 @@ function hideLoading(){
 }
 // save 防抖合并：连续操作（复习/答题/编辑）只做一次持久化，避免全量 upsert 刷爆带宽与 API 配额
 let _saveTimer = null, _savePending = false;
+let _cloudLoadFailed = false;   // 本次会话云端读取失败标志：置位期间禁止 upsert，防止本机旧数据+新改动整包覆盖云端较新数据（其他设备进度丢失）
 function _setSync(t, warn){
   const el = document.getElementById('sync-status');
   if(el){ el.textContent = t; el.style.color = warn ? 'var(--warn)' : ''; }
@@ -602,13 +603,16 @@ function doSave(){
   if(db.quizRecords && db.quizRecords.length > 20000) db.quizRecords = db.quizRecords.slice(-20000);
   // localStorage 始终写入作为降级备份（无 UI 提示，用户无感知）
   try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
-  if(sb && _currentUser){
+  if(sb && _currentUser && !_cloudLoadFailed){
     _setSync('同步中…');
     try{
       sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: db.updated_at })
         .then(()=> _setSync('已保存'))
         .catch(()=> _setSync('保存失败，请检查网络', true));
     }catch(e){ _setSync('保存失败，请检查网络', true); }
+  } else if(sb && _currentUser && _cloudLoadFailed){
+    // 云端读取失败期间只写本机：上传会让旧数据+新改动以更新的时间戳覆盖云端较新数据
+    _setSync('云端暂不可达，已存本机（防止覆盖云端数据）', true);
   } else {
     _setSync('未登录，无法云端保存', true);
   }
@@ -1919,6 +1923,13 @@ function isAuthError(err){
 // 假登录修复：清掉过期会话与本机数据缓存，回登录墙
 async function purgeInvalidSession(reason){
   _currentUser = null; _profile = null; _sessionVerified = false;
+  _cloudLoadFailed = false;
+  // 停掉活跃计时与待写防抖：否则 60 秒后 / 页面隐藏时会把刚置入的 blankDb 回写 localStorage，
+  // 使"清除本机缓存"形同虚设
+  if(_activeTimer){ clearInterval(_activeTimer); _activeTimer = null; }
+  _activeSeconds = 0;
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; }
+  _savePending = false;
   if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel = null; }
   try{ await sb.auth.signOut(); }catch(e){}
   try{ localStorage.removeItem(STORAGE_KEY); localStorage.removeItem('yanxueku_v1'); }catch(e){}
@@ -1955,14 +1966,18 @@ function setupAuthListener(){
       var rd = await sb.from('app_state').select('data').eq('user_id', _currentUser.id).maybeSingle();
       if(rd && rd.error){
         // 云端读取失败（非鉴权）：保留本机数据继续用，别把旧本地数据上传覆盖云端
+        _cloudLoadFailed = true;
         _setSync('云端读取失败，正在使用本机数据', true);
       }else if(rd && rd.data && rd.data.data && rd.data.data.subjects){
+        _cloudLoadFailed = false;
         db = migrateData(rd.data.data);                     // 云端有数据 → 用云端（旧字段名先迁移成统一格式）
       }else if(db && db.subjects && db.subjects.length && !isPureSeed(db)){
         // 云端无数据 → 仅当本地确有用户自己产生的内容才上传（首次同步）。
         // 纯种子演示数据不得上传：避免污染全新账号，也避免把他人留在本机的缓存写入新账号。
+        _cloudLoadFailed = false;
         try{ await sb.from('app_state').upsert({ user_id: _currentUser.id, data: db, updated_at: new Date().toISOString() }); }catch(e){}
       }else{
+        _cloudLoadFailed = false;
         db = blankDb();                                     // 全新账号 / 本地只有种子或为空 → 干净开始
       }
       hideGate();

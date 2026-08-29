@@ -1,8 +1,9 @@
 /* 研学库 Service Worker — network-first with smart fallback
  * v7: 模块化拆分适配 — styles.css / core.js / quiz.js / views.js / public-lib.js
+ * v19: beta.14 修复版（core/ai/views 变更）
  * v18: 移除 src/ ESM 过渡层（双模块体系已合并，gate.css 提升至根目录）
  */
-const CACHE = 'yanxueku-v18';
+const CACHE = 'yanxueku-v19';
 // 预缓存必须完整覆盖 index.html 引用的全部资源：gate.css、quiz_analyzer.js 等，
 // 离线时任一资源加载失败整个应用打不开；法律页一并缓存供离线查看
 const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js','./public-lib.js',

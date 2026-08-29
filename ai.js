@@ -55,7 +55,16 @@ async function aiChat(messages, opts){
     try{ body = (await res.text()).slice(0, 140); }catch(e){}
     throw new Error('HTTP ' + res.status + (body ? ' · ' + body : ''));
   }
-  var j = await res.json();
+  // 响应体读取也受超时控制：此前仅 fetch 阶段有超时，慢速滴流的响应体会让调用方远超预期时限
+  var j;
+  try{
+    j = await Promise.race([
+      res.json(),
+      new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('timeout')); }, 15000); })
+    ]);
+  }catch(e){
+    throw new Error('AI 响应读取失败（非 JSON 响应或连接中断）');
+  }
   var content = j && j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content;
   if(!content) throw new Error('AI 响应缺少内容');
   return content;

@@ -302,6 +302,7 @@ function renderReviewHome(){
 function renderFlashcard(){
   const el = document.getElementById('view-review');
   const k = reviewQueue[reviewIdx];
+  if(!k){ renderReviewHome(); return; }   // 卡片已被删除/索引越界（如另一设备同步后）：回主页重排而不是 TypeError
   const s = getSubject(k.subjectId);
   el.innerHTML = `
     <div class="review-wrap">
