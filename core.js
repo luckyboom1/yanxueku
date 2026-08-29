@@ -1476,15 +1476,15 @@ function renderGate(){
       '<div class="gate-card">'+
         '<div class="gate-logo gate-stagger">研</div>'+
         '<h2 class="gate-stagger">研学库 · 考研专业课学习系统</h2>'+
-        '<div class="gate-subtitle gate-stagger">FSRS 自适应记忆引擎 · 科学排期到每一天<br>一人一号 · 云端同步 · 知识库 + 刷题 + 错题</div>'+
+        '<div class="gate-subtitle gate-stagger">记得更牢，学得更快<br>FSRS 记忆引擎 · 知识库 · 智能刷题 · 云端同步</div>'+
         '<div class="gate-features gate-stagger">'+
-          '<div class="gate-feat" data-tip="FSRS 自适应引擎\n按你的评分拟合\n个人遗忘曲线">'+
+          '<div class="gate-feat" data-tip="FSRS 引擎\n拟合你的遗忘曲线">'+
             '<div class="gf-icon">🧠</div><span>科学记忆</span></div>'+
-          '<div class="gate-feat" data-tip="13大热门考研专业课\n616张真实知识点卡片\n打开即用，无需手动录入">'+
+          '<div class="gate-feat" data-tip="16 大热门专业\n1591 张真实知识点卡片\n打开即用">'+
             '<div class="gf-icon">📚</div><span>16科1591卡片</span></div>'+
-          '<div class="gate-feat" data-tip="单选·判断·填空·简答\n四种题型随机组卷\n答错自动收录错题本">'+
+          '<div class="gate-feat" data-tip="四种题型\n随机组卷\n答错自动收录">'+
             '<div class="gf-icon">✍️</div><span>智能刷题</span></div>'+
-          '<div class="gate-feat" data-tip="一人一号专属存储\n手机电脑数据实时同步\n登录即可跨设备访问">'+
+          '<div class="gate-feat" data-tip="一人一号\n多端实时同步\n随时继续">'+
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
         '<div class="gate-legal gate-stagger">'+
@@ -1506,43 +1506,43 @@ function renderGate(){
           '<div class="gate-showcase-card" style="--i:0">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6)">🧠</div>'+
             '<h3>科学记忆引擎</h3>'+
-            '<p>FSRS 自适应算法逐卡拟合你的个人遗忘曲线，在记忆临界点精准推送，越用越懂你。</p>'+
-            '<ul><li>难度/稳定性双参数记忆建模</li><li>评分即时更新间隔（忘记→重置，轻松→跃进）</li><li>可视化今日待复习数量</li></ul>'+
+            '<p>FSRS 逐卡拟合你的遗忘曲线，在临界点推送复习，越用越懂你。</p>'+
+            '<ul><li>难度与稳定性逐卡建模</li><li>评分即调间隔</li><li>今日待复习一目了然</li></ul>'+
           '</div>'+
           // 功能2: 知识库
           '<div class="gate-showcase-card" style="--i:1">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#10b981,#14b8a6)">📚</div>'+
             '<h3>结构化知识库</h3>'+
-            '<p>按科目 → 章节 → 标签三层组织专业课笔记。支持 Markdown 排版、代码高亮、挖空记忆。</p>'+
-            '<ul><li>16大热门考研专业 · 1591张预置卡片</li><li>公共课程库一键导入到个人科目</li><li>单张创建 / 文本批量导入 / 卡包分享</li></ul>'+
+            '<p>科目、章节、标签三层组织笔记，支持 Markdown 与挖空记忆。</p>'+
+            '<ul><li>16 大热门专业 · 1591 张预置卡</li><li>一键导入 / 批量录入 / 卡包分享</li><li>搜索与标签即刻定位</li></ul>'+
           '</div>'+
           // 功能3: 刷题自测
           '<div class="gate-showcase-card" style="--i:2">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#f59e0b,#ec4899)">✍️</div>'+
             '<h3>多题型智能刷题</h3>'+
-            '<p>单选、判断、填空、简答四种题型随机组卷，即时判分，答错自动收录错题本。</p>'+
-            '<ul><li>填空精确匹配 / 简答关键词评分</li><li>错题本支持原题型重做</li><li>每题附详细解析 + 参考答案</li></ul>'+
+            '<p>四种题型随机组卷，即时判分，答错自动进错题本。</p>'+
+            '<ul><li>填空精确匹配 · 简答智能评分</li><li>弱项章节智能选题</li><li>解析随答随看</li></ul>'+
           '</div>'+
           // 功能4: 学习统计
           '<div class="gate-showcase-card" style="--i:3">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#3b82f6,#0ea5e9)">📊</div>'+
             '<h3>数据驱动的学习追踪</h3>'+
-            '<p>连续学习天数、每日学习时长、考研倒计时、各科掌握度分布一目了然。</p>'+
-            '<ul><li>日/周学习日历热力图</li><li>四阶段掌握度：未掌握→初学→熟练→掌握</li><li>自定义每日目标 + 考研日倒计时</li></ul>'+
+            '<p>时长、掌握度、倒计时与分布，进步看得见。</p>'+
+            '<ul><li>近 14 天学习时长</li><li>章节掌握热力图</li><li>考研倒计时 + 每日目标</li></ul>'+
           '</div>'+
           // 功能5: 云端同步
           '<div class="gate-showcase-card" style="--i:4">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#6366f1,#ec4899)">☁️</div>'+
             '<h3>云端安全同步</h3>'+
-            '<p>一人一号专属存储，手机电脑浏览器数据实时同步。登录即可随时随地继续学习。</p>'+
-            '<ul><li>Supabase 托管 · 端到端加密传输</li><li>数据导出 / 卡包分享 / 备份恢复</li><li>支持学习小组成员实时同步进度</li></ul>'+
+            '<p>一人一号，多端实时同步；会话验真，数据隔离。</p>'+
+            '<ul><li>Supabase 托管 · TLS 加密 · RLS 隔离</li><li>导出 / 备份 / 卡包分享</li><li>过期登录态自动清除</li></ul>'+
           '</div>'+
           // 功能6: 学习计时
           '<div class="gate-showcase-card" style="--i:5">'+
             '<div class="gate-sc-icon" style="background:linear-gradient(135deg,#8b5cf6,#6366f1)">⏱</div>'+
             '<h3>沉浸式学习计时器</h3>'+
-            '<p>侧栏实时显示今日学习时长，复习和刷题自动计入。累计统计帮你看见自己的成长。</p>'+
-            '<ul><li>60秒无操作自动暂停计分</li><li>番茄钟模式（后续版本支持）</li><li>排行榜与同学互相激励</li></ul>'+
+            '<p>复习与刷题自动计时，专注就是分数。</p>'+
+            '<ul><li>复习刷题自动计时</li><li>累计时长与连续打卡</li><li>排行榜互相激励</li></ul>'+
           '</div>'+
         '</div>'+
         // 页脚
@@ -1550,7 +1550,7 @@ function renderGate(){
           '<div class="gate-footer-grid">'+
             '<div class="gate-footer-col">'+
               '<div class="gate-footer-title">研学库</div>'+
-              '<p>考研专业课高效学习系统。基于艾宾浩斯遗忘曲线的智能复习工具，让记忆更科学。</p>'+
+              '<p>考研专业课高效学习系统：FSRS 记忆引擎 + 知识库 + 智能刷题，让每一遍复习都恰到好处。</p>'+
             '</div>'+
             '<div class="gate-footer-col">'+
               '<div class="gate-footer-title">功能</div>'+
