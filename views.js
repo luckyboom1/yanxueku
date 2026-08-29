@@ -972,31 +972,103 @@ function renderMine(){
 var _pubLib = null, _pubLibLoading = false, _pubLibSubject = null;
 
 /* 加载公共课程库（缓存到内存） */
-function loadPublicLibrary(cb){
-  if(_pubLib){ cb(_pubLib); return; }
-  if(_pubLibLoading) return; // 正在加载中不重复请求
-  _pubLibLoading = true;
-  var el = document.getElementById('view-public-library');
-  el.innerHTML = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div><div class="plib-subject-grid">' +
-    '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>' +
-    '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
+/* 公共课程库加载：版本化本地缓存（stale-while-revalidate）+ 进度骨架。
+ * 数据已达 1.1MB：首次走网络（骨架显示进度），成功后缓存到 localStorage；
+ * 再次进入秒开，后台静默校验新版本。数据更新时 bump PLIB_VER 使缓存失效。 */
+var PLIB_URL = 'public-library.json?v=3.0.0-beta.10';
+var PLIB_VER = '3.0.0-beta.10';
+var PLIB_RAW_KEY = 'yanxueku_plib_raw';
+var PLIB_VER_KEY = 'yanxueku_plib_ver';
+var _plibCbs = [];
 
+function savePlibCache(lib){
+  try{
+    // 配额保护：用户自身数据已很大时不再挤占 localStorage（避免 doSave 静默失败）
+    var dbSize = 0;
+    try{ dbSize = JSON.stringify(db || {}).length; }catch(e){}
+    if(dbSize > 1000000) return;
+    localStorage.setItem(PLIB_RAW_KEY, JSON.stringify(lib));
+    localStorage.setItem(PLIB_VER_KEY, PLIB_VER);
+  }catch(e){
+    try{ localStorage.removeItem(PLIB_RAW_KEY); localStorage.removeItem(PLIB_VER_KEY); }catch(e2){}
+  }
+}
+function plibNormalize(lib){
+  if(!lib || !lib.subjects) throw new Error('bad data');
+  lib._total = lib.subjects.reduce(function(n,s){ return n + (s.cardCount||0); }, 0);
+  return lib;
+}
+function _pubLibFetch(done, silent, withProgress){
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', 'public-library.json?v=3.0.0-beta.7', true);
+  xhr.open('GET', PLIB_URL, true);
+  xhr.onprogress = function(e){
+    if(withProgress && e.lengthComputable){
+      var pct = Math.min(99, Math.round(e.loaded / e.total * 100));
+      var t = document.getElementById('plib-progress');
+      if(t) t.textContent = '正在加载课程数据… ' + pct + '%';
+    }
+  };
   xhr.onload = function(){
     _pubLibLoading = false;
     if(xhr.status >= 200 && xhr.status < 300){
-      try {
-        _pubLib = JSON.parse(xhr.responseText);
-        _pubLib._total = _pubLib.subjects.reduce(function(n,s){ return n + (s.cardCount||0); }, 0);
-        if(cb) cb(_pubLib);
-      } catch(e){ toast('课程库数据解析失败','err'); }
+      try{
+        _pubLib = plibNormalize(JSON.parse(xhr.responseText));
+        savePlibCache(_pubLib);
+        while(_plibCbs.length) _plibCbs.shift()(_pubLib);
+      }catch(e){
+        toast('课程库数据解析失败','err');
+        _plibCbs.length = 0;
+      }
     } else {
-      toast('课程库加载失败，请检查网络连接','err');
+      _plibCbs.length = 0;
+      if(!silent) toast('课程库加载失败，请检查网络连接','err');
+      var el = document.getElementById('view-public-library');
+      if(el && curView === 'public-library' && !_pubLibSubject){
+        el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载失败</h3><p>请检查网络后重试</p>'+
+          '<button class="btn btn-primary" style="margin-top:14px" onclick="renderPublicLibrary()">重试</button></div>';
+      }
     }
   };
-  xhr.onerror = function(){ _pubLibLoading = false; toast('课程库加载失败','err'); };
+  xhr.onerror = function(){
+    _pubLibLoading = false; _plibCbs.length = 0;
+    if(!silent) toast('课程库加载失败','err');
+  };
   xhr.send();
+}
+function loadPublicLibrary(cb, silent){
+  if(_pubLib){ if(cb) cb(_pubLib); return; }
+  _plibCbs.push(cb || function(){});
+  if(_pubLibLoading) return;
+  // 本地缓存命中（版本匹配）→ 秒开，后台静默校验新版本
+  try{
+    if(localStorage.getItem(PLIB_VER_KEY) === PLIB_VER){
+      var raw = localStorage.getItem(PLIB_RAW_KEY);
+      if(raw){
+        _pubLib = plibNormalize(JSON.parse(raw));
+        _pubLibLoading = false;
+        while(_plibCbs.length) _plibCbs.shift()(_pubLib);
+        // 后台静默校验新版本
+        _pubLibLoading = true;
+        _pubLibFetch(function(fresh){
+          _pubLibLoading = false;
+          var changed = fresh._total !== _pubLib._total || fresh.subjects.length !== _pubLib.subjects.length;
+          if(changed){ toast('课程库已更新','info'); if(curView === 'public-library' && !_pubLibSubject) renderPublicLibrary(); }
+        }, true);
+        return;
+      }
+    }
+  }catch(e){}
+  // 无缓存：骨架 + 进度
+  _pubLibLoading = true;
+  var el = document.getElementById('view-public-library');
+  if(el){
+    el.innerHTML = '<div class="plib-header"><h2>🏛️ 公共课程库</h2></div>'+
+      '<div style="text-align:center;font-size:12.5px;color:var(--text-3);margin-bottom:12px" id="plib-progress">正在加载课程数据…</div>'+
+      '<div class="plib-subject-grid">' +
+      '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div>' +
+      '<div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
+  }
+  _pubLibFetch(function(fresh){}, silent, true);
 }
 
 function renderPublicLibrary(){
