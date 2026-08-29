@@ -68,7 +68,7 @@ python -m http.server 8080
 
 ## 贡献
 
-欢迎 Issue 与 PR。涉及安全或数据格式的修改请先在 PR 中说明影响范围。
+欢迎 Issue 与 PR。提交前请通读 [CODE_REVIEW.md](CODE_REVIEW.md)（审查标准与自审清单）；涉及安全或数据格式的修改请先在 PR 中说明影响范围。
 
 ## License
 
