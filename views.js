@@ -304,20 +304,22 @@ function renderFlashcard(){
   const k = reviewQueue[reviewIdx];
   if(!k){ renderReviewHome(); return; }   // 卡片已被删除/索引越界（如另一设备同步后）：回主页重排而不是 TypeError
   const s = getSubject(k.subjectId);
+  const _pct = Math.round(reviewIdx/reviewQueue.length*100);
   el.innerHTML = `
     <div class="review-wrap">
       ${reviewScopeChips()}
-      <div class="review-progress">
+      <div class="review-progress" role="progressbar" aria-valuemin="0" aria-valuemax="${reviewQueue.length}" aria-valuenow="${reviewIdx}" aria-label="复习进度">
         <span class="rp-text">进度 ${reviewIdx+1} / ${reviewQueue.length}</span>
-        <div class="rp-bar"><div class="rp-fill" style="width:${Math.round(reviewIdx/reviewQueue.length*100)}%"></div></div>
+        <div class="rp-bar"><div class="rp-fill" style="width:${_pct}%"></div></div>
+        <span class="rp-pct">${_pct}%</span>
         <span class="rp-text" style="color:var(--success)">已完成 ${reviewDone}</span>
       </div>
-      <div class="flashcard" id="fcard" onclick="this.classList.toggle('flipped')">
+      <div class="flashcard" id="fcard" role="button" tabindex="0" aria-label="知识点卡片：${esc(k.title)}。按空格或点击翻卡查看答案" onclick="this.classList.toggle('flipped')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.classList.toggle('flipped')}">
         <div class="fc-inner">
           <div class="fc-face fc-front">
             <span class="fc-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)} · ${cardStageLabel(k)}</span>
             <div class="fc-title">${esc(k.title)}</div>
-            <div class="fc-hint">👆 点击卡片查看答案（翻卡后可按 1/2/3/4 评分）</div>
+            <div class="fc-hint">👆 点击卡片或按 <span class="kbd-inline">空格</span> 翻卡，翻面后按 <span class="kbd-inline">1</span><span class="kbd-inline">2</span><span class="kbd-inline">3</span><span class="kbd-inline">4</span> 评分</div>
           </div>
           <div class="fc-face fc-back">
             <span class="fc-chapter" style="align-self:center">${esc(k.title)}</span>
@@ -325,11 +327,11 @@ function renderFlashcard(){
           </div>
         </div>
       </div>
-      <div class="grade-row">
-        <button class="grade-btn g-forgot" onclick="grade(0,event)">😵 忘记了<small>${engineMode()==='fsrs'?'重置进度':'明天重新复习'}</small></button>
-        <button class="grade-btn g-blur" onclick="grade(1,event)">🤔 有点模糊<small>缩短间隔巩固</small></button>
-        <button class="grade-btn g-good" onclick="grade(2,event)">😎 记得牢固<small>正常推进</small></button>
-        ${engineMode()==='fsrs'?'<button class="grade-btn g-easy" onclick="grade(3,event)">🚀 轻松<small>大幅拉长间隔</small></button>':''}
+      <div class="grade-row" role="group" aria-label="记忆评分">
+        <button class="grade-btn g-forgot" aria-label="评分：忘记了（快捷键 1）" onclick="grade(0,event)"><span class="gb-key" aria-hidden="true">1</span>😵 忘记了<small>${engineMode()==='fsrs'?'重置进度':'明天重新复习'}</small></button>
+        <button class="grade-btn g-blur" aria-label="评分：有点模糊（快捷键 2）" onclick="grade(1,event)"><span class="gb-key" aria-hidden="true">2</span>🤔 有点模糊<small>缩短间隔巩固</small></button>
+        <button class="grade-btn g-good" aria-label="评分：记得牢固（快捷键 3）" onclick="grade(2,event)"><span class="gb-key" aria-hidden="true">3</span>😎 记得牢固<small>正常推进</small></button>
+        ${engineMode()==='fsrs'?'<button class="grade-btn g-easy" aria-label="评分：轻松（快捷键 4）" onclick="grade(3,event)"><span class="gb-key" aria-hidden="true">4</span>🚀 轻松<small>大幅拉长间隔</small></button>':''}
       </div>
     </div>`;
 }

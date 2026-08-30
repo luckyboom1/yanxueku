@@ -431,3 +431,38 @@
 }
 /* 页脚：极细分隔线 */
 .gate-footer::before{content:none}
+
+/* ==================================================================
+   v3.0.0-beta.21 登录墙打磨层（web-design-pro）
+   流体标语字阶 · AA 对比修正 · 统一可见焦点环 · 无位移 hover · 尊重减动偏好
+   ================================================================== */
+#login-gate{
+  --gate-display: clamp(24px, 19px + 2.6vw, 40px);
+  --gate-focus: 0 0 0 3px rgba(129,140,248,.55);
+}
+/* 主标题：流体缩放（覆盖旧 clamp 上限偏小） */
+#login-gate h2{ font-size:var(--gate-display); }
+/* AA 对比：法律条款与副标题的弱不透明度文本提升到 ≥4.5:1 */
+#login-gate .gate-subtitle{ color:#a7a9c0; }
+#login-gate .gate-legal{ color:rgba(255,255,255,.62); }
+#login-gate .gate-legal a{ color:rgba(255,255,255,.78); text-decoration:underline;text-underline-offset:2px; }
+#login-gate .gate-legal a:hover{ color:#fff; }
+/* 特性说明卡：正文/列表文本对比提升 */
+.gate-showcase-card p{ color:#a9adc2; }
+.gate-showcase-card li{ color:#c4c8da; }
+/* 统一可见焦点环：登录主按钮 + 特性磁贴 */
+#login-gate .gate-btn:focus-visible{ outline:none; box-shadow:var(--gate-focus),0 10px 34px rgba(129,140,248,.42); }
+#login-gate .gate-feat{ cursor:default; }
+#login-gate .gate-feat:focus-visible{ outline:none; box-shadow:var(--gate-focus); }
+/* CTA hover：去掉纵向位移，避免与入场动画叠加时的轻微跳动，仅亮度/辉光反馈（CLS 友好） */
+#login-gate .gate-btn:hover{ transform:none; box-shadow:0 12px 44px rgba(129,140,248,.5); filter:brightness(1.08); }
+#login-gate .gate-btn:active{ transform:scale(.985); }
+/* 尊重减少动效偏好：停用背景呼吸与浮动无限动画 */
+@media (prefers-reduced-motion: reduce){
+  #login-gate::after,
+  .gate-particle::after,
+  .gate-geo,
+  .gsh-chevron,
+  .gate-scroll-hint{ animation:none!important; }
+  #login-gate .gate-card{ animation:none; }
+}

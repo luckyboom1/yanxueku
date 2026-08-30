@@ -635,3 +635,119 @@ html[data-theme="dark"] .heat-cell[style*="rgba(16,185,129"]{background:rgba(16,
 /* 复习范围选择行 */
 .review-scope{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
 .review-scope .chip{padding:6px 14px;font-size:12px}
+
+/* ==================================================================
+   v3.0.0-beta.21 设计系统重构层（web-design-pro）
+   目标：把散落在多处的 :root 与硬编码 rgba 收敛为「语义/组件令牌」，
+   建立 clamp() 流体字阶，修正 AA 文本对比，重塑「全局外壳 + 复习闪卡」。
+   纯追加层，依靠源码顺序覆盖既有规则，不删除历史样式。
+   ================================================================== */
+
+/* 1) 令牌层：primitive → semantic → component 三级 */
+:root{
+  /* 流体字阶：无断点，320px→1440px 平滑缩放 */
+  --fs-micro: clamp(11px, 10.4px + .28vw, 12px);
+  --fs-xs:    clamp(12px, 11.5px + .3vw, 13px);
+  --fs-sm:    clamp(12.5px, 12px + .35vw, 13.5px);
+  --fs-base:  clamp(14px, 13.3px + .42vw, 15px);
+  --fs-md:    clamp(15px, 14px + .5vw, 16.5px);
+  --fs-lg:    clamp(17px, 15.4px + .82vw, 20px);   /* 页面标题 */
+  --fs-xl:    clamp(22px, 18px + 1.9vw, 34px);     /* 统计大数字 */
+  --fs-display:clamp(24px, 19px + 2.6vw, 40px);    /* 复习卡正面 / 登录标语 */
+  /* 语义色：把反复出现的 rgba 收敛为令牌 */
+  --primary-soft: rgba(99,102,241,.10);
+  --primary-soft-2: rgba(99,102,241,.06);
+  --primary-line: rgba(99,102,241,.22);
+  --primary-glow: 0 0 0 3px rgba(99,102,241,.16);
+  --primary-shadow: 0 4px 14px rgba(99,102,241,.32);
+  /* 组件令牌 */
+  --tap-min: 44px;                 /* WCAG 最小触控 */
+  --radius-btn: 999px;
+  --card-border-focus: var(--primary);
+  --shell-maxw: 1200px;
+}
+/* 2) AA 对比修正：浅色系弱文本 #6f7594 在浅底仅 ~4.0:1，加深到 ~5.2:1 */
+:root{ --text-3:#5b6178; }
+/* 深色主题保持原值（更高特异性的 dark 块会覆盖，不受此处影响） */
+
+/* 3) 全局排版：接入流体字阶 */
+body{ font-size:var(--fs-base); }
+.stat-num{ font-size:var(--fs-xl); }
+#page-title{ font-size:var(--fs-lg); }
+.panel-title{ font-size:var(--fs-md); }
+.logo{ font-size:var(--fs-lg); }
+.stat-label,.rp-text,.nav-badge,.kw-chapter,.kw-title{ font-size:var(--fs-sm); }
+.side-label,.subj-count,.foot-btn,.mini-btn,.tag{ font-size:var(--fs-xs); }
+
+/* 4) 全局外壳：侧栏当前项 —— 渐变指示条 + 焦点环统一 */
+.nav-item{ min-height:var(--tap-min); }
+.nav-item:focus-visible{ box-shadow:var(--primary-glow); outline:none; }
+.nav-item.active{ box-shadow:inset 0 0 0 1px var(--primary-line); }
+.icon-btn,.foot-btn,.add-subj-btn{ font-size:var(--fs-xs); }
+.foot-btn{ min-height:38px; }
+
+/* 5) 顶栏按钮：稳定高度、令牌化焦点，避免 hover 位移造成的 CLS */
+.btn{ min-height:38px; }
+.btn:focus-visible{ outline:none; box-shadow:var(--primary-glow); }
+.btn-primary{ box-shadow:var(--primary-shadow); }
+.btn-primary:hover{ transform:translateY(-1px); box-shadow:var(--primary-shadow),0 8px 20px rgba(99,102,241,.28); }
+.btn-primary:hover{ background-position:0 0; } /* 覆盖旧流动背景，杜绝横向 CLS */
+
+/* 6) 复习闪卡：更大留白、层级更清晰、翻卡可访问 */
+.review-wrap{ max-width:660px; }
+.flashcard{ height:clamp(300px, 44vh, 380px); }
+.fc-face{ padding:clamp(24px, 5vw, 44px); border-radius:24px; }
+.fc-face:focus-visible{ outline:none; box-shadow:var(--primary-glow),var(--shadow-md); border-color:var(--card-border-focus); }
+.flashcard.flipped .fc-front{ box-shadow:var(--shadow-md); }
+.fc-chapter{ font-size:var(--fs-xs); background:var(--primary-soft); color:var(--primary); }
+.fc-title{ font-size:var(--fs-display); font-weight:800; letter-spacing:-.6px; line-height:1.24; }
+.fc-back .fc-content{ font-size:var(--fs-md); line-height:1.95; }
+.fc-hint{ margin-top:clamp(18px,4vh,34px); font-size:var(--fs-sm); }
+.fc-hint .kbd-inline{
+  display:inline-block;min-width:20px;padding:1px 7px;margin:0 2px;border-radius:6px;
+  border:1px solid var(--border-strong);border-bottom-width:2px;background:var(--surface-2);
+  font-weight:800;font-size:11.5px;color:var(--text);vertical-align:middle;
+}
+
+/* 进度条：百分比读数，弱对比文字提升可读 */
+.review-progress .rp-pct{
+  font-variant-numeric:tabular-nums;font-weight:800;color:var(--primary);
+  min-width:42px;text-align:right;font-size:var(--fs-sm);
+}
+.rp-bar{ height:10px;border:none;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--border); }
+.rp-fill{ background:var(--grad);position:relative;overflow:hidden; }
+.rp-fill::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);
+  transform:translateX(-100%);animation:rpSheen 2.2s ease-in-out infinite;
+}
+@keyframes rpSheen{0%{transform:translateX(-100%)}60%,100%{transform:translateX(220%)}}
+
+/* 7) 评分按钮：触控达标 + 键位徽标 + 色觉友好（emoji+文字+键位三重冗余） */
+.grade-row{ gap:clamp(8px,2vw,14px); }
+.grade-btn{
+  position:relative;min-height:var(--tap-min);padding:14px 12px 12px;border-radius:16px;
+  box-shadow:0 4px 14px rgba(23,24,28,.10);
+}
+.grade-btn .gb-key{
+  position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(255,255,255,.22);color:#fff;font-weight:800;font-size:11px;line-height:1;
+}
+.grade-btn:focus-visible{ outline:none; box-shadow:0 0 0 3px var(--surface),0 0 0 5px currentColor,0 4px 14px rgba(23,24,28,.1); }
+/* 主选项「记得牢固」在桌面端占据更宽比例，符合 JTBD 高频动作优先 */
+.grade-btn.g-good{ flex:1.4; }
+.grade-btn small{ font-size:var(--fs-micro); }
+
+/* 8) 复习范围 chips：键盘可达 + 焦点可见 */
+.review-scope .chip{ min-height:34px;display:inline-flex;align-items:center; }
+.review-scope .chip:focus-visible{ outline:none;box-shadow:var(--primary-glow); }
+
+/* 9) 空/完成态：留白与字阶提升 */
+.empty-state h3{ font-size:var(--fs-lg); }
+.empty-state p{ font-size:var(--fs-sm); }
+
+/* 10) reduced-motion：撤销新增动效（翻卡进度微光、sheen 等） */
+@media (prefers-reduced-motion: reduce){
+  .rp-fill::after{ animation:none; }
+}
