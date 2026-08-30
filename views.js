@@ -687,11 +687,11 @@ function confirmCardsImport(){
 }
 
 /* ====== v5: 用户系统 + 排行榜 + 收藏 ====== */
-// 收藏以 db.stars 为准（随云端同步）；此处理合并 localStorage 遗留数据兜底
-let _starred = new Set(Array.isArray(db && db.stars) ? db.stars : []);
-try{
-  (JSON.parse(localStorage.getItem('yanxueku_stars') || '[]') || []).forEach(function(id){ _starred.add(id); });
-}catch(e){}
+// 收藏以 db.stars 为唯一事实源（随云端同步）。
+// v3.0.0-beta.21 修复：此前在脚本加载期对 _starred Set 拍快照，而 db 可能在登录后才被云端数据
+// 接管，快照不再同步 → 云端收藏当次会话不显示（刷新才恢复）。改为每次渲染实时读 db.stars。
+// 遗留 localStorage 收藏的合并由 core.js _dbReady 统一迁入 db.stars，此处不再重复。
+function isStarred(id){ return !!(db && Array.isArray(db.stars) && db.stars.indexOf(id) !== -1); }
 
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
@@ -905,7 +905,7 @@ function openProfileModal(){
   if(!_profile){ toast('请先登录','err'); return; }
   openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 个人资料</h3>'+
     '<div class="form-row"><label>显示名称</label><input id="pf-name" value="'+esc(_profile.display_name||'')+'"></div>'+
-    '<div class="form-row"><label>头像颜色</label><div class="color-picker" id="pf-colors"></div><input type="hidden" id="pf-color" value="'+(_profile.avatar_color||'#6366f1')+'"></div>'+
+    '<div class="form-row"><label>头像颜色</label><div class="color-picker" id="pf-colors"></div><input type="hidden" id="pf-color" value="'+escAttr(_profile.avatar_color||'#6366f1')+'"></div>'+
     '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveProfile()">保存</button></div>');
   setTimeout(function(){
     var colors=['#6366f1','#e11d48','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#0891b2','#ca8a04'];
@@ -1324,7 +1324,7 @@ if(typeof renderFlashcard === 'function'){
 if(typeof kwCard === 'function'){
   const _origKC = kwCard;
   kwCard = function(k){
-    var on = _starred.has(k.id);
+    var on = isStarred(k.id);
     var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
     return _origKC(k).replace('>', '>' + star);
   };
