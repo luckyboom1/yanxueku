@@ -200,7 +200,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.20';   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.21';   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1581,7 +1581,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v3.0.0-beta.4 · MIT License</span>'+
+            '<span>研学库 v3.0.0-beta.21 · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
