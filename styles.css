@@ -5,6 +5,8 @@
 :root{
   /* 表面与底色 */
   --bg:#f4f5fb; --bg-grad:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.08), transparent 60%), #f4f5fb;
+  /* 背景光晕（独立于底色，供 body::before 脉搏动效使用） */
+  --bg-glow:radial-gradient(1200px 600px at 80% -10%, rgba(99,102,241,.10), transparent 60%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.08), transparent 60%);
   --surface:#ffffff; --surface-2:#f8f9fd; --surface-glass:rgba(255,255,255,.68);
   --border:#eceef4; --border-strong:#d5d9e8;
   /* 文本（--text-3 为 AA 对比修正值，浅底 ~5.2:1） */
@@ -46,9 +48,24 @@ html[data-theme="dark"]{
 html,body{height:100%}
 body{
   font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,sans-serif;
-  background:var(--bg-grad); color:var(--text); font-size:14px; line-height:1.6;
+  background:var(--bg); color:var(--text); font-size:14px; line-height:1.6;
   transition:background .3s,color .3s; overflow:hidden;
   user-select:none; -webkit-user-select:none; cursor:default;
+}
+/* 首页背景光晕：独立固定层做"脉搏感"渐变发光（opacity+scale，仅合成器属性，性能友好）。
+   底色由 body 承担，光晕置于内容之后（z-index:-1），不拦截交互。 */
+body::before{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:var(--bg-glow);
+  animation:bgPulse 5.2s ease-in-out infinite;
+  will-change:opacity,transform;
+}
+@keyframes bgPulse{
+  0%,100%{ opacity:.55; transform:scale(1); }
+  50%    { opacity:1;   transform:scale(1.05); }
+}
+@media (prefers-reduced-motion: reduce){
+  body::before{ animation:none; opacity:.8; }
 }
 /* 恢复文本选择：可编辑区域 + 文章内容 */
 input,textarea,[contenteditable],.fc-content,.plib-kw-preview .content{
@@ -613,6 +630,7 @@ kbd{display:inline-block;min-width:22px;padding:1px 8px;border-radius:6px;border
 html[data-theme="dark"]{
   --bg:#0b0c14;
   --bg-grad:radial-gradient(1100px 480px at 50% -14%, rgba(99,102,241,.14), transparent 62%), #0b0c14;
+  --bg-glow:radial-gradient(1100px 480px at 50% -14%, rgba(99,102,241,.16), transparent 62%), radial-gradient(900px 500px at -10% 110%, rgba(14,165,233,.10), transparent 60%);
 }
 /* 移除装饰性光效，回归纯平面 */
 .stat-card::after{content:none}
