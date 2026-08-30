@@ -4,6 +4,9 @@ _*.js
 _*.json
 _*.md
 commit_msg.txt
+# 但两个"正式"自审脚本必须入库（CODE_REVIEW §2.2 门槛依赖它们）
+!_audit_test.js
+!_ref_check.js
 
 # 本地运行时配置与工作区数据（勿提交）
 config.js

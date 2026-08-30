@@ -18,8 +18,9 @@ function deduplicateTitle(title, usedTitles) {
 }
 
 // === 知识库 ===
-// 搜索改为"就地过滤"：输入时只切换卡片可见性，不再整页 innerHTML 重建。
-// 600+ 卡片时每次键入重建 6000+ DOM 节点是输入卡顿的主要来源。
+// 搜索"就地过滤"：逐字收窄时只切换已渲染卡片的可见性，不重建 innerHTML
+//（600+ 卡片时每次键入重建 6000+ DOM 节点是输入卡顿的主要来源）。
+// 删除/清空/换词等结构性变化回退全量重建（正确性优先）。
 // 干草堆按数据版本缓存：任何 save()（数据变更）后版本号 +1，下一次渲染才重建索引。
 var _libHayCache = {};    // kwId -> {v: 数据版本, h: 小写拼接文本}
 var _libHaystacks = [];   // 与 #kw-grid 内卡片顺序一一对应
@@ -27,6 +28,8 @@ var _libDataVer = 0;
 var _liveFilterTimer = null;
 var _libRenderLimit = 60; // 首屏只渲染 60 张，滚动到底部增量加载（千卡级首屏流畅）
 var _libSentinel = null;
+var _libSearchActive = false;   // 当前是否处于搜索态（搜索态全量渲染，haystacks 与卡片对齐）
+var _libLastQuery = '';
 function _libLoadMore(){
   if(_libSentinel){ _libSentinel.disconnect(); _libSentinel = null; }
   _libRenderLimit += 60;
@@ -35,17 +38,42 @@ function _libLoadMore(){
 function liveFilterLibrary(v){
   libFilter.search = String(v == null ? '' : v);
   clearTimeout(_liveFilterTimer);
-  // 搜索即重建：renderLibrary 在搜索态渲染全部匹配项（匹配集小、干草堆有缓存）
-  _liveFilterTimer = setTimeout(renderLibrary, 150);
+  var q = libFilter.search;
+  // 逐字收窄（前缀延长）→ 就地切换可见性；其余（删除/换词/清空）→ 全量重建
+  var refining = q && _libSearchActive && q.length > _libLastQuery.length && q.indexOf(_libLastQuery) === 0;
+  _libLastQuery = q;
+  if(refining){
+    _liveFilterTimer = setTimeout(function(){ if(!applyLiveFilter()) renderLibrary(); }, 60);
+  }else{
+    _libSearchActive = !!q;
+    _liveFilterTimer = setTimeout(renderLibrary, 150);
+  }
+}
+// 就地过滤：对已渲染卡片按干草堆切换可见性。
+// 返回 false = DOM 与索引不同步或无命中，调用方回退全量重建（无命中时重建可展示空状态）。
+function applyLiveFilter(){
+  var grid = document.getElementById('kw-grid');
+  if(!grid) return false;
+  var cards = grid.children;
+  if(cards.length !== _libHaystacks.length) return false;
+  var q = libFilter.search.toLowerCase();
+  var visible = 0;
+  for(var i = 0; i < cards.length; i++){
+    var hit = _libHaystacks[i].indexOf(q) !== -1;
+    cards[i].style.display = hit ? '' : 'none';
+    if(hit) visible++;
+  }
+  return visible > 0;
+}
+function hayText(k){
+  var c = _libHayCache[k.id];
+  if(!c || c.v !== _libDataVer){
+    c = _libHayCache[k.id] = { v: _libDataVer, h: (k.title+' '+k.content+' '+k.chapter+' '+((k.tags)||[]).join(' ')).toLowerCase() };
+  }
+  return c.h;
 }
 function buildHaystacks(list){
-  _libHaystacks = list.map(function(k){
-    var c = _libHayCache[k.id];
-    if(!c || c.v !== _libDataVer){
-      c = _libHayCache[k.id] = { v: _libDataVer, h: (k.title+' '+k.content+' '+k.chapter+' '+((k.tags)||[]).join(' ')).toLowerCase() };
-    }
-    return c.h;
-  });
+  _libHaystacks = list.map(hayText);
 }
 function setLibSubject(id){ libFilter.subject = id; renderLibrary(); }
 function renderLibrary(){
@@ -60,12 +88,14 @@ function renderLibrary(){
   if(libFilter.tag) list = list.filter(k=>k.tags.includes(libFilter.tag));
   if(libFilter.search){
     const q = libFilter.search.toLowerCase();
-    list = list.filter(k=> (k.title+k.content+k.chapter+k.tags.join('')).toLowerCase().includes(q));
+    list = list.filter(k=> hayText(k).indexOf(q) !== -1);   // 干草堆缓存：避免每次键入重复拼接 + toLowerCase
   }
   list.sort((a,b)=> (isDue(a)?0:1)-(isDue(b)?0:1) || a.nextReview.localeCompare(b.nextReview));
-  buildHaystacks(list);
+  buildHaystacks(list);   // 搜索态下 shown===list，haystacks 与渲染卡片一一对齐，供就地过滤使用
   // 搜索时必须全量匹配（干草堆覆盖全部卡片），无搜索时增量渲染
   var searching = !!libFilter.search;
+  _libSearchActive = searching;   // 结构性渲染后同步就地过滤状态
+  _libLastQuery = libFilter.search;
   var shown = searching ? list : list.slice(0, _libRenderLimit);
 
   el.innerHTML = `

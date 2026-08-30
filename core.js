@@ -200,7 +200,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.21';   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.22';   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -1334,30 +1334,68 @@ function buildSafeModal(opts){
 }
 var _modalGen = 0;   // 弹窗代际：关闭动画的延迟清理只对"代际未变"的容器生效，
                      // 修复"关闭后立刻开新弹窗被延迟清理误删"的闪退（如 AI 建卡 → 去配置）
+var _modalLastFocus = null;   // 打开弹窗前的焦点元素：关闭时还原，满足 WCAG 焦点可达/可还原
+// 弹窗内可聚焦元素（排除禁用与隐藏域）
+function _modalFocusables(modal){
+  var els = modal.querySelectorAll('button, [href], input:not([type=hidden]), select, textarea, [tabindex]:not([tabindex="-1"])');
+  return Array.prototype.filter.call(els, function(el){ return !el.disabled; });
+}
+// 焦点圈：Tab / Shift+Tab 在打开的弹窗内循环，不逃逸到遮罩之后
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Tab') return;
+  var root = document.getElementById('modal-root');
+  if(!root || !root.classList.contains('open')) return;
+  var modal = root.querySelector('.modal');
+  if(!modal) return;
+  var f = _modalFocusables(modal);
+  if(!f.length){ e.preventDefault(); modal.focus(); return; }
+  var first = f[0], last = f[f.length-1];
+  var active = document.activeElement;
+  if(e.shiftKey){
+    if(active === first || !modal.contains(active)){ e.preventDefault(); last.focus(); }
+  }else{
+    if(active === last || !modal.contains(active)){ e.preventDefault(); first.focus(); }
+  }
+});
 function openModal(html){
   const root = document.getElementById('modal-root');
   _modalGen++;
   // 支持对象式安全调用：openModal({title, body, actions})
   const content = typeof html === 'object' && html !== null ? buildSafeModal(html) : html;
-  root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal">${content}</div>`;
+  root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal" role="dialog" aria-modal="true" tabindex="-1">${content}</div>`;
   root.classList.add('open');
   document.body.classList.add('modal-open'); // 锁背景滚动
+  // 焦点移入弹窗：表单优先聚焦首个输入项，确认类聚焦主按钮，兜底首个可聚焦元素
+  try{
+    _modalLastFocus = document.activeElement;
+    var modal = root.querySelector('.modal');
+    var target = modal.querySelector('input:not([type=hidden]), select, textarea')
+              || modal.querySelector('.btn-primary')
+              || _modalFocusables(modal)[0] || modal;
+    _defer(function(){ if(root.classList.contains('open')) target.focus(); }, 30);
+  }catch(e){}
 }
 function closeModal(){
   const root = document.getElementById('modal-root');
   const modal = root.querySelector('.modal');
   const gen = _modalGen;
+  const restoreFocus = function(){
+    if(_modalLastFocus && _modalLastFocus.focus){ try{ _modalLastFocus.focus(); }catch(e){} }
+    _modalLastFocus = null;
+  };
   if(modal && !modal.classList.contains('closing')){
     modal.classList.add('closing');
     _defer(function(){
-      if(gen !== _modalGen) return;   // 期间已打开新弹窗：跳过清理，保留新弹窗
+      if(gen !== _modalGen) return;   // 期间已打开新弹窗：跳过清理，保留新弹窗（焦点由新弹窗接管）
       root.classList.remove('open'); root.innerHTML = '';
       document.body.classList.remove('modal-open');
+      restoreFocus();
     }, 180);
     return;
   }
   root.classList.remove('open'); root.innerHTML = '';
   document.body.classList.remove('modal-open');
+  restoreFocus();
 }
 function toast(msg, type){
   const root = document.getElementById('toast-root');

@@ -5,8 +5,9 @@
  *      静态资源 network-first → stale-while-revalidate（资源均带 ?v= 版本戳，URL 变即缓存失效）
  * v24: 公共库数据拆分——索引（6KB）进预缓存，卡片按科目 plib/<id>.json 走运行时缓存
  * v26: beta.21 UI/UX 重构版本戳（样式/视图内容变更，ASSETS 清单不变）
+ * v27: beta.22 快赢改进批版本戳（样式/核心/视图内容变更，ASSETS 清单不变）
  */
-const CACHE = 'yanxueku-v26';
+const CACHE = 'yanxueku-v27';
 // 预缓存只放首屏关键资源 + 公共库索引（6KB）。卡片按科目拆分在 plib/<id>.json，
 // 单个最大 745KB，只在用户下钻该科目时才由 fetch handler 运行时缓存。
 const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js','./public-lib.js',
