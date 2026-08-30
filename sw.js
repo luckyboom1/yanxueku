@@ -34,7 +34,10 @@ self.addEventListener('fetch', e => {
     e.respondWith(
       fetch(e.request).then(netRes => {
         if (netRes && netRes.status === 200) {
-          caches.open(CACHE).then(cache => cache.put(e.request, netRes.clone()));
+          // 必须在 return 前同步 clone：一旦 netRes 交给页面消费，异步回调里再 clone 会抛
+          // "Response body is already used"（v27 修复，headless 运行时实测复现）
+          const copy = netRes.clone();
+          caches.open(CACHE).then(cache => cache.put(e.request, copy)).catch(() => {});
         }
         return netRes;
       }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
