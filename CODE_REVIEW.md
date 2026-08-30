@@ -113,6 +113,7 @@ main/master
   4. `sw.js` `CACHE = 'yanxueku-vN'` +1，且 `ASSETS` 列表与 index.html 引用一一对应（多了会装不上缓存，少了离线打不开）
   5. `views.js` `PLIB_URL`/`PLIB_VER` —— **仅当 public-library.json 数据变化时才 bump**，勿随 APP_VERSION 走
 - 🔴 CSP 变更（`script-src`/`connect-src`）必须单独说明安全影响，默认拒绝放宽
+- 🔴 **CSP 与代码实际加载源必须逐一对应**：新增/修改外部脚本源（如 SDK CDN 及其回退镜像）时，必须在 `index.html` 的 CSP `script-src` 同步放行。事故先例：代码里配了 `fastly.jsdelivr.net` 回退，CSP 只放行 `cdn.jsdelivr.net`，这条供应链冗余防线被静默拦截、从未生效（beta.20 修复）。验证方法：浏览器动态注入该源脚本，确认 `onload` 触发而非被 CSP 拒绝。
 - 🟡 新增静态资源必须同时加入 `ASSETS` 预缓存，否则 PWA 离线模式白屏
 - 🟡 缓存策略变更必须说明对"发版即时生效"的影响：静态资源靠 `?v=` 版本戳失效（SWR 安全），**不带版本戳的资源不得进 SWR 路径**
 
