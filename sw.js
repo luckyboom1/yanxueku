@@ -7,11 +7,12 @@
  * v26: beta.21 UI/UX 重构版本戳（样式/视图内容变更，ASSETS 清单不变）
  * v27: beta.22 快赢改进批版本戳（样式/核心/视图内容变更，ASSETS 清单不变）
  * v28: beta.23 首页背景光晕脉搏动效（仅样式变更，ASSETS 清单不变）
+ * v29: beta.24 移除 public-lib.js（早已退化为注释占位的死文件）+ 核心/视图/刷题修复
  */
-const CACHE = 'yanxueku-v28';
+const CACHE = 'yanxueku-v29';
 // 预缓存只放首屏关键资源 + 公共库索引（6KB）。卡片按科目拆分在 plib/<id>.json，
 // 单个最大 745KB，只在用户下钻该科目时才由 fetch handler 运行时缓存。
-const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js','./public-lib.js',
+const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js',
   './quiz_analyzer.js','./ai.js','./public-library-index.json',
   './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png',
   './privacy.html','./terms.html'];

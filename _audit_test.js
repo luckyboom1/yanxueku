@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* 研学库 纯函数边界测试（CODE_REVIEW §2.2 自审项之一，40 断言）
+/* 研学库 纯函数边界测试（CODE_REVIEW §2.2 自审项之一，77 断言）
  * 用法：node _audit_test.js
  * 覆盖：日期工具 / 转义与安全色 / FSRS 引擎（单调性·边界分桶）/ 数据消毒与迁移
  *      （原型链污染·id 白名单·限长）/ 刷题判分 / 连续天数 / AI JSON 解析与端点校验
@@ -62,7 +62,9 @@ global.self = global;
 global.top = global;
 global.document = documentStub;
 global.localStorage = localStorageStub;
-global.navigator = { userAgent: 'node-audit' };        // 不含 serviceWorker 键 → 跳过 SW 注册
+// Node ≥21 自带只读 navigator 全局，须 defineProperty 覆盖（直接赋值抛 TypeError）
+Object.defineProperty(globalThis, 'navigator', { value: { userAgent: 'node-audit' }, configurable: true, writable: true });   // 不含 serviceWorker 键 → 跳过 SW 注册
+if (typeof global.addEventListener !== 'function'){ global.addEventListener = function(){}; global.removeEventListener = function(){}; }   // Node 无 DOM 事件全局，core.js 顶层 pagehide 监听需要
 global.location = { protocol: 'file:', search: '', href: 'file:///audit' };
 global.matchMedia = () => ({ matches: false, addEventListener(){}, removeEventListener(){} });
 global.requestAnimationFrame = fn => setTimeout(() => fn(Date.now()), 0);
@@ -148,6 +150,26 @@ ok(uid().charAt(0) === 'k' && uid() !== uid(), 'uid 前缀与唯一性');
   const clean = sanitizeImport({ subjects: [{ id: "a');alert(1);//", name: 'n', color: 'red' }], knowledge: [], questions: [] });
   ok(/^[a-zA-Z0-9_-]*$/.test(clean.subjects[0].id), 'sanitizeImport id 白名单');
   eq(clean.subjects[0].color, '#6366f1', 'sanitizeImport 颜色走 safeColor');
+  // fsrs 记忆状态必须随备份透传（修复前白名单丢 fsrs → 恢复后遗忘曲线清零）
+  const fsrsIn = sanitizeImport({ subjects: [], questions: [], knowledge: [
+    { id: 'k1', subjectId: 's1', fsrs: { d: 7.5, s: 30, lastReviewDate: '2026-08-01', reps: 9 } },
+    { id: 'k2', subjectId: 's1', fsrs: { d: 99, s: -5, lastReviewDate: '垃圾', reps: -3 } },
+    { id: 'k3', subjectId: 's1' }
+  ] });
+  eq(fsrsIn.knowledge[0].fsrs.s, 30, 'sanitizeImport 保留 fsrs.s');
+  eq(fsrsIn.knowledge[0].fsrs.d, 7.5, 'sanitizeImport 保留 fsrs.d');
+  eq(fsrsIn.knowledge[0].fsrs.reps, 9, 'sanitizeImport 保留 fsrs.reps');
+  eq(fsrsIn.knowledge[0].fsrs.lastReviewDate, '2026-08-01', 'sanitizeImport 保留 fsrs.lastReviewDate');
+  eq(fsrsIn.knowledge[1].fsrs.d, 10, 'sanitizeImport fsrs.d 超界钳 10');
+  eq(fsrsIn.knowledge[1].fsrs.s, 0.1, 'sanitizeImport fsrs.s 负值钳 0.1');
+  eq(fsrsIn.knowledge[1].fsrs.reps, 0, 'sanitizeImport fsrs.reps 负值钳 0');
+  eq(fsrsIn.knowledge[1].fsrs.lastReviewDate, todayStr(), 'sanitizeImport fsrs 非法日期回退今天');
+  eq(fsrsIn.knowledge[2].fsrs, null, 'sanitizeImport 无 fsrs 字段置 null');
+  // quizRecords 上限与 doSave 对齐 20000：超限备份保尾弃头（修复前 10 万，恢复后保存再被静默截尾）
+  const recs = []; for (let i = 0; i < 25000; i++) recs.push({ qid: 'q' + i, correct: true, date: '2026-01-01' });
+  const recsOut = sanitizeImport({ subjects: [], knowledge: [], questions: [], quizRecords: recs });
+  eq(recsOut.quizRecords.length, 20000, 'sanitizeImport quizRecords 截到 20000');
+  eq(recsOut.quizRecords[19999].qid, 'q24999', 'quizRecords 截断保尾不保头');
   ok(isPureSeed(seedData()) === true, 'isPureSeed 识别未动过的种子');
   ok(isPureSeed(blankDb()) === false, 'isPureSeed 拒绝空白库');
   const old = { _schemaVersion: 0, subjects: [], knowledge: [{ id: 'k1', stage: 2, nextReview: '2026-01-02', lastReview: '2026-01-01' }],

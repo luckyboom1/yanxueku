@@ -11,7 +11,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const FILES = ['core.js','views.js','quiz.js','quiz_analyzer.js','ai.js','public-lib.js','sw.js','index.html'];
+const FILES = ['core.js','views.js','quiz.js','quiz_analyzer.js','ai.js','sw.js','index.html'];
 const BUILTINS = new Set(('setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame ' +
   'fetch parseInt parseFloat String Number Boolean Object Array JSON Math Date RegExp Promise Error isNaN isFinite ' +
   'alert confirm prompt encodeURIComponent decodeURIComponent console document window navigator location history ' +

@@ -256,6 +256,7 @@ function delKw(id){
 }
 function doDelKw(id){
   db.knowledge = db.knowledge.filter(k=>k.id!==id);
+  if(Array.isArray(db.stars)) db.stars = db.stars.filter(function(sid){ return sid !== id; });   // 同步收藏列表，避免孤儿 id 残留
   save(); closeModal(); render();
   toast('已删除','info');
 }
@@ -294,7 +295,9 @@ function startReview(focusId){
     q = k? [k] : [];
   }
   if(!q.length){
-    if(!focusId && _reviewSubject !== 'all' && dueList().length){
+    if(focusId){
+      toast('知识点不存在或已被删除','err');   // 区别于"无待复习"：卡片可能已被本端/他端删掉
+    }else if(_reviewSubject !== 'all' && dueList().length){
       toast('该科目今日没有待复习内容，试试其他科目','info');
     }else{
       toast('今日没有待复习内容，太棒了！🎉','ok');
@@ -1040,7 +1043,21 @@ function dropLegacyPlibCache(){
 
 /* ===== 按科目按需加载卡片 ===== */
 var _plibCards = {};                       // subjectId -> cards（内存缓存）
-function plibCardsKey(id){ return 'yanxueku_plib_c_' + id; }
+// 键中嵌入 PLIB_VER：此前键无版本，数据更新 bump PLIB_VER 后旧卡片仍被命中，
+// 版本失效机制对拆分后的单科数据形同虚设
+function plibCardsKey(id){ return 'yanxueku_plib_c_' + PLIB_VER + '_' + id; }
+/* 清理过期科目卡片缓存：拆分前的旧格式键（无版本）与非当前版本键一并移除 */
+function dropStalePlibCardCache(){
+  try{
+    var prefix = 'yanxueku_plib_c_' + PLIB_VER + '_';
+    var dead = [];
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && k.indexOf('yanxueku_plib_c_') === 0 && k.indexOf(prefix) !== 0) dead.push(k);
+    }
+    dead.forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+  }catch(e){}
+}
 /* 取某科目的卡片：内存 → localStorage → 网络。cb(cards) 保证以数组回调，失败回调空数组。 */
 function loadSubjectCards(id, cb){
   if(!id) { if(cb) cb([]); return; }
@@ -1146,6 +1163,7 @@ function _pubLibFetch(done, silent, withProgress){
   xhr.send();
 }
 function loadPublicLibrary(cb, silent){
+  dropStalePlibCardCache();   // 顺手清掉旧版本/旧格式的单科卡片缓存
   if(_pubLib){ if(cb) cb(_pubLib); return; }
   _plibCbs.push(cb || function(){});
   if(_pubLibLoading) return;
@@ -1304,14 +1322,18 @@ function doImportPubLibCards(s, cards){
   var addedKw = 0, skippedKw = 0;
   var titleCount = {};
   cards.forEach(function(c){
-    titleCount[c.title] = (titleCount[c.title] || 0) + 1;
-    var finalTitle = titleCount[c.title] > 1 ? c.title + ' (' + titleCount[c.title] + ')' : c.title;
+    if(!c || typeof c !== 'object') return;
+    // 字段限长与卡包导入对齐（plib 虽为第一方同域数据，导入后同样进导出/分享链路）
+    var baseTitle = String(c.title || '').slice(0,200);
+    titleCount[baseTitle] = (titleCount[baseTitle] || 0) + 1;
+    var finalTitle = titleCount[baseTitle] > 1 ? baseTitle + ' (' + titleCount[baseTitle] + ')' : baseTitle;
     var exists = db.knowledge.some(function(k){ return k.title === finalTitle; });
     if(exists){ skippedKw++; return; }
     db.knowledge.push({
       id: uid(), subjectId: appSubj.id,
-      chapter: c.chapter, title: finalTitle,
-      content: c.content, tags: (c.tags || []).slice(0,20),
+      chapter: String(c.chapter || '未分章').slice(0,100), title: finalTitle,
+      content: String(c.content || '').slice(0,20000),
+      tags: (Array.isArray(c.tags) ? c.tags : []).slice(0,20).map(function(t){ return String(t || '').slice(0,50); }),
       stage: 0, nextReview: todayStr(), lastReview: null, createdAt: todayStr()
     });
     addedKw++;

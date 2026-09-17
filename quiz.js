@@ -31,7 +31,7 @@ function scoreUserAnswer(userAnswer, q) {
 function renderQuizHome(){
   if(!db||!db.questions) return;
   const el = document.getElementById('view-quiz');
-  if(quiz && quiz.idx < quiz.list.length){ renderQuestion(); return; }
+  if(quiz && quiz.list && quiz.idx < quiz.list.length){ renderQuestion(); return; }
   el.innerHTML = `
     <div class="quiz-setup panel">
       <div class="panel-title">📝 组卷设置</div>
@@ -78,7 +78,9 @@ function startQuiz(){
 }
 function renderQuestion(){
   const el = document.getElementById('view-quiz');
-  const q = quiz.list[quiz.idx];
+  // 状态越界防御：内联事件/异步回调触发时 quiz 可能已被清空或题库被他端同步换掉
+  const q = quiz && quiz.list ? quiz.list[quiz.idx] : null;
+  if(!q){ quiz = null; renderQuizHome(); return; }
   const s = getSubject(q.subjectId);
   var typeLabelText = typeLabel(q);
   var typeIconText = typeIcon(q);
@@ -86,7 +88,7 @@ function renderQuestion(){
 
   var answerArea = '';
   if (q.type === 'single' || q.type === 'judge') {
-    const opts = q.type==='judge' ? ['正确','错误'] : q.options;
+    const opts = q.type==='judge' ? ['正确','错误'] : (q.options || []);
     answerArea = `<div id="q-opts">
       ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('')}
     </div>`;
@@ -124,9 +126,10 @@ function renderQuestion(){
     </div>`;
 }
 function answerQ(i){
-  const q = quiz.list[quiz.idx];
   const optEls = document.querySelectorAll('#q-opts .q-opt');
-  if(optEls[0].classList.contains('locked')) return;
+  if(!optEls.length || optEls[0].classList.contains('locked')) return;
+  const q = quiz && quiz.list ? quiz.list[quiz.idx] : null;
+  if(!q) return;
   const correct = i === q.answer;
   optEls.forEach((el,j)=>{
     el.classList.add('locked');
@@ -150,7 +153,8 @@ function answerQ(i){
 
 /* 填空/简答题：输入文本后提交判分；简答题在已配置 AI 时走语义阅卷，失败回退关键词评分 */
 function answerInputQ(){
-  const q = quiz.list[quiz.idx];
+  const q = quiz && quiz.list ? quiz.list[quiz.idx] : null;
+  if(!q) return;
   const inputId = q.type === 'fill' ? 'q-fill-input' : 'q-short-input';
   const inputEl = document.getElementById(inputId);
   const btnEl = document.querySelector('#q-opts .q-submit-btn');
@@ -266,7 +270,7 @@ function renderWrong(){
       const s = getSubject(q.subjectId);
       var answerArea = '';
       if (q.type === 'single' || q.type === 'judge') {
-        const opts = q.type==='judge'? ['正确','错误'] : q.options;
+        const opts = q.type==='judge'? ['正确','错误'] : (q.options || []);
         answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('');
       } else {
         answerArea = `<div style="display:flex;gap:8px;align-items:stretch">
@@ -288,8 +292,9 @@ function renderWrong(){
 function redoWrong(qid, i){
   const q = db.questions.find(x=>x.id===qid);
   const box = document.getElementById('wq-'+qid);
+  if(!q || !box) return;
   const optEls = box.querySelectorAll('.q-opt');
-  if(optEls[0].classList.contains('locked')) return;
+  if(!optEls.length || optEls[0].classList.contains('locked')) return;
   const correct = i === q.answer;
   optEls.forEach((el,j)=>{
     el.classList.add('locked');
@@ -317,7 +322,7 @@ function redoWrongInput(qid) {
   const q = db.questions.find(function(x){ return x.id === qid; });
   const box = document.getElementById('wq-' + qid);
   const inputEl = document.getElementById('wq-input-' + qid);
-  if (!inputEl || inputEl.classList.contains('locked') || inputEl.classList.contains('wrong-locked')) return;
+  if (!q || !box || !inputEl || inputEl.classList.contains('locked') || inputEl.classList.contains('wrong-locked')) return;
   var userAnswer = inputEl.value.trim();
   if (!userAnswer) { toast('请输入答案再提交','warn'); return; }
   var correct = scoreUserAnswer(userAnswer, q);

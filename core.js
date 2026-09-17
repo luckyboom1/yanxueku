@@ -200,7 +200,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.23';   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.24';   // v3.0.0-beta.24: 审查修复批——备份恢复保留 FSRS 记忆状态（sanitizeImport 此前丢弃 fsrs 字段，恢复后曲线清零）、公共库单科卡片缓存键纳入 PLIB_VER（此前 bump 后旧卡片仍被命中）、登录墙展示期间不计学习时长（幻影时长污染 isPureSeed 使新账号被灌入演示数据）、实时同步改订全部事件（补 INSERT 首次同步）、删除科目/知识点清理 quizStats/stars 孤儿键、doSave 本地配额写满一次性提示、刷题/错题空值兜底、移除 public-lib.js 死文件   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -472,7 +472,7 @@ function __deepSanitize(data){
     var answer = (qType==='fill'||qType==='short') ? str(q.answer, 2000) : (parseInt(q.answer)||0);
     return { id: idClean(q.id), subjectId: idClean(q.subjectId),
       chapter: str(q.chapter, 100), type: qType,
-      question: str(q.question, 2000),
+      question: str(q.question || q.q, 2000),   // v2 旧字段 q 作回退：消毒先于版本迁移执行，不读 q 会让题干在迁移前就丢成空串
       options: (Array.isArray(q.options) ? q.options.slice(0,10).map(function(o){ return str(o, 1000); }) : null),
       answer: answer, explanation: str(q.explanation || q.explain, 5000) };
   }).filter(Boolean);
@@ -590,6 +590,7 @@ function hideLoading(){
 }
 // save 防抖合并：连续操作（复习/答题/编辑）只做一次持久化，避免全量 upsert 刷爆带宽与 API 配额
 let _saveTimer = null, _savePending = false;
+let _lsWarned = false;   // localStorage 配额写满已提示过（每会话一次，避免每次保存刷屏）
 let _cloudLoadFailed = false;   // 本次会话云端读取失败标志：置位期间禁止 upsert，防止本机旧数据+新改动整包覆盖云端较新数据（其他设备进度丢失）
 function _setSync(t, warn){
   const el = document.getElementById('sync-status');
@@ -603,8 +604,10 @@ function doSave(){
   db.updated_at = new Date().toISOString();
   // 答题记录只保留最近 20000 条：防止 localStorage 配额溢出后被整体静默丢弃
   if(db.quizRecords && db.quizRecords.length > 20000) db.quizRecords = db.quizRecords.slice(-20000);
-  // localStorage 始终写入作为降级备份（无 UI 提示，用户无感知）
-  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){}
+  // localStorage 始终写入作为降级备份；配额写满时仅提示一次（此前静默失败，用户毫无察觉）
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }catch(e){
+    if(!_lsWarned){ _lsWarned = true; toast('本机存储空间不足，本地备份写入失败；云端同步不受影响，建议导出数据备份','warn'); }
+  }
   if(sb && _currentUser && !_cloudLoadFailed){
     _setSync('同步中…');
     try{
@@ -634,8 +637,9 @@ let _rtChannel = null;   // 实时同步频道句柄：登出时退订，重登�
 function setupRealtimeSync(){
   if(!sb || !_currentUser) return;
   if(_rtChannel){ try{ sb.removeChannel(_rtChannel); }catch(e){} _rtChannel = null; }
+  // event:'*' 全收：另一设备的首次 upsert 产生的是 INSERT，只订 UPDATE 会漏掉首次同步
   _rtChannel = sb.channel('app_state_changes')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'app_state', filter: 'user_id=eq.'+_currentUser.id },
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'app_state', filter: 'user_id=eq.'+_currentUser.id },
       payload => {
         if(db && payload.new && payload.new.data && payload.new.data.subjects){
           const oldUpdated = new Date(db.updated_at||0).getTime();
@@ -950,10 +954,14 @@ function delSubject(id, ev){
 function doDelSubject(id){
   const s = getSubject(id);
   const qids = new Set(db.questions.filter(q=>q.subjectId===id).map(q=>q.id));
+  const kwIds = new Set(db.knowledge.filter(k=>k.subjectId===id).map(k=>k.id));
   db.subjects = db.subjects.filter(x=>x.id!==id);
   db.knowledge = db.knowledge.filter(k=>k.subjectId!==id);
   db.questions = db.questions.filter(q=>q.subjectId!==id);
   db.quizRecords = db.quizRecords.filter(r=>!qids.has(r.qid));
+  // 清理孤儿数据：被删题目的智能选题统计、被删卡片的收藏 id（否则死数据随 JSONB 越滚越大）
+  if(db.quizStats) qids.forEach(function(qid){ delete db.quizStats[qid]; });
+  if(Array.isArray(db.stars)) db.stars = db.stars.filter(function(sid){ return !kwIds.has(sid); });
   if(libFilter.subject===id) libFilter.subject = 'all';
   save(); closeModal(); render();
   toast(`科目「${s.name}」已删除`,'info');   // toast 走 textContent，无需 esc（用了反而显示 &amp; 字面量）
@@ -1058,7 +1066,8 @@ function sanitizeImport(d){
             stage:Math.max(0,Math.min(6,parseInt(k&&k.stage)||0)),
             nextReview:cleanDate(k&&k.nextReview) || todayStr(),
             lastReview:(k&&k.lastReview)?(cleanDate(k.lastReview)||null):null,
-            createdAt:cleanDate(k&&k.createdAt) || todayStr()};
+            createdAt:cleanDate(k&&k.createdAt) || todayStr(),
+            fsrs:(k&&k.fsrs&&typeof k.fsrs==='object')?{d:Math.max(1,Math.min(10,parseFloat(k.fsrs.d)||5)),s:Math.max(0.1,Math.min(730,parseFloat(k.fsrs.s)||0.1)),lastReviewDate:cleanDate(k.fsrs.lastReviewDate)||todayStr(),reps:Math.max(0,parseInt(k.fsrs.reps)||0)}:null};
   });
   out.questions = (Array.isArray(d.questions)?d.questions:[]).slice(0,10000).map(function(q){
     var qType = q&&q.type ? q.type : (q&&q.options===null?'judge':'single');
@@ -1075,7 +1084,7 @@ function sanitizeImport(d){
             options:(Array.isArray(q&&q.options)?q.options:[]).slice(0,10).map(function(o){return String(o||'').slice(0,1000);}),
             answer: answer, explanation:String(q&&q.explanation||'').slice(0,5000)};
   });
-  out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(0,100000).map(function(r){
+  out.quizRecords = (Array.isArray(d.quizRecords)?d.quizRecords:[]).slice(-20000).map(function(r){
     return {qid:cleanId(r&&r.qid), correct:!!(r&&r.correct), date:cleanDate(r&&r.date) || todayStr()};
   });
   out.studyLog = (Array.isArray(d.studyLog)?d.studyLog:[]).slice(0,5000).map(function(r){
@@ -1619,7 +1628,7 @@ function renderGate(){
             '</div>'+
           '</div>'+
           '<div class="gate-footer-bottom">'+
-            '<span>研学库 v3.0.0-beta.21 · MIT License</span>'+
+            '<span>研学库 '+APP_VERSION+' · MIT License</span>'+
             '<span>Powered by <b>GitHub Pages</b> · <b>Supabase</b> · <b>Cloudflare</b></span>'+
             '<span>© 2026 研学库 · 仅供学习交流使用</span>'+
           '</div>'+
@@ -1697,6 +1706,9 @@ function startActivityTracking(){
   if(_activeTimer) return;
   _activeTimer = setInterval(()=>{
     if(document.visibilityState === 'visible'){
+      // 未登录（登录墙展示中）不计入：幻影时长会让 studyLog 非空，污染 isPureSeed 判定，
+      // 使新账号注册时把整包演示种子数据误传云端
+      if(!_currentUser){ _activeSeconds = 0; return; }
       _activeSeconds++;
       if(!db||!db.studyLog){ _activeSeconds=0; return; }
       if(_activeSeconds >= 60){

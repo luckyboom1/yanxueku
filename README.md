@@ -20,10 +20,9 @@
 ```
 index.html            入口（含运行时配置注入）
 core.js               数据层 / 认证 / FSRS 引擎 / 仪表盘（经典脚本主文件）
-views.js              渲染层：知识库 / 复习 / 统计 / 排行榜 / 认证 UI
+views.js              渲染层：知识库 / 复习 / 统计 / 排行榜 / 认证 UI / 公共课程库
 quiz.js + quiz_analyzer.js   刷题引擎与题库智能分析
 ai.js                AI 能力层（建卡生成 / 语义批改 / 连接管理）
-public-lib.js         公共课程库视图
 styles.css            应用样式（扁平高级感设计语言）
 gate.css              登录页样式
 sw.js                 Service Worker（导航 network-first，静态资源 stale-while-revalidate）
