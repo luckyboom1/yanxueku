@@ -5,7 +5,7 @@
 try{ if(window.top!==window.self){ document.documentElement.style.display="none"; window.top.location=window.self.location; } }catch(e){}
 
 // 版本跳变检测：每次发布 bump __APP_VERSION，旧版本自动强制刷新
-var __APP_VERSION = "3.0.0-beta.25";
+var __APP_VERSION = "3.0.0-beta.26";
 (function(){
   var __sv = localStorage.getItem('yanxueku_ver');
   if(__sv && __sv !== __APP_VERSION){

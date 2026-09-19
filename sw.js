@@ -11,7 +11,7 @@
  * v30/v31: beta.25 内联事件清零——新增 actions.js（事件委托层）/boot.js（启动引导外置）/
  *      config.js（运行时配置入库），CSP script-src 移除 'unsafe-inline'
  */
-const CACHE = 'yanxueku-v31';
+const CACHE = 'yanxueku-v32';
 // 预缓存只放首屏关键资源 + 公共库索引（6KB）。卡片按科目拆分在 plib/<id>.json，
 // 单个最大 745KB，只在用户下钻该科目时才由 fetch handler 运行时缓存。
 const ASSETS = ['./','./index.html','./styles.css','./gate.css','./config.js','./boot.js','./core.js','./quiz.js','./views.js',
@@ -34,19 +34,31 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('supabase.co')) return;
 
-  // 页面导航：强制走网络拿最新 HTML，避免用户看到旧版；离线才回退缓存
+  // 页面导航：网络优先拿最新 HTML + 2.5s 超时回退缓存——慢网/弱网下不再无限等待
+  // （此前是单纯 network-first，慢连接时整个应用启动被网络吊住）。
+  // 超时输掉竞速的 fetch 继续在后台完成并更新缓存，不浪费带宽。
   if (e.request.mode === 'navigate') {
-    e.respondWith(
-      fetch(e.request).then(netRes => {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const cached = (await cache.match(e.request)) || (await cache.match('./index.html'));
+      const net = fetch(e.request).then(netRes => {
         if (netRes && netRes.status === 200) {
           // 必须在 return 前同步 clone：一旦 netRes 交给页面消费，异步回调里再 clone 会抛
           // "Response body is already used"（v27 修复，headless 运行时实测复现）
-          const copy = netRes.clone();
-          caches.open(CACHE).then(cache => cache.put(e.request, copy)).catch(() => {});
+          cache.put(e.request, netRes.clone()).catch(() => {});
         }
         return netRes;
-      }).catch(() => caches.match(e.request).then(hit => hit || caches.match('./index.html')))
-    );
+      });
+      try {
+        return await Promise.race([
+          net,
+          new Promise((_, rej) => setTimeout(() => rej(new Error('nav-timeout')), 2500))
+        ]);
+      } catch (err) {
+        // 网络超时/失败：有缓存立即用缓存；无缓存只能继续等网络
+        return cached || net;
+      }
+    })());
     return;
   }
 

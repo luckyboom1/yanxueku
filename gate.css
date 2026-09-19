@@ -197,7 +197,7 @@
 #login-gate .gate-legal input[type=checkbox]{
   appearance:none;-webkit-appearance:none;width:18px;height:18px;
   border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;flex-shrink:0;
-  background:rgba(255,255,255,.03);transition:all .2s var(--ease-out-quart);
+  background:rgba(255,255,255,.03);transition:background-color .2s var(--ease-out-quart),border-color .2s var(--ease-out-quart),color .2s var(--ease-out-quart);
   position:relative;
 }
 #login-gate .gate-legal input[type=checkbox]:checked{

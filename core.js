@@ -191,16 +191,24 @@ if(!sb){
     s.onerror = _loadSdk;
     document.head.appendChild(s);
   };
-  _loadSdk();
-  // 8 秒仍未就绪 → 标记失败（登录/注册提示可区分"连接中"与"加载失败"）
-  setTimeout(function(){ if(!sb) _supabaseFailed = true; }, 8000);
+  if(_hasStoredSession()){
+    _loadSdk();
+  }else{
+    // 无存档会话 → 必然落到登录墙：SDK 推迟到浏览器空闲再拉（~110KB），
+    // 不与首帧抢带宽/主线程；用户点登录前早已就绪，极端情况有"正在连接"兜底
+    if(typeof requestIdleCallback === 'function') requestIdleCallback(function(){ _loadSdk(); }, {timeout:1500});
+    else setTimeout(_loadSdk, 0);
+  }
+  // 8 秒仍未就绪 → 标记失败（登录/注册提示可区分"连接中"与"加载失败"）；
+  // SDK 延迟启动的场景下，只有真正开始下载（_sdkIdx>0）后才计时判负
+  setTimeout(function(){ if(!sb && _sdkIdx > 0) _supabaseFailed = true; }, 8000);
 }
 
 // === 数据模型（EBB 遗忘曲线、主题、日期工具） ===
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.25';   // v3.0.0-beta.24: 审查修复批——备份恢复保留 FSRS 记忆状态（sanitizeImport 此前丢弃 fsrs 字段，恢复后曲线清零）、公共库单科卡片缓存键纳入 PLIB_VER（此前 bump 后旧卡片仍被命中）、登录墙展示期间不计学习时长（幻影时长污染 isPureSeed 使新账号被灌入演示数据）、实时同步改订全部事件（补 INSERT 首次同步）、删除科目/知识点清理 quizStats/stars 孤儿键、doSave 本地配额写满一次性提示、刷题/错题空值兜底、移除 public-lib.js 死文件   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.26';   // v3.0.0-beta.26: 性能批——无存档会话时登录墙不等 Supabase SDK 直接揭幕（此前 hideLoading 吊在 SDK 下载+INITIAL_SESSION 上，慢网数秒白屏）、SDK 无会话时推迟到 requestIdleCallback 加载、SW 导航 network-first 加 2.5s 超时回退缓存、viewIn 去除 filter:blur 重绘、backdrop-filter 半径收敛、transition:all 枚举化防意外布局过渡、switchView 滚动复位瞬时化、sidebar 计时器变更才写 DOM   // v3.0.0-beta.24: 审查修复批——备份恢复保留 FSRS 记忆状态（sanitizeImport 此前丢弃 fsrs 字段，恢复后曲线清零）、公共库单科卡片缓存键纳入 PLIB_VER（此前 bump 后旧卡片仍被命中）、登录墙展示期间不计学习时长（幻影时长污染 isPureSeed 使新账号被灌入演示数据）、实时同步改订全部事件（补 INSERT 首次同步）、删除科目/知识点清理 quizStats/stars 孤儿键、doSave 本地配额写满一次性提示、刷题/错题空值兜底、移除 public-lib.js 死文件   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -425,6 +433,17 @@ function isPureSeed(d){
 let db;
 let _loadResolve = null;
 let _currentUser = null, _profile = null;   // 提前声明，避免 load() 中访问触发 TDZ
+// 本机是否存有 Supabase 会话令牌（sb-<ref>-auth-token）：决定启动走"等 SDK 验真"
+// 还是"直接进登录墙"的快路径
+function _hasStoredSession(){
+  try{
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && /^sb-.+-auth-token$/.test(k)) return true;
+    }
+  }catch(e){}
+  return false;
+}
 const _dbReady = new Promise(r => { _loadResolve = r; });
 
 /* 数据迁移：确保数据格式与当前版本兼容 */
@@ -733,7 +752,10 @@ function switchView(name){
   document.getElementById('page-sub').textContent = meta.sub;
   document.title = meta.title + ' · 研学库';
   render();
-  document.getElementById('content').scrollTop = 0;
+  // #content 挂了 scroll-behavior:smooth——scrollTop=0 会变成"从旧视图深处
+  // 一路滚回去"的可见动画，视图切换像卡住。瞬时复位，不动容器 smooth 策略。
+  var _c = document.getElementById('content');
+  if(_c){ try{ _c.scrollTo({top:0, left:0, behavior:'instant'}); }catch(e){ _c.scrollTop = 0; } }
   _analytics.page(name);
 }
 function toggleSidebar(){
@@ -1678,11 +1700,14 @@ function updateSidebarTimer(){
   const t = todayStr();
   const todayRec = db.studyLog.find(r=>r.date===t);
   const m = todayRec ? todayRec.minutes : 0;
+  // 每秒触发但分钟级才变：只在值变化时写 DOM，避免无意义的每秒 layout 抖动
   const el = document.getElementById('sidebar-timer');
-  if(el) el.textContent = formatMinutes(m, 'colon');
+  const txt = formatMinutes(m, 'colon');
+  if(el && el.textContent !== txt) el.textContent = txt;
   const totalMin = db.studyLog.reduce((s,r)=>s+r.minutes,0);
   const totalEl = document.getElementById('sidebar-total');
-  if(totalEl) totalEl.textContent = formatMinutes(totalMin, 'chinese');
+  const tTxt = formatMinutes(totalMin, 'chinese');
+  if(totalEl && totalEl.textContent !== tTxt) totalEl.textContent = tTxt;
 }
 function startTimer(){
   if(_timerInterval) clearInterval(_timerInterval);
@@ -1728,6 +1753,22 @@ function startActivityTracking(){
 _dbReady.then(function(){
   try{ startTimer(); }catch(e){}
   try{ startActivityTracking(); }catch(e){}
+  // 无存档会话 → 登录墙是必然终点：不必等 Supabase SDK 就位（下载+解析+INITIAL_SESSION
+  // 在慢网要数秒），直接揭幕。SDK 仍在后台加载，点登录前早已就绪。
+  // 例外：gate.css 还在路上（media-swap 异步）时等它 load，避免未渲染样式的 gate 闪现。
+  try{
+    if(!_currentUser && !_hasStoredSession()){
+      var gl = document.getElementById('gate-css');
+      if(gl && !gl.sheet){
+        var _glDone = false;
+        var _glFin = function(){ if(!_glDone){ _glDone = true; hideLoading(); } };
+        gl.addEventListener('load', _glFin, {once:true});
+        setTimeout(_glFin, 1200);   // 兜底：样式表迟到也不无限等
+      }else{
+        hideLoading();
+      }
+    }
+  }catch(e){}
   // 遗留收藏迁移：老版本的 ⭐ 只存 localStorage，数据里没有 stars 字段时搬进 db 随云端同步
   try{
     if(!db.stars || !db.stars.length){
