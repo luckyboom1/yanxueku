@@ -8,12 +8,14 @@
  * v27: beta.22 快赢改进批版本戳（样式/核心/视图内容变更，ASSETS 清单不变）
  * v28: beta.23 首页背景光晕脉搏动效（仅样式变更，ASSETS 清单不变）
  * v29: beta.24 移除 public-lib.js（早已退化为注释占位的死文件）+ 核心/视图/刷题修复
+ * v30/v31: beta.25 内联事件清零——新增 actions.js（事件委托层）/boot.js（启动引导外置）/
+ *      config.js（运行时配置入库），CSP script-src 移除 'unsafe-inline'
  */
-const CACHE = 'yanxueku-v29';
+const CACHE = 'yanxueku-v31';
 // 预缓存只放首屏关键资源 + 公共库索引（6KB）。卡片按科目拆分在 plib/<id>.json，
 // 单个最大 745KB，只在用户下钻该科目时才由 fetch handler 运行时缓存。
-const ASSETS = ['./','./index.html','./styles.css','./gate.css','./core.js','./quiz.js','./views.js',
-  './quiz_analyzer.js','./ai.js','./public-library-index.json',
+const ASSETS = ['./','./index.html','./styles.css','./gate.css','./config.js','./boot.js','./core.js','./quiz.js','./views.js',
+  './quiz_analyzer.js','./ai.js','./actions.js','./public-library-index.json',
   './manifest.json','./icon-192.png','./icon-512.png','./icon-maskable-512.png',
   './privacy.html','./terms.html'];
 

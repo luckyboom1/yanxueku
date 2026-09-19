@@ -190,9 +190,10 @@
 #login-gate .gate-legal{
   margin:0 0 16px;font-size:12.5px;color:rgba(255,255,255,.4);line-height:1.5;
 }
-#login-gate .gate-legal label{
-  display:inline-flex;align-items:center;cursor:pointer;gap:8px;
+#login-gate .gate-legal .gate-agree-row{
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;
 }
+#login-gate .gate-legal .gate-agree-row label{cursor:pointer}
 #login-gate .gate-legal input[type=checkbox]{
   appearance:none;-webkit-appearance:none;width:18px;height:18px;
   border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;flex-shrink:0;

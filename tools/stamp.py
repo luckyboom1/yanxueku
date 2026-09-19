@@ -8,7 +8,7 @@
 
 覆盖的位置：
   1. core.js     const APP_VERSION = 'vX.Y.Z'
-  2. index.html  var __APP_VERSION = "X.Y.Z"
+  2. boot.js     var __APP_VERSION = "X.Y.Z"（beta.25 起由 index.html 内联脚本外置至此）
   3. index.html  全部 ?v=X.Y.Z 查询串（样式与脚本）
   4. sw.js       const CACHE = 'yanxueku-vN'（bump 时自动 +1；check 时报告供人工确认）
 不覆盖（有意）：
@@ -47,9 +47,10 @@ def check():
     print('当前版本：v' + ver)
 
     html = read('index.html')
-    m = re.search(r'var __APP_VERSION = "([^"]+)"', html)
+    boot = read('boot.js')
+    m = re.search(r'var __APP_VERSION = "([^"]+)"', boot)
     if not m or m.group(1) != ver:
-        problems.append('index.html __APP_VERSION 不一致：%s' % (m.group(1) if m else '未找到'))
+        problems.append('boot.js __APP_VERSION 不一致：%s' % (m.group(1) if m else '未找到'))
 
     qv = re.findall(r'\?v=([0-9][^"\'>\s]*)', html)
     bad_qv = [v for v in qv if v != ver]
@@ -58,11 +59,11 @@ def check():
     elif bad_qv:
         problems.append('index.html 存在 %d 处过期 ?v=：%s' % (len(bad_qv), sorted(set(bad_qv))))
     else:
-        print('  ✓ index.html __APP_VERSION 与 %d 处 ?v= 全部一致' % len(qv))
+        print('  ✓ boot.js __APP_VERSION 与 index.html %d 处 ?v= 全部一致' % len(qv))
 
-    old_hits = [ln for ln in html.splitlines() if 'beta.' in ln and ver not in ln and ('?v=' in ln or '__APP_VERSION' in ln)]
+    old_hits = [ln for ln in (html + boot).splitlines() if 'beta.' in ln and ver not in ln and ('?v=' in ln or '__APP_VERSION' in ln)]
     if old_hits:
-        problems.append('index.html 仍有旧版本残留行')
+        problems.append('index.html/boot.js 仍有旧版本残留行')
 
     sw = read('sw.js')
     msw = re.search(r"const CACHE = 'yanxueku-v(\d+)'", sw)
@@ -98,8 +99,11 @@ def bump(target):
     html = read('index.html')
     n_qv = html.count('?v=' + old)
     html = html.replace('?v=' + old, '?v=' + target)
-    html = html.replace('var __APP_VERSION = "%s"' % old, 'var __APP_VERSION = "%s"' % target, 1)
     write('index.html', html)
+
+    boot = read('boot.js')
+    boot = boot.replace('var __APP_VERSION = "%s"' % old, 'var __APP_VERSION = "%s"' % target, 1)
+    write('boot.js', boot)
 
     sw = read('sw.js')
     m = re.search(r"const CACHE = 'yanxueku-v(\d+)'", sw)
@@ -109,7 +113,7 @@ def bump(target):
         write('sw.js', sw)
         print('  sw.js CACHE → yanxueku-v%d' % n)
 
-    print('bump: v%s → v%s（core.js APP_VERSION、index.html __APP_VERSION + %d 处 ?v=、sw.js CACHE）'
+    print('bump: v%s → v%s（core.js APP_VERSION、boot.js __APP_VERSION + %d 处 ?v=、sw.js CACHE）'
           % (old, target, n_qv))
     print('提醒：views.js PLIB_VER 未动——公共库数据有变更时请手动随数据 bump。')
     return check()

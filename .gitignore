@@ -8,6 +8,5 @@ commit_msg.txt
 !_audit_test.js
 !_ref_check.js
 
-# 本地运行时配置与工作区数据（勿提交）
-config.js
+# 工作区数据（勿提交；config.js 为运行时配置已入库）
 .workbuddy/

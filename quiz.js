@@ -37,20 +37,20 @@ function renderQuizHome(){
       <div class="panel-title">📝 组卷设置</div>
       <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:4px">选择科目</div>
       <div class="opt-grid">
-        <div class="opt-card ${quizCfg.subject==='all'?'sel':''}" onclick="quizCfg.subject='all';renderQuizHome()">全部科目</div>
-        ${db.subjects.map(s=>`<div class="opt-card ${quizCfg.subject===s.id?'sel':''}" onclick="quizCfg.subject='${s.id}';renderQuizHome()">${esc(s.name)}（${db.questions.filter(q=>q.subjectId===s.id).length}题）</div>`).join('')}
+        <div class="opt-card ${quizCfg.subject==='all'?'sel':''}" data-act-click="quizSubject" data-arg="all">全部科目</div>
+        ${db.subjects.map(s=>`<div class="opt-card ${quizCfg.subject===s.id?'sel':''}" data-act-click="quizSubject" data-arg="${s.id}">${esc(s.name)}（${db.questions.filter(q=>q.subjectId===s.id).length}题）</div>`).join('')}
       </div>
       <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:4px">选题模式</div>
       <div class="opt-grid" style="grid-template-columns:repeat(3,1fr)">
-        <div class="opt-card ${quizCfg.mode==='smart'?'sel':''}" onclick="quizCfg.mode='smart';renderQuizHome()">🧠 智能</div>
-        <div class="opt-card ${quizCfg.mode==='weak'?'sel':''}" onclick="quizCfg.mode='weak';renderQuizHome()">🎯 弱项</div>
-        <div class="opt-card ${quizCfg.mode==='random'?'sel':''}" onclick="quizCfg.mode='random';renderQuizHome()">🎲 随机</div>
+        <div class="opt-card ${quizCfg.mode==='smart'?'sel':''}" data-act-click="quizMode" data-arg="smart">🧠 智能</div>
+        <div class="opt-card ${quizCfg.mode==='weak'?'sel':''}" data-act-click="quizMode" data-arg="weak">🎯 弱项</div>
+        <div class="opt-card ${quizCfg.mode==='random'?'sel':''}" data-act-click="quizMode" data-arg="random">🎲 随机</div>
       </div>
       <div style="font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:4px">题目数量</div>
       <div class="opt-grid">
-        ${[5,10,20].map(n=>`<div class="opt-card ${quizCfg.count===n?'sel':''}" onclick="quizCfg.count=${n};renderQuizHome()">${n} 题</div>`).join('')}
+        ${[5,10,20].map(n=>`<div class="opt-card ${quizCfg.count===n?'sel':''}" data-act-click="quizCount" data-arg="${n}">${n} 题</div>`).join('')}
       </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:14px" onclick="startQuiz()">🚀 开始自测</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center;padding:14px;font-size:14px" data-act-click="startQuiz">🚀 开始自测</button>
       ${renderQuizAnalysis()}
       <div style="text-align:center;font-size:12px;color:var(--text-3);margin-top:12px">答错的题目会自动进入错题本 · 快捷键：数字键选答案，Enter 下一题</div>
     </div>`;
@@ -90,19 +90,19 @@ function renderQuestion(){
   if (q.type === 'single' || q.type === 'judge') {
     const opts = q.type==='judge' ? ['正确','错误'] : (q.options || []);
     answerArea = `<div id="q-opts">
-      ${opts.map((o,i)=>`<div class="q-opt" onclick="answerQ(${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('')}
+      ${opts.map((o,i)=>`<div class="q-opt" data-act-click="answerQ" data-arg="${i}"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('')}
     </div>`;
   } else if (q.type === 'fill') {
     answerArea = `
       <div id="q-opts">
-        <input type="text" class="q-input" id="q-fill-input" placeholder="请输入答案…" autocomplete="off" onkeydown="if(event.key==='Enter')answerInputQ()">
-        <button class="q-submit-btn" onclick="answerInputQ()">✓ 提交答案</button>
+        <input type="text" class="q-input" id="q-fill-input" placeholder="请输入答案…" autocomplete="off" data-act-keydown="answerInputQ">
+        <button class="q-submit-btn" data-act-click="answerInputQ">✓ 提交答案</button>
       </div>`;
   } else if (q.type === 'short') {
     answerArea = `
       <div id="q-opts">
-        <textarea class="q-input" id="q-short-input" style="min-height:80px;resize:vertical" placeholder="请输入你的回答…" onkeydown="if(event.key==='Enter'&&event.ctrlKey)answerInputQ()"></textarea>
-        <button class="q-submit-btn" onclick="answerInputQ()">✓ 提交答案</button>
+        <textarea class="q-input" id="q-short-input" style="min-height:80px;resize:vertical" placeholder="请输入你的回答…" data-act-keydown="answerInputQ" data-ctrl="1"></textarea>
+        <button class="q-submit-btn" data-act-click="answerInputQ">✓ 提交答案</button>
         <div style="font-size:11px;color:var(--text-3);margin-top:4px">Ctrl+Enter 提交</div>
       </div>`;
   }
@@ -146,7 +146,7 @@ function answerQ(i){
     <div class="q-explain"><b>📖 解析：</b>${md(q.explanation)}</div>
     <div class="q-foot">
       <span class="q-result-badge ${correct?'ok':'no'}">${correct?'✅ 回答正确':'❌ 回答错误，已加入错题本'}</span>
-      <button class="btn btn-primary" onclick="nextQ()">${isLast?'查看成绩 🏁':'下一题 →'}</button>
+      <button class="btn btn-primary" data-act-click="nextQ">${isLast?'查看成绩 🏁':'下一题 →'}</button>
     </div>`;
   renderBadges();
 }
@@ -208,7 +208,7 @@ function finalizeInputAnswer(q, userAnswer, correct, aiNote){
   if (fb) fb.innerHTML = feedbackHtml +
     '<div class="q-foot">' +
       '<span class="q-result-badge ' + (correct?'ok':'no') + '">' + (correct?'✅ 回答正确':'❌ 回答错误，已加入错题本') + '</span>' +
-      '<button class="btn btn-primary" onclick="nextQ()">'+(isLast?'查看成绩 🏁':'下一题 →')+'</button>' +
+      '<button class="btn btn-primary" data-act-click="nextQ">'+(isLast?'查看成绩 🏁':'下一题 →')+'</button>' +
     '</div>';
   renderBadges();
 }
@@ -243,8 +243,8 @@ function renderQuizResult(){
         </div>
         <p style="color:var(--text-2)">${total} 题答对 ${right} 题${wrongs.length?`，${wrongs.length} 道错题已收入错题本`:'，全部答对，太稳了！'}</p>
         <div style="display:flex;gap:10px;justify-content:center;margin-top:20px">
-          <button class="btn btn-ghost" onclick="quiz=null;renderQuizHome()">再来一组</button>
-          ${wrongs.length?`<button class="btn btn-primary" onclick="quiz=null;switchView('wrong')">去攻克错题</button>`:`<button class="btn btn-primary" onclick="quiz=null;switchView('dashboard')">回到仪表盘</button>`}
+          <button class="btn btn-ghost" data-act-click="quizExitHome">再来一组</button>
+          ${wrongs.length?`<button class="btn btn-primary" data-act-click="quizExitView" data-arg="wrong">去攻克错题</button>`:`<button class="btn btn-primary" data-act-click="quizExitView" data-arg="dashboard">回到仪表盘</button>`}
         </div>
       </div>
     </div>`;
@@ -258,7 +258,7 @@ function renderWrong(){
   const list = wrongList();
   if(!list.length){
     el.innerHTML = `<div class="empty-state"><div class="big">✨</div><h3>错题本空空如也</h3><p>去「刷题自测」练练手，答错的题会自动收录到这里</p>
-      <button class="btn btn-primary" style="margin-top:18px" onclick="switchView('quiz')">去刷题</button></div>`;
+      <button class="btn btn-primary" style="margin-top:18px" data-act-click="switchView" data-arg="quiz">去刷题</button></div>`;
     return;
   }
   el.innerHTML = `
@@ -271,11 +271,11 @@ function renderWrong(){
       var answerArea = '';
       if (q.type === 'single' || q.type === 'judge') {
         const opts = q.type==='judge'? ['正确','错误'] : (q.options || []);
-        answerArea = opts.map((o,i)=>`<div class="q-opt" onclick="redoWrong('${q.id}',${i})"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('');
+        answerArea = opts.map((o,i)=>`<div class="q-opt" data-act-click="redoWrong" data-arg="${q.id}" data-arg2="${i}"><span class="key">${q.type==='judge'?(i===0?'✓':'✗'):(QUIZ_LETTERS[i]||String(i+1))}</span><span>${esc(o)}</span></div>`).join('');
       } else {
         answerArea = `<div style="display:flex;gap:8px;align-items:stretch">
           <input type="text" class="q-input" id="wq-input-${q.id}" placeholder="${q.type==='fill'?'请输入答案…':'请输入你的回答…'}" style="flex:1;margin-bottom:0">
-          <button class="q-submit-btn" onclick="redoWrongInput('${q.id}')" style="margin-top:0;white-space:nowrap">✓ 提交</button>
+          <button class="q-submit-btn" data-act-click="redoWrongInput" data-arg="${q.id}" style="margin-top:0;white-space:nowrap">✓ 提交</button>
         </div>`;
       }
       return `<div class="row-item" id="wq-${q.id}">

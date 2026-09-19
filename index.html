@@ -15,27 +15,9 @@
 <link rel="preconnect" href="https://challenges.cloudflare.com">
 <link rel="preconnect" href="https://gwihiemggugzwhutsfea.supabase.co">
 <title>研学库 · 考研专业课高效学习</title>
-<script>window.__YANXUEKU_CONFIG__={SUPABASE_URL:"https://gwihiemggugzwhutsfea.supabase.co",SUPABASE_KEY:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd3aWhpZW1nZ3VnendodXRzZmVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU4NTMyODksImV4cCI6MjEwMTQyOTI4OX0.UcE502jd3DINEHwxmOgDXsGR3kQ3YYda48v5myCAHA4",TURNSTILE_SITE_KEY:"0x4AAAAAAEGrawQkO7430Qen"};</script>
-<script>
-// 版本跳变检测：每次发布 bump 这个值，旧版本自动强制刷新
-var __APP_VERSION = "3.0.0-beta.24";
-var __sv = localStorage.getItem('yanxueku_ver');
-if(__sv && __sv !== __APP_VERSION){
-  // 旧版本用户：清除 SW 缓存 → 硬刷新
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.getRegistrations().then(function(regs){
-      regs.forEach(function(r){ r.unregister(); });
-      localStorage.setItem('yanxueku_ver', __APP_VERSION);
-      location.reload(true);
-    });
-  }else{
-    localStorage.setItem('yanxueku_ver', __APP_VERSION);
-    location.reload(true);
-  }
-}else{
-  localStorage.setItem('yanxueku_ver', __APP_VERSION);
-}
-</script>
+<!-- 运行时配置（公开客户端凭据）+ 启动引导（框架逃逸/版本跳变/gate.css 切换）：外置以移除 CSP unsafe-inline -->
+<script defer src="config.js?v=3.0.0-beta.25"></script>
+<script defer src="boot.js?v=3.0.0-beta.25"></script>
 <!-- Supabase SDK（云同步/登录依赖）：动态异步加载，不阻塞首屏渲染；加载失败自动回退本地模式 -->
 
 <meta name="description" content="研学库 - 考研专业课高效学习系统。艾宾浩斯遗忘曲线智能复习、刷题自测、错题本、学习统计。支持多人实时同步，永久免费。">
@@ -47,13 +29,12 @@ if(__sv && __sv !== __APP_VERSION){
 <meta property="og:image" content="https://luckyboom1.github.io/yanxueku/icon-512.png">
 <meta name="twitter:card" content="summary">
 <meta name="format-detection" content="telephone=no">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: wss://*.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
-<script>try{if(window.top!==window.self){document.documentElement.style.display="none";window.top.location=window.self.location;}}catch(e){}</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fastly.jsdelivr.net https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https: wss://*.supabase.co https://challenges.cloudflare.com; font-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'">
 
-  <link rel="stylesheet" href="styles.css?v=3.0.0-beta.24">
+  <link rel="stylesheet" href="styles.css?v=3.0.0-beta.25">
   <!-- gate.css 只服务登录墙：异步加载不阻塞首屏渲染（media-swap 模式 + noscript 兜底） -->
-  <link rel="stylesheet" href="gate.css?v=3.0.0-beta.24" media="print" onload="this.media='all'">
-  <noscript><link rel="stylesheet" href="gate.css?v=3.0.0-beta.24"></noscript>
+  <link rel="stylesheet" id="gate-css" href="gate.css?v=3.0.0-beta.25" media="print">
+  <noscript><link rel="stylesheet" href="gate.css?v=3.0.0-beta.25"></noscript>
 </head>
 <body>
 <div class="loading-shield" id="loading-screen">
@@ -64,16 +45,16 @@ if(__sv && __sv !== __APP_VERSION){
 <div id="app">
   <aside id="sidebar">
     <div class="logo"><div class="logo-badge">研</div><span><em>研学库</em></span></div>
-    <div class="nav-item active" data-view="dashboard" role="button" tabindex="0" onclick="switchView('dashboard')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('dashboard')}"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
-    <div class="nav-item" data-view="library" role="button" tabindex="0" onclick="switchView('library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library')}"><span class="ico">📚</span>知识库</div>
-    <div class="nav-item" data-view="review" role="button" tabindex="0" onclick="switchView('review')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('review')}"><span class="ico">🧠</span>记忆复习</div>
-    <div class="nav-item" data-view="public-library" role="button" tabindex="0" onclick="switchView('public-library')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('public-library')}"><span class="ico">🏛️</span>公共课程库</div>
-    <div class="nav-item" data-view="quiz" role="button" tabindex="0" onclick="switchView('quiz')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('quiz')}"><span class="ico">✍️</span>刷题自测</div>
-    <div class="nav-item" data-view="wrong" role="button" tabindex="0" onclick="switchView('wrong')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('wrong')}"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
-    <div class="nav-item" data-view="stats" role="button" tabindex="0" onclick="switchView('stats')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('stats')}"><span class="ico">📊</span>学习统计</div>
-    <div class="nav-item" data-view="mine" role="button" tabindex="0" onclick="switchView('mine')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('mine')}"><span class="ico">👤</span>我的</div>
+    <div class="nav-item active" data-view="dashboard" role="button" tabindex="0" data-act-click="switchView"><span class="ico">🏠</span>学习仪表盘<span class="nav-badge" id="badge-due" style="display:none"></span></div>
+    <div class="nav-item" data-view="library" role="button" tabindex="0" data-act-click="switchView"><span class="ico">📚</span>知识库</div>
+    <div class="nav-item" data-view="review" role="button" tabindex="0" data-act-click="switchView"><span class="ico">🧠</span>记忆复习</div>
+    <div class="nav-item" data-view="public-library" role="button" tabindex="0" data-act-click="switchView"><span class="ico">🏛️</span>公共课程库</div>
+    <div class="nav-item" data-view="quiz" role="button" tabindex="0" data-act-click="switchView"><span class="ico">✍️</span>刷题自测</div>
+    <div class="nav-item" data-view="wrong" role="button" tabindex="0" data-act-click="switchView"><span class="ico">📕</span>错题本<span class="nav-badge" id="badge-wrong" style="display:none"></span></div>
+    <div class="nav-item" data-view="stats" role="button" tabindex="0" data-act-click="switchView"><span class="ico">📊</span>学习统计</div>
+    <div class="nav-item" data-view="mine" role="button" tabindex="0" data-act-click="switchView"><span class="ico">👤</span>我的</div>
     <div id="sidebar-user-area"></div>
-    <div class="side-label" style="display:flex;align-items:center;justify-content:space-between">专业科目 <button class="add-subj-btn" onclick="openNewSubjectModal(event)" title="新建科目">＋ 新建</button></div>
+    <div class="side-label" style="display:flex;align-items:center;justify-content:space-between">专业科目 <button class="add-subj-btn" data-act-click="openNewSubjectModal" title="新建科目">＋ 新建</button></div>
     <div id="subj-list"></div>
     
   <div class="side-label">⏱ 学习计时</div>
@@ -82,25 +63,25 @@ if(__sv && __sv !== __APP_VERSION){
   <div id="sync-status" style="font-size:11px;color:var(--text-3);text-align:center;margin-top:2px;transition:color .3s">已保存</div>
 
   <div class="side-foot">
-      <button class="foot-btn" onclick="exportData()" title="导出全部数据">⬇ 导出</button>
-      <button class="foot-btn" onclick="document.getElementById('import-file').click()" title="从备份 JSON 恢复数据">⬆ 恢复备份</button>
-      <button class="foot-btn" id="theme-btn" onclick="cycleTheme()" title="切换主题">🌓 主题</button>
-      <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
-      <input type="file" id="import-cards-file" accept=".txt,.md" style="display:none" onchange="importCardsFile(event)">
-      <input type="file" id="import-pack-file" accept=".json" style="display:none" onchange="importCardPackFile(event)">
+      <button class="foot-btn" data-act-click="exportData" title="导出全部数据">⬇ 导出</button>
+      <button class="foot-btn" data-act-click="pickFile" data-arg="import-file" title="从备份 JSON 恢复数据">⬆ 恢复备份</button>
+      <button class="foot-btn" id="theme-btn" data-act-click="cycleTheme" title="切换主题">🌓 主题</button>
+      <input type="file" id="import-file" accept=".json" style="display:none" data-act-change="importData">
+      <input type="file" id="import-cards-file" accept=".txt,.md" style="display:none" data-act-change="importCardsFile">
+      <input type="file" id="import-pack-file" accept=".json" style="display:none" data-act-change="importCardPackFile">
     </div>
   </aside>
 
   <main id="main">
     <header id="topbar">
-      <button class="icon-btn" onclick="toggleSidebar()" title="收起/展开侧栏">☰</button>
+      <button class="icon-btn" data-act-click="toggleSidebar" title="收起/展开侧栏">☰</button>
       <div>
         <div id="page-title">学习仪表盘</div>
         <div id="page-sub"></div>
       </div>
       <div class="top-actions">
-        <button class="btn btn-ghost" onclick="openKwModal()"><span class="btn-plus">＋</span><span class="btn-label"> 记知识点</span></button>
-        <button class="btn btn-primary" onclick="startReview()">▶ 开始今日复习</button>
+        <button class="btn btn-ghost" data-act-click="openKwModal"><span class="btn-plus">＋</span><span class="btn-label"> 记知识点</span></button>
+        <button class="btn btn-primary" data-act-click="startReview">▶ 开始今日复习</button>
       </div>
     </header>
 
@@ -119,10 +100,11 @@ if(__sv && __sv !== __APP_VERSION){
 <div id="modal-root"></div>
 <div id="toast-root" role="status" aria-live="polite" aria-atomic="false"></div>
 
-<script defer src="core.js?v=3.0.0-beta.24"></script>
-<script defer src="quiz_analyzer.js?v=3.0.0-beta.24"></script>
-<script defer src="quiz.js?v=3.0.0-beta.24"></script>
-<script defer src="ai.js?v=3.0.0-beta.24"></script>
-<script defer src="views.js?v=3.0.0-beta.24"></script>
+<script defer src="core.js?v=3.0.0-beta.25"></script>
+<script defer src="quiz_analyzer.js?v=3.0.0-beta.25"></script>
+<script defer src="quiz.js?v=3.0.0-beta.25"></script>
+<script defer src="ai.js?v=3.0.0-beta.25"></script>
+<script defer src="views.js?v=3.0.0-beta.25"></script>
+<script defer src="actions.js?v=3.0.0-beta.25"></script>
 </body>
 </html>

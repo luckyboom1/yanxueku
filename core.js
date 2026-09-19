@@ -200,7 +200,7 @@ if(!sb){
 const THEME_KEY = 'yanxueku_theme';
 const STORAGE_KEY = 'yanxueku_v2';               // v2: schema 版本化 + 多题型支持
 const DATA_VERSION = 4;
-const APP_VERSION = 'v3.0.0-beta.24';   // v3.0.0-beta.24: 审查修复批——备份恢复保留 FSRS 记忆状态（sanitizeImport 此前丢弃 fsrs 字段，恢复后曲线清零）、公共库单科卡片缓存键纳入 PLIB_VER（此前 bump 后旧卡片仍被命中）、登录墙展示期间不计学习时长（幻影时长污染 isPureSeed 使新账号被灌入演示数据）、实时同步改订全部事件（补 INSERT 首次同步）、删除科目/知识点清理 quizStats/stars 孤儿键、doSave 本地配额写满一次性提示、刷题/错题空值兜底、移除 public-lib.js 死文件   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
+const APP_VERSION = 'v3.0.0-beta.25';   // v3.0.0-beta.24: 审查修复批——备份恢复保留 FSRS 记忆状态（sanitizeImport 此前丢弃 fsrs 字段，恢复后曲线清零）、公共库单科卡片缓存键纳入 PLIB_VER（此前 bump 后旧卡片仍被命中）、登录墙展示期间不计学习时长（幻影时长污染 isPureSeed 使新账号被灌入演示数据）、实时同步改订全部事件（补 INSERT 首次同步）、删除科目/知识点清理 quizStats/stars 孤儿键、doSave 本地配额写满一次性提示、刷题/错题空值兜底、移除 public-lib.js 死文件   // v3.0.0-beta.23: 首页背景光晕改为"脉搏感"渐变发光动效——光晕从 body 背景拆为独立固定层 body::before（--bg-glow 令牌，浅/深主题各一份），opacity+scale 心跳关键帧（仅合成器属性），z-index:-1 置于内容后且不拦截交互，prefers-reduced-motion 下停用   // v3.0.0-beta.22: 快赢改进批——知识库搜索就地过滤（干草堆缓存真正生效，逐字收窄不再重建 DOM）、模态框焦点管理（role=dialog + 焦点圈 + 关闭还原）、toast 加 aria-live、脚本 defer + gate.css 非阻塞加载、styles.css 令牌收敛（6 个 :root 合一 + 清除死令牌）；补齐 CODE_REVIEW 引用的 _audit_test.js/_ref_check.js 与版本戳工具 tools/stamp.py   // v3.0.0-beta.21: UI/UX 重构（web-design-pro）——收敛设计令牌为语义/组件三级 + clamp() 流体字阶 + AA 文本对比修正；重塑全局外壳（侧栏/顶栏/按钮焦点环，杜绝 hover 位移 CLS）与复习闪卡（评分键位徽标、翻卡 role/aria + Enter/空格、进度百分比）；登录墙流体标语/统一焦点环/prefers-reduced-motion。纯前端呈现层，不动数据与行为。同版全站 debug 修复：sw.js 导航分支 clone 竞态（body is already used）、收藏改以 db.stars 为唯一事实源（修云端收藏当次会话不显示）、排行榜头像首字符补 esc()、toast 去除误用 esc()、资料弹窗隐藏域补 escAttr()   // v3.0.0-beta.20: CSP 修复——放行 fastly.jsdelivr.net（SDK 回退镜像此前被 CSP 静默拦截，冗余防线从未生效），移除已废弃的 unpkg.com   // v3.0.0-beta.19: 公共课程库数据拆分——索引 6KB + 卡片按科目按需加载，首屏数据量 2.29MB → 6KB   // v3.0.0-beta.18: 公共课程库加载优化——静默校验改 HEAD+ETag 比对（不再全量重下 2.2MB）、仅在数据变化时重写 localStorage、预热改浏览器空闲时执行   // v3.0.0-beta.17: ai.js 括号配对扫描解析（救回后缀含花括号的畸形回复）+ AI 内容清洗（控制字符/危险 scheme）   // v3.0.0-beta.16: ai.js 审查重构——JSON 解析中文报错、响应体超时真正中止并清理定时器、配置内存缓存、错误分类、建卡数量收敛   // v3.0.0-beta.15: SW 性能优化——公共库数据移出预缓存（首装-2.2MB），静态资源改 stale-while-revalidate（回访缓存秒出）；修复 __APP_VERSION 漏 bump   // v3.0.0-beta.14: 深度调试修复——云端读取失败防覆盖、purge 清缓存竞态、AI 响应体超时、复习卡片空值防御   // v3.0.0-beta.13: 移除 src/ ESM 过渡层，双模块体系合并为经典脚本单体系   // v3.0.0-beta.12: 加载器 debug 修复 + 首页文案精简   // v3.0.0-beta.11: 公共库加载优化——本地缓存秒开/进度骨架/空闲预热   // v3.0.0-beta.10: 公共课程库新增「实务理论」（16 科 1591 卡）   // v3.0.0-beta.9: 中外新闻史科目扩充（+316 张史实卡，共 328）   // v3.0.0-beta.8: 复习页支持按科目选择复习范围   // v3.0.0-beta.7: 公共课程库新增「前沿名词解释」（15 科 1084 卡）   // v3.0.0-beta.6: 公共课程库新增「高频名词解释」（14 科 832 卡）
 const EBB = [1, 2, 4, 7, 15, 30, 60];            // 艾宾浩斯间隔（天），stage 0..6
 const EBB_LABEL = ['新学', '第2天', '第4天', '第7天', '第15天', '第30天', '长期记忆'];
 
@@ -776,10 +776,10 @@ function renderSidebar(){
   el.innerHTML = db.subjects.map(s=>{
     const cnt = db.knowledge.filter(k=>k.subjectId===s.id).length;
     const due = db.knowledge.filter(k=>k.subjectId===s.id && isDue(k)).length;
-    return `<div class="subj-item" role="button" tabindex="0" onclick="switchView('library');setLibSubject('${s.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchView('library');setLibSubject('${s.id}')}">
+    return `<div class="subj-item" role="button" tabindex="0" data-act-click="gotoLibrarySubject" data-arg="${s.id}">
       <span class="subj-dot" style="background:${safeColor(s.color)}"></span>${esc(s.name)}
       <span class="subj-count">${due>0? due+' 待复习 · ' : ''}${cnt}</span>
-      <button class="subj-del" title="删除科目" onclick="delSubject('${s.id}',event)">✕</button></div>`;
+      <button class="subj-del" title="删除科目" data-act-click="delSubject" data-arg="${s.id}">✕</button></div>`;
   }).join('');
 }
 function renderBadges(){
@@ -876,19 +876,19 @@ function renderDashboard(){
           <div style="font-size:20px">①</div>
           <div style="font-weight:700;margin:6px 0 2px">新建科目</div>
           <div style="font-size:12px;color:var(--text-3)">比如：专业课一、英语</div>
-          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="openNewSubjectModal(event)">＋ 新建科目</button>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:10px;padding:8px" data-act-click="openNewSubjectModal">＋ 新建科目</button>
         </div>
         <div style="padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">
           <div style="font-size:20px">②</div>
           <div style="font-weight:700;margin:6px 0 2px">记录知识点</div>
           <div style="font-size:12px;color:var(--text-3)">标题 + 内容，支持 Markdown</div>
-          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="openKwModal()">＋ 记知识点</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" data-act-click="openKwModal">＋ 记知识点</button>
         </div>
         <div style="padding:14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)">
           <div style="font-size:20px">③</div>
           <div style="font-weight:700;margin:6px 0 2px">开始复习</div>
           <div style="font-size:12px;color:var(--text-3)">按艾宾浩斯节奏巩固</div>
-          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" onclick="switchView('library')">去知识库看看</button>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:10px;padding:8px" data-act-click="switchView" data-arg="library">去知识库看看</button>
         </div>
       </div>
     </div>`:''}
@@ -897,10 +897,10 @@ function renderDashboard(){
       <div class="panel">
         <div class="panel-title">⚡ 快捷操作</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <button class="btn btn-primary" style="justify-content:center;padding:15px" onclick="startReview()">🧠 开始复习</button>
-          <button class="btn btn-ghost" style="justify-content:center;padding:15px" onclick="switchView('quiz')">✍️ 随机自测</button>
-          <button class="btn btn-ghost" style="justify-content:center;padding:15px" onclick="openKwModal()">＋ 记知识点</button>
-          <button class="btn btn-ghost" style="justify-content:center;padding:15px" onclick="switchView('stats')">📊 学习统计</button>
+          <button class="btn btn-primary" style="justify-content:center;padding:15px" data-act-click="startReview">🧠 开始复习</button>
+          <button class="btn btn-ghost" style="justify-content:center;padding:15px" data-act-click="switchView" data-arg="quiz">✍️ 随机自测</button>
+          <button class="btn btn-ghost" style="justify-content:center;padding:15px" data-act-click="openKwModal">＋ 记知识点</button>
+          <button class="btn btn-ghost" style="justify-content:center;padding:15px" data-act-click="switchView" data-arg="stats">📊 学习统计</button>
         </div>
       </div>
       <div class="panel">
@@ -923,7 +923,7 @@ function renderDashboard(){
     </div>
 
     <div class="panel" id="dash-leader-wrap" style="margin-top:20px;display:none">
-      <div class="panel-title">🏅 学习排行榜 <span class="sub" style="cursor:pointer;color:var(--primary)" onclick="switchView('stats')">查看完整排行 →</span></div>
+      <div class="panel-title">🏅 学习排行榜 <span class="sub" style="cursor:pointer;color:var(--primary)" data-act-click="switchView" data-arg="stats">查看完整排行 →</span></div>
       <div id="dash-leader-panel" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px"></div>
     </div>`;
   _deferRaf(function(){ animateStatNums(el); });
@@ -938,7 +938,7 @@ function delSubject(id, ev){
   const kwN = db.knowledge.filter(k=>k.subjectId===id).length;
   const qN = db.questions.filter(q=>q.subjectId===id).length;
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3>⚠️ 删除科目「${esc(s.name)}」</h3>
     <p style="color:var(--text-2);line-height:1.9">该科目下的以下内容将被一并删除，且不可恢复：</p>
     <div class="review-info" style="margin:12px 0">
@@ -947,8 +947,8 @@ function delSubject(id, ev){
     </div>
     <p style="color:var(--text-3);font-size:12px">建议先通过侧栏「⬇ 导出」备份全部数据。</p>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" style="background:#ef4444" onclick="doDelSubject('${id}')">确认删除</button>
+      <button class="btn btn-ghost" data-act-click="closeModal">取消</button>
+      <button class="btn btn-primary" style="background:#ef4444" data-act-click="doDelSubject" data-arg="${id}">确认删除</button>
     </div>`);
 }
 function doDelSubject(id){
@@ -971,18 +971,18 @@ function doDelSubject(id){
 function openNewSubjectModal(ev){
   if(ev) ev.stopPropagation();
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<h3>＋ 新建专业科目</h3>'+
     '<div class="form-row"><label>科目名称 *</label><input id="ns-name" placeholder="如：传播学教程"></div>'+
     '<div class="form-row"><label>考试名称</label><input id="ns-exam" placeholder="如：新闻与传播 440"></div>'+
     '<div class="form-row"><label>科目颜色</label><div class="color-picker" id="ns-colors"></div><input type="hidden" id="ns-hidden-color" value="#6366f1"></div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="confirmNewSubject()">创建科目</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">取消</button><button class="btn btn-primary" data-act-click="confirmNewSubject">创建科目</button></div>');
   var colors = ['#6366f1','#e11d48','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#0891b2','#ca8a04','#dc2626','#16a34a'];
   function fillColorPicker(){
     var el = document.getElementById('ns-colors');
     if(!el){ requestAnimationFrame(fillColorPicker); return; }
     el.innerHTML = colors.map(function(c){
-      return '<span style="background:'+c+'" data-color="'+c+'" onclick="var p=this.parentElement;p.querySelectorAll(\'span\').forEach(function(s){s.classList.remove(\'sel\')});this.classList.add(\'sel\');document.getElementById(\'ns-hidden-color\').value=\''+c+'\'"></span>';
+      return '<span style="background:'+c+'" data-color="'+c+'" data-act-click="pickColor" data-target="ns-hidden-color" data-arg=\''+c+'\'"></span>';
     }).join('');
   }
   fillColorPicker();
@@ -1003,7 +1003,7 @@ function confirmNewSubject(){
 /* ================= 数据重置 ================= */
 function resetStats(){
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3>🔄 重置学习数据</h3>
     <p style="color:var(--text-2);line-height:1.9">此操作将清空以下数据：</p>
     <div class="review-info" style="margin:12px 0">
@@ -1013,8 +1013,8 @@ function resetStats(){
     </div>
     <p style="color:var(--text-3);font-size:12px">知识点本身（标题/内容）不会删除。此操作不可恢复，建议先导出备份。</p>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" style="background:#f59e0b" onclick="doResetStats()">确认重置</button>
+      <button class="btn btn-ghost" data-act-click="closeModal">取消</button>
+      <button class="btn btn-primary" style="background:#f59e0b" data-act-click="doResetStats">确认重置</button>
     </div>`);
 }
 function doResetStats(){
@@ -1151,8 +1151,8 @@ function showImportConfirm(fname, data){
     </div>
     <div style="font-size:12px;color:var(--warn)">⚠️ 此操作不可恢复，请确认后继续。</div>`,
     actions: [
-      {text: '取消', class: 'btn btn-ghost', onclick: 'closeModal(); _pendingImportData=null;'},
-      {text: '确认恢复', class: 'btn btn-primary', onclick: 'confirmImportData()'}
+      {text: '取消', class: 'btn btn-ghost', action: 'closeModalClearImport'},
+      {text: '确认恢复', class: 'btn btn-primary', action: 'confirmImportData'}
     ]
   });
 }
@@ -1258,8 +1258,8 @@ function showPackImportPreview(fname, pack){
       '</div>' +
       '<div style="font-size:12px;color:var(--text-3)">导入后可在知识库中筛选、编辑和删除。</div>',
     actions: [
-      {text: '取消', class: 'btn btn-ghost', onclick: 'closeModal(); _pendingPackData=null;'},
-      {text: '确认导入', class: 'btn btn-primary', onclick: 'confirmPackImport()'}
+      {text: '取消', class: 'btn btn-ghost', action: 'closeModalClearPack'},
+      {text: '确认导入', class: 'btn btn-primary', action: 'confirmPackImport'}
     ]
   });
 }
@@ -1328,16 +1328,16 @@ function confirmPackImport(){
 
 /* ================= 弹窗 & 提示 ================= */
 // 安全弹窗构建：接收对象 {title, body, actions} 时自动转义所有文本，避免 XSS
-/** 构建安全弹窗（必须确保所有调用点 action.onclick 为硬编码字符串，禁止拼接用户输入） */
+/** 构建安全弹窗（action 只能是 ACTIONS 注册表中的名字——查名执行，标记值不会变成代码） */
 function buildSafeModal(opts){
   const title = opts.title ? `<h3>${esc(opts.title)}</h3>` : '';
   const body = opts.body || '';
   const actions = (opts.actions || []).map(a => {
     const cls = a.class || 'btn btn-ghost';
-    if(a.onclick) return `<button class="${esc(cls)}" onclick="${a.onclick}">${esc(a.text)}</button>`;
-    return `<button class="${esc(cls)}" onclick="closeModal()">${esc(a.text)}</button>`;
+    if(a.action) return `<button class="${esc(cls)}" data-act-click="${escAttr(a.action)}"${a.arg != null ? ' data-arg="'+escAttr(a.arg)+'"' : ''}>${esc(a.text)}</button>`;
+    return `<button class="${esc(cls)}" data-act-click="closeModal">${esc(a.text)}</button>`;
   }).join('');
-  return (opts.close !== false ? '<button class="modal-close" onclick="closeModal()">✕</button>' : '') +
+  return (opts.close !== false ? '<button class="modal-close" data-act-click="closeModal">✕</button>' : '') +
     title + body +
     (actions ? `<div class="modal-actions">${actions}</div>` : '');
 }
@@ -1371,7 +1371,7 @@ function openModal(html){
   _modalGen++;
   // 支持对象式安全调用：openModal({title, body, actions})
   const content = typeof html === 'object' && html !== null ? buildSafeModal(html) : html;
-  root.innerHTML = `<div class="modal-mask" onclick="closeModal()"></div><div class="modal" role="dialog" aria-modal="true" tabindex="-1">${content}</div>`;
+  root.innerHTML = `<div class="modal-mask" data-act-click="closeModal"></div><div class="modal" role="dialog" aria-modal="true" tabindex="-1">${content}</div>`;
   root.classList.add('open');
   document.body.classList.add('modal-open'); // 锁背景滚动
   // 焦点移入弹窗：表单优先聚焦首个输入项，确认类聚焦主按钮，兜底首个可聚焦元素
@@ -1425,7 +1425,7 @@ function openHotkeyHelp(){
       '<div>✍️ 刷题自测：<kbd>1</kbd>-<kbd>9</kbd> 选择选项；解析出现后 <kbd>Enter</kbd> 下一题</div>'+
       '<div>🪟 任意界面：<kbd>Esc</kbd> 关闭弹窗；<kbd>?</kbd> 打开本帮助</div>'+
       '</div>',
-    actions: [{text: '知道了', class: 'btn btn-primary', onclick: 'closeModal()'}]
+    actions: [{text: '知道了', class: 'btn btn-primary', action: 'closeModal'}]
   });
 }
 document.addEventListener('keydown', e=>{
@@ -1483,7 +1483,7 @@ function showFirstGuide(){
   var bubble = document.createElement('div');
   bubble.className = 'guide-bubble';
   bubble.id = 'guide-bubble';
-  bubble.innerHTML = '<b>👋 欢迎使用研学库！</b><br>这是你的考研专业课学习系统。<br>· 侧栏「知识库」管理考点<br>· 「记忆复习」自动排期复盘<br>· 「刷题自测」检验掌握程度<br><button class="guide-next" onclick="nextGuide()">知道了，开始使用</button><button class="guide-skip" onclick="closeGuide()">跳过</button>';
+  bubble.innerHTML = '<b>👋 欢迎使用研学库！</b><br>这是你的考研专业课学习系统。<br>· 侧栏「知识库」管理考点<br>· 「记忆复习」自动排期复盘<br>· 「刷题自测」检验掌握程度<br><button class="guide-next" data-act-click="nextGuide">知道了，开始使用</button><button class="guide-skip" data-act-click="closeGuide">跳过</button>';
   bubble.style.top = '90px';
   bubble.style.left = '260px';
   document.body.appendChild(bubble);
@@ -1495,7 +1495,7 @@ function nextGuide(){
     var b2 = document.createElement('div');
     b2.className = 'guide-bubble';
     b2.id = 'guide-bubble';
-    b2.innerHTML = '<b>📖 从新建知识点开始</b><br>点击右上角「＋ 记知识点」创建专属知识库。<br>支持批量导入真经笔记文本、手动逐条录入。<br><button class="guide-next" onclick="closeGuide()">明白了</button>';
+    b2.innerHTML = '<b>📖 从新建知识点开始</b><br>点击右上角「＋ 记知识点」创建专属知识库。<br>支持批量导入真经笔记文本、手动逐条录入。<br><button class="guide-next" data-act-click="closeGuide">明白了</button>';
     b2.style.top = '130px';
     b2.style.left = '280px';
     document.body.appendChild(b2);
@@ -1541,12 +1541,12 @@ function renderGate(){
             '<div class="gf-icon">☁️</div><span>云端同步</span></div>'+
         '</div>'+
         '<div class="gate-legal gate-stagger">'+
-          '<label><input type="checkbox" id="gate-agree">'+
-          '我已阅读并同意 <a href="terms.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">服务条款</a> 和 <a href="privacy.html" target="_blank" rel="noopener" onclick="event.stopPropagation()">隐私政策</a></label>'+
+          '<span class="gate-agree-row"><input type="checkbox" id="gate-agree"><label for="gate-agree">我已阅读并同意</label>'+
+          ' <a href="terms.html" target="_blank" rel="noopener">服务条款</a> 和 <a href="privacy.html" target="_blank" rel="noopener">隐私政策</a></span>'+
         '</div>'+
-        '<button class="gate-btn gate-stagger" onclick="gateLogin()">👤 登录 / 注册</button>'+
+        '<button class="gate-btn gate-stagger" data-act-click="gateLogin">👤 登录 / 注册</button>'+
       '</div>'+
-      '<div class="gate-scroll-hint" id="gateScrollHint" role="button" tabindex="0" title="向下探索" aria-label="向下滚动查看功能介绍" onclick="gateScrollDown()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gateScrollDown()}">'+
+      '<div class="gate-scroll-hint" id="gateScrollHint" role="button" tabindex="0" title="向下探索" aria-label="向下滚动查看功能介绍" data-act-click="gateScrollDown">'+
         '<span class="gsh-text">向下滑动</span><span class="gsh-chevron"></span>'+
       '</div>'+
       '</div>'+ // 关闭 gate-hero
@@ -1837,12 +1837,12 @@ function updateDashboardHeader(){
   const dueList = db.knowledge.filter(k => k.nextReview <= todayStr());
   const todayDone = db.knowledge.filter(k => k.lastReview === todayStr()).length;
   el.innerHTML = `
-    <div class="countdown-badge" onclick="openExamDatePicker()" title="点击设置考研日期">
+    <div class="countdown-badge" data-act-click="openExamDatePicker" title="点击设置考研日期">
       <div style="text-align:center"><div class="num">${Math.max(0, diff)}</div><div class="unit">天</div></div>
       <div style="line-height:1.3"><div style="font-size:12px">距考研</div><div style="font-size:10px;opacity:.7">${examDate.toLocaleDateString('zh-CN',{month:'long',day:'numeric'})}</div></div>
     </div>
     <div style="font-size:12px;line-height:1.5">
-      <div>📋 今日目标 <b>${todayDone}</b> / <b onclick="openGoalSetter()" style="cursor:pointer;color:var(--primary)" title="点击设置目标">${_dailyGoal}</b> 个</div>
+      <div>📋 今日目标 <b>${todayDone}</b> / <b data-act-click="openGoalSetter" style="cursor:pointer;color:var(--primary)" title="点击设置目标">${_dailyGoal}</b> 个</div>
       <div class="goal-bar" style="width:80px"><div class="goal-fill" style="width:${Math.min(100, Math.round(todayDone/_dailyGoal*100))}%"></div></div>
     </div>`;
 }
@@ -1856,18 +1856,18 @@ function confirmExamDate(){
 function openExamDatePicker(){
   const d = getCountdownDate();
   openModal(
-    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" data-act-click="closeModal">✕</button></div>'+
     '<h3>📅 设定考研日期</h3>'+
     '<div class="form-row"><label>考试日期</label><input id="exam-date-input" type="date" value="'+dayStr(d)+'"></div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="confirmExamDate()">确定</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">取消</button><button class="btn btn-primary" data-act-click="confirmExamDate">确定</button></div>');
 }
 function openGoalSetter(){
   openModal(
-    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" onclick="closeModal()">✕</button></div>'+
+    '<div style="position:absolute;top:16px;right:16px"><button class="modal-close" data-act-click="closeModal">✕</button></div>'+
     '<h3>🎯 每日复习目标</h3>'+
     '<div class="form-row"><label>每天想复习多少个知识点？</label><input id="goal-input" type="number" value="'+_dailyGoal+'" min="1" max="200"></div>'+
     '<div style="font-size:12px;color:var(--text-3)">建议从 15~30 开始，根据实际节奏调整</div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="setDailyGoal(parseInt(document.getElementById(\'goal-input\').value)||20);closeModal()">确定</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">取消</button><button class="btn btn-primary" data-act-click="setDailyGoalInput">确定</button></div>');
 }
 // 在 renderDashboard 和 renderBadges 后更新头部
 const _origRD = renderDashboard;
@@ -1897,14 +1897,14 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
 function openAccountModal(){
   if(!sb||!_currentUser){ toast('请先登录','err'); return; }
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<h3>🔑 账号安全</h3>'+
     '<div class="panel" style="box-shadow:none;padding:14px;margin-bottom:14px">'+
       '<div class="panel-title" style="font-size:13px;margin-bottom:8px">修改密码</div>'+
       '<div class="form-row"><label>当前密码</label><input id="ac-old" type="password" placeholder="输入当前密码"></div>'+
       '<div class="form-row"><label>新密码（≥8位）</label><input id="ac-new" type="password" placeholder="至少 8 位"></div>'+
       '<div class="form-row"><label>确认新密码</label><input id="ac-new2" type="password" placeholder="再输入一次"></div>'+
-      '<button class="btn btn-primary" style="width:100%;justify-content:center" onclick="changePassword()">确认修改密码</button>'+
+      '<button class="btn btn-primary" style="width:100%;justify-content:center" data-act-click="changePassword">确认修改密码</button>'+
     '</div>'+
     '<div class="panel" style="box-shadow:none;padding:14px">'+
       '<div class="panel-title" style="font-size:13px;margin-bottom:8px">修改邮箱</div>'+
@@ -1912,9 +1912,9 @@ function openAccountModal(){
       '<div class="form-row"><label>当前密码</label><input id="ac-mail-pwd" type="password" placeholder="输入当前密码"></div>'+
       '<div class="form-row"><label>新邮箱</label><input id="ac-mail" type="email" placeholder="you@example.com"></div>'+
       '<div class="form-row"><label>确认新邮箱</label><input id="ac-mail2" type="email" placeholder="再输入一次"></div>'+
-      '<button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--warn);color:var(--warn)" onclick="changeEmail()">确认修改邮箱</button>'+
+      '<button class="btn btn-ghost" style="width:100%;justify-content:center;border-color:var(--warn);color:var(--warn)" data-act-click="changeEmail">确认修改邮箱</button>'+
     '</div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">关闭</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">关闭</button></div>');
 }
 async function changePassword(){
   if(!sb||!_currentUser){ toast('请先登录','err'); return; }

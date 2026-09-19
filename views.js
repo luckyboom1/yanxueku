@@ -102,19 +102,19 @@ function renderLibrary(){
     <div class="filter-bar">
       <div class="search-box">
         <span class="s-ico">🔍</span>
-        <input id="lib-search" placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" oninput="liveFilterLibrary(this.value)">
+        <input id="lib-search" placeholder="搜索标题 / 内容 / 标签…" value="${esc(libFilter.search)}" data-act-input="liveFilterLibrary">
       </div>
-      <div class="chip ${libFilter.subject==='all'?'active':''}" onclick="setLibSubject('all')">全部科目</div>
-      ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" onclick="setLibSubject('${s.id}')">${esc(s.name)}</div>`).join('')}
-      <button class="btn btn-ghost" style="padding:9px 14px" onclick="document.getElementById('import-cards-file').click()">📥 导入卡片</button>
-      <button class="btn btn-ghost" style="padding:9px 14px" onclick="exportCardPack()">📦 导出卡包</button>
-      <button class="btn btn-ghost" style="padding:9px 14px" onclick="document.getElementById('import-pack-file').click()">📥 导入卡包</button>
-      <button class="btn btn-primary" onclick="openKwModal()">＋ 新建知识点</button>
-      <button class="btn btn-ghost" onclick="openAiCardModal()">🤖 AI 建卡</button>
+      <div class="chip ${libFilter.subject==='all'?'active':''}" data-act-click="setLibSubject" data-arg="all">全部科目</div>
+      ${db.subjects.map(s=>`<div class="chip ${libFilter.subject===s.id?'active':''}" data-act-click="setLibSubject" data-arg="${s.id}">${esc(s.name)}</div>`).join('')}
+      <button class="btn btn-ghost" style="padding:9px 14px" data-act-click="pickFile" data-arg="import-cards-file">📥 导入卡片</button>
+      <button class="btn btn-ghost" style="padding:9px 14px" data-act-click="exportCardPack">📦 导出卡包</button>
+      <button class="btn btn-ghost" style="padding:9px 14px" data-act-click="pickFile" data-arg="import-pack-file">📥 导入卡包</button>
+      <button class="btn btn-primary" data-act-click="openKwModal">＋ 新建知识点</button>
+      <button class="btn btn-ghost" data-act-click="openAiCardModal">🤖 AI 建卡</button>
     </div>
     ${tags.length?`<div class="filter-bar" style="margin-top:-6px">
       <span style="font-size:12px;color:var(--text-3)">标签：</span>
-      ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" onclick="libFilter.tag = libFilter.tag===this.dataset.tag ? '' : this.dataset.tag; renderLibrary()">${esc(t)}</div>`).join('')}
+      ${tags.map(t=>`<div class="chip ${libFilter.tag===t?'active':''}" style="padding:5px 12px;font-size:12px" data-tag="${esc(t)}" data-act-click="libFilterTag">${esc(t)}</div>`).join('')}
     </div>`:''}
     ${list.length? `<div class="kw-grid${searching?' no-anim':''}" id="kw-grid">${shown.map(kwCard).join('')}</div>`
       : `<div class="empty-state"><div class="big">🗂️</div><h3>没有找到相关知识点</h3><p>换个关键词试试，或者新建一个知识点</p></div>`}`;
@@ -145,7 +145,7 @@ function kwCard(k){
   else if(k.nextReview===t){ dueCls='today'; dueTxt='今日待复习'; }
   else if(diffDays(k.nextReview,t)<=3){ dueCls='soon'; dueTxt=diffDays(k.nextReview,t)+' 天后复习'; }
   else { dueCls='later'; dueTxt=k.nextReview.slice(5).replace('-','/')+' 复习'; }
-  return `<div class="kw-card" role="button" tabindex="0" style="--kc:${safeColor(s?s.color:'#6366f1')}" onclick="openKwDetail('${k.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openKwDetail('${k.id}')}">
+  return `<div class="kw-card" role="button" tabindex="0" style="--kc:${safeColor(s?s.color:'#6366f1')}" data-act-click="openKwDetail" data-arg="${k.id}">
     <div class="kw-head">
       <span class="kw-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
       <span class="kw-due ${dueCls}">${dueTxt}</span>
@@ -163,7 +163,7 @@ function openKwDetail(id){
   if(!k) return;
   const s = getSubject(k.subjectId);
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3><span class="subj-dot" style="background:${safeColor(s?s.color:'#6366f1')};width:11px;height:11px"></span>${esc(k.title)}</h3>
     <div class="review-info">
       <span>📖 ${esc(s?s.name:'')} · ${esc(k.chapter)}</span>
@@ -174,31 +174,31 @@ function openKwDetail(id){
     <div class="detail-content">${md(k.content)}</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">${k.tags.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" style="color:var(--danger)" onclick="delKw('${k.id}')">删除</button>
-      <button class="btn btn-ghost" onclick="openKwModal('${k.id}')">编辑</button>
-      <button class="btn btn-primary" onclick="closeModal();startReview('${k.id}')">立即复习</button>
+      <button class="btn btn-ghost" style="color:var(--danger)" data-act-click="delKw" data-arg="${k.id}">删除</button>
+      <button class="btn btn-ghost" data-act-click="openKwModal" data-arg="${k.id}">编辑</button>
+      <button class="btn btn-primary" data-act-click="closeModalStartReview" data-arg="${k.id}">立即复习</button>
     </div>`);
 }
 function openKwModal(id){
   const k = id? db.knowledge.find(x=>x.id===id) : null;
   var kid = k? k.id : 'new';
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3>${k?'✏️ 编辑知识点':'＋ 新建知识点'}</h3>
     <div class="form-2col">
       <div class="form-row"><label>所属科目</label>
-        <select id="f-subject" onchange="saveKwDraft('${kid}')">${db.subjects.map(s=>`<option value="${s.id}" ${k&&k.subjectId===s.id?'selected':''}>${esc(s.name)}（${esc(s.exam)}）</option>`).join('')}</select>
+        <select id="f-subject" data-act-change="saveKwDraft" data-arg="${kid}">${db.subjects.map(s=>`<option value="${s.id}" ${k&&k.subjectId===s.id?'selected':''}>${esc(s.name)}（${esc(s.exam)}）</option>`).join('')}</select>
       </div>
       <div class="form-row"><label>章节</label>
-        <input id="f-chapter" placeholder="如：树与二叉树" value="${k?esc(k.chapter):''}" oninput="saveKwDraft('${kid}')">
+        <input id="f-chapter" placeholder="如：树与二叉树" value="${k?esc(k.chapter):''}" data-act-input="saveKwDraft" data-arg="${kid}">
       </div>
     </div>
-    <div class="form-row"><label>标题</label><input id="f-title" placeholder="一句话概括这个知识点" value="${k?esc(k.title):''}" oninput="saveKwDraft('${kid}')"></div>
-    <div class="form-row"><label>内容（支持 **加粗** 和 \`代码\`）</label><textarea id="f-content" rows="7" placeholder="用自己的话记录考点，记得更牢…" oninput="saveKwDraft('${kid}')">${k?esc(k.content):''}</textarea></div>
-    <div class="form-row"><label>标签（用逗号分隔）</label><input id="f-tags" placeholder="如：高频考点, 计算题" value="${k?esc(k.tags.join(', ')):''}" oninput="saveKwDraft('${kid}')"></div>
+    <div class="form-row"><label>标题</label><input id="f-title" placeholder="一句话概括这个知识点" value="${k?esc(k.title):''}" data-act-input="saveKwDraft" data-arg="${kid}"></div>
+    <div class="form-row"><label>内容（支持 **加粗** 和 \`代码\`）</label><textarea id="f-content" rows="7" placeholder="用自己的话记录考点，记得更牢…" data-act-input="saveKwDraft" data-arg="${kid}">${k?esc(k.content):''}</textarea></div>
+    <div class="form-row"><label>标签（用逗号分隔）</label><input id="f-tags" placeholder="如：高频考点, 计算题" value="${k?esc(k.tags.join(', ')):''}" data-act-input="saveKwDraft" data-arg="${kid}"></div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="saveKw('${k?k.id:''}')">${k?'保存修改':'创建并加入复习计划'}</button>
+      <button class="btn btn-ghost" data-act-click="closeModal">取消</button>
+      <button class="btn btn-primary" data-act-click="saveKw" data-arg="${k?k.id:''}">${k?'保存修改':'创建并加入复习计划'}</button>
     </div>`);
   // 恢复上次未保存的草稿（误触关闭不丢内容）
   try{
@@ -246,12 +246,12 @@ function saveKw(id){
 function delKw(id){
   const k = db.knowledge.find(x=>x.id===id);
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3>⚠️ 确认删除</h3>
     <p style="color:var(--text-2);line-height:1.8">即将删除知识点「<b>${esc(k.title)}</b>」，删除后不可恢复，确定吗？</p>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" style="background:#ef4444" onclick="doDelKw('${id}')">确认删除</button>
+      <button class="btn btn-ghost" data-act-click="closeModal">取消</button>
+      <button class="btn btn-primary" style="background:#ef4444" data-act-click="doDelKw" data-arg="${id}">确认删除</button>
     </div>`);
 }
 function doDelKw(id){
@@ -275,10 +275,10 @@ function reviewScopeChips(){
   var due = dueList();
   var counts = {};
   due.forEach(function(k){ counts[k.subjectId] = (counts[k.subjectId]||0)+1; });
-  var chips = '<div class="chip'+(_reviewSubject==='all'?' active':'')+'" onclick="setReviewSubject(\'all\')">全部 · '+due.length+'</div>';
+  var chips = '<div class="chip'+(_reviewSubject==='all'?' active':'')+'" data-act-click="setReviewSubject" data-arg="all">全部 · '+due.length+'</div>';
   db.subjects.forEach(function(s){
     var n = counts[s.id]||0;
-    chips += '<div class="chip'+(_reviewSubject===s.id?' active':'')+'" onclick="setReviewSubject(\''+s.id+'\')">'+esc(s.name)+' · '+n+'</div>';
+    chips += '<div class="chip'+(_reviewSubject===s.id?' active':'')+'" data-act-click="setReviewSubject" data-arg="' + s.id + '">'+esc(s.name)+' · '+n+'</div>';
   });
   return '<div class="review-scope">'+chips+'</div>';
 }
@@ -324,7 +324,7 @@ function renderReviewHome(){
         (anyDue
           ? '<div class="empty-state"><div class="big">🗂️</div><h3>所选科目今日没有待复习</h3><p>切换上方科目范围，或看看其他科目</p></div>'
           : '<div class="empty-state"><div class="big">🎉</div><h3>今日复习任务全部完成</h3><p>保持节奏，FSRS 会帮你把知识焊在脑子里</p></div>') +
-        '<div style="text-align:center;margin-top:14px"><button class="btn btn-primary" onclick="switchView(\'dashboard\')">回到仪表盘</button></div>';
+        '<div style="text-align:center;margin-top:14px"><button class="btn btn-primary" data-act-click="switchView" data-arg="dashboard">回到仪表盘</button></div>';
       return;
     }
     reviewQueue = due; reviewIdx = 0; reviewDone = 0;
@@ -347,7 +347,7 @@ function renderFlashcard(){
         <span class="rp-pct">${_pct}%</span>
         <span class="rp-text" style="color:var(--success)">已完成 ${reviewDone}</span>
       </div>
-      <div class="flashcard" id="fcard" role="button" tabindex="0" aria-label="知识点卡片：${esc(k.title)}。按空格或点击翻卡查看答案" onclick="this.classList.toggle('flipped')" onkeydown="if(event.key==='Enter'){event.preventDefault();this.classList.toggle('flipped')}">
+      <div class="flashcard" id="fcard" role="button" tabindex="0" aria-label="知识点卡片：${esc(k.title)}。按空格或点击翻卡查看答案" data-act-click="flipCard" data-act-keydown="flipCard">
         <div class="fc-inner">
           <div class="fc-face fc-front">
             <span class="fc-chapter">${esc(s?s.name:'')} · ${esc(k.chapter)} · ${cardStageLabel(k)}</span>
@@ -361,10 +361,10 @@ function renderFlashcard(){
         </div>
       </div>
       <div class="grade-row" role="group" aria-label="记忆评分">
-        <button class="grade-btn g-forgot" aria-label="评分：忘记了（快捷键 1）" onclick="grade(0,event)"><span class="gb-key" aria-hidden="true">1</span>😵 忘记了<small>${engineMode()==='fsrs'?'重置进度':'明天重新复习'}</small></button>
-        <button class="grade-btn g-blur" aria-label="评分：有点模糊（快捷键 2）" onclick="grade(1,event)"><span class="gb-key" aria-hidden="true">2</span>🤔 有点模糊<small>缩短间隔巩固</small></button>
-        <button class="grade-btn g-good" aria-label="评分：记得牢固（快捷键 3）" onclick="grade(2,event)"><span class="gb-key" aria-hidden="true">3</span>😎 记得牢固<small>正常推进</small></button>
-        ${engineMode()==='fsrs'?'<button class="grade-btn g-easy" aria-label="评分：轻松（快捷键 4）" onclick="grade(3,event)"><span class="gb-key" aria-hidden="true">4</span>🚀 轻松<small>大幅拉长间隔</small></button>':''}
+        <button class="grade-btn g-forgot" aria-label="评分：忘记了（快捷键 1）" data-act-click="grade" data-arg="0"><span class="gb-key" aria-hidden="true">1</span>😵 忘记了<small>${engineMode()==='fsrs'?'重置进度':'明天重新复习'}</small></button>
+        <button class="grade-btn g-blur" aria-label="评分：有点模糊（快捷键 2）" data-act-click="grade" data-arg="1"><span class="gb-key" aria-hidden="true">2</span>🤔 有点模糊<small>缩短间隔巩固</small></button>
+        <button class="grade-btn g-good" aria-label="评分：记得牢固（快捷键 3）" data-act-click="grade" data-arg="2"><span class="gb-key" aria-hidden="true">3</span>😎 记得牢固<small>正常推进</small></button>
+        ${engineMode()==='fsrs'?'<button class="grade-btn g-easy" aria-label="评分：轻松（快捷键 4）" data-act-click="grade" data-arg="3"><span class="gb-key" aria-hidden="true">4</span>🚀 轻松<small>大幅拉长间隔</small></button>':''}
       </div>
     </div>`;
 }
@@ -397,8 +397,8 @@ function grade(level, ev){
     el.innerHTML = `<div class="empty-state"><div class="big">🏆</div><h3>本轮复习完成！</h3>
       <p>共复习 ${reviewDone} 个知识点，遗忘曲线已更新</p>
       <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
-        <button class="btn btn-ghost" onclick="switchView('dashboard')">回到仪表盘</button>
-        <button class="btn btn-primary" onclick="switchView('quiz')">去刷几道题巩固一下</button>
+        <button class="btn btn-ghost" data-act-click="switchView" data-arg="dashboard">回到仪表盘</button>
+        <button class="btn btn-primary" data-act-click="switchView" data-arg="quiz">去刷几道题巩固一下</button>
       </div></div>`;
     reviewQueue = [];
     _analytics.reviewComplete(reviewDone);
@@ -428,7 +428,7 @@ function renderStats(){
   db.knowledge.forEach(k=> dist[masteryLevel(k)]++);
   el.innerHTML = `
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
-      <button class="btn btn-ghost" style="color:var(--warn)" onclick="resetStats()">🔄 重置学习数据</button>
+      <button class="btn btn-ghost" style="color:var(--warn)" data-act-click="resetStats">🔄 重置学习数据</button>
     </div>
     <div class="grid-stats" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">
       <div class="stat-card" style="--sc:var(--grad)"><div class="stat-num">${db.knowledge.length}</div><div class="stat-label">知识点总数</div></div>
@@ -470,7 +470,7 @@ function renderStats(){
     const el = document.getElementById('view-stats');
     if(el && !el.querySelector('#leaderboard-panel')){
       const div = document.createElement('div');
-      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub"><span class="chip'+(_lbMode==='week'?' active':'')+'" style="padding:3px 14px" onclick="renderLeaderboard(\'week\')">近7天</span> <span class="chip'+(_lbMode==='total'?' active':'')+'" style="padding:3px 14px" onclick="renderLeaderboard(\'total\')">累计</span></span></div><div id="leaderboard-panel"></div></div>';
+      div.innerHTML = '<div class="panel" style="margin-top:20px"><div class="panel-title">🏅 学习排行榜 <span class="sub"><span class="chip'+(_lbMode==='week'?' active':'')+'" style="padding:3px 14px" data-act-click="renderLeaderboard" data-arg="week">近7天</span> <span class="chip'+(_lbMode==='total'?' active':'')+'" style="padding:3px 14px" data-act-click="renderLeaderboard" data-arg="total">累计</span></span></div><div id="leaderboard-panel"></div></div>';
       el.appendChild(div); renderLeaderboard();
     }
   }, 60);
@@ -492,7 +492,7 @@ function renderHeatmap(){
     if(!bySubject[k.subjectId]) bySubject[k.subjectId] = [];
     bySubject[k.subjectId].push(k);
   });
-  var html = '<div class="panel" onclick="heatmapClick(event)"><div class="panel-title">🔥 知识掌握热力图 <span class="sub">记得程度 × 记忆强度 · 点击章节直达</span></div>';
+  var html = '<div class="panel" data-act-click="heatmapClick"><div class="panel-title">🔥 知识掌握热力图 <span class="sub">记得程度 × 记忆强度 · 点击章节直达</span></div>';
   html += '<div style="display:flex;gap:6px;align-items:center;font-size:11px;color:var(--text-3);margin-bottom:14px"><span>弱</span>' +
     [15,35,55,75,95].map(function(v){ return '<span style="width:28px;height:12px;border-radius:4px;display:inline-block;'+heatCellStyle(v)+'"></span>'; }).join('') +
     '<span>强</span></div>';
@@ -671,7 +671,7 @@ function showCardsImportPreview(fname){
     return existed;
   }).length;
   openModal(`
-    <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-close" data-act-click="closeModal">✕</button>
     <h3>📥 导入预览</h3>
     <div class="form-row"><label>导入到科目（不存在则自动创建）</label>
       <input id="imp-subject" value="${esc(guess)}">
@@ -691,8 +691,8 @@ function showCardsImportPreview(fname){
       星级标记将转为标签（如「两星」）；全部卡片进入今日复习队列。导入后可随时在知识库中编辑修正。
     </div>
     <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal()">取消</button>
-      <button class="btn btn-primary" onclick="confirmCardsImport()">确认导入 ${cards.length} 张卡片</button>
+      <button class="btn btn-ghost" data-act-click="closeModal">取消</button>
+      <button class="btn btn-primary" data-act-click="confirmCardsImport">确认导入 ${cards.length} 张卡片</button>
     </div>`);
 }
 function confirmCardsImport(){
@@ -729,9 +729,9 @@ function isStarred(id){ return !!(db && Array.isArray(db.stars) && db.stars.inde
 function renderSidebarUser(){
   var el = document.getElementById('sidebar-user-area'); if(!el) return;
   if(_currentUser && _profile){
-    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button onclick="openProfileModal()" title="编辑资料">⚙</button><button onclick="signOut()" title="退出登录">↩</button></div></div>';
+    el.innerHTML = '<div class="side-user"><div class="avatar" style="background:'+safeColor(_profile.avatar_color)+'">'+(esc(_profile.display_name||'?').charAt(0))+'</div><div class="info"><div class="name">'+esc(_profile.display_name||'考研人')+'</div><div class="email">'+esc(_currentUser.email)+'</div></div><div class="actions"><button data-act-click="openProfileModal" title="编辑资料">⚙</button><button data-act-click="signOut" title="退出登录">↩</button></div></div>';
   }else{
-    el.innerHTML = '<div class="side-user" style="cursor:pointer;justify-content:center" onclick="openAuthModal()"><span style="color:var(--primary);font-weight:600;font-size:13px">👤 登录 / 注册</span></div>';
+    el.innerHTML = '<div class="side-user" style="cursor:pointer;justify-content:center" data-act-click="openAuthModal"><span style="color:var(--primary);font-weight:600;font-size:13px">👤 登录 / 注册</span></div>';
   }
 }
 var __orig_rs = renderSidebar; renderSidebar = function(){ __orig_rs(); renderSidebarUser(); };
@@ -824,19 +824,19 @@ function renderAuthModal(){
   const isLogin = _authMode === 'login';
   destroyTurnstile();
   const m =
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<div style="text-align:center;padding:12px 0 20px">'+
     '<h3 style="font-size:20px;margin:0 0 6px;font-weight:700;color:var(--text)">'+(isLogin?'欢迎回来 👋':'创建你的研学库账号')+'</h3>'+
     '<p style="font-size:13px;color:var(--text-3);margin:0;line-height:1.6">'+(isLogin?'继续你的考研学习之旅，今天也要加油':'开启科学备考新体验，3分钟起步')+'</p></div>'+
     (isLogin?'':'<div class="form-row"><label>昵称（选填）</label><input id="auth-name" placeholder="怎么称呼你？"></div>')+
     '<div class="form-row"><label>邮箱</label><input id="auth-email" type="email" placeholder="you@example.com" value="'+esc(_authTempEmail)+'"></div>'+
-    '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" onclick="togglePwd()" title="显示/隐藏密码">👁</button></div></div>'+
+    '<div class="form-row"><label>密码（≥8位）</label><div class="pwd-wrap"><input id="auth-password" type="password" placeholder="至少 8 位"><button class="pwd-eye" data-act-click="togglePwd" title="显示/隐藏密码">👁</button></div></div>'+
     (isLogin?'':'<div class="form-row"><label>确认密码</label><input id="auth-confirm" type="password" placeholder="再输入一次密码"></div>')+
     (isLogin?'':'<div class="form-row"><div id="auth-captcha"></div></div>')+
     (isLogin?'':'<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:var(--text-3);margin:8px 0 16px;line-height:1.5;cursor:pointer"><input type="checkbox" id="auth-agree" style="margin-top:2px;flex-shrink:0"><span>我已阅读并同意 <a href="privacy.html" target="_blank" style="color:var(--primary)">《隐私政策》</a>和 <a href="terms.html" target="_blank" style="color:var(--primary)">《服务条款及免责声明》</a></span></label>')+
     '<div class="modal-actions">'+
-    '<button class="btn btn-ghost" onclick="toggleAuthMode()">'+(isLogin?'去注册':'去登录')+'</button>'+
-    '<button class="btn btn-primary" id="auth-submit" onclick="'+(isLogin?'doLogin':'doSignUp')+'()">'+(isLogin?'登录':'注册')+'</button>'+
+    '<button class="btn btn-ghost" data-act-click="toggleAuthMode">'+(isLogin?'去注册':'去登录')+'</button>'+
+    '<button class="btn btn-primary" id="auth-submit" data-act-click="'+(isLogin?'doLogin':'doSignUp')+'">'+(isLogin?'登录':'注册')+'</button>'+
     '</div>';
   openModal(m);
   if(!isLogin && TURNSTILE_SITE_KEY) loadTurnstileSDK(renderTurnstile);
@@ -936,14 +936,14 @@ async function signOut(){
 }
 function openProfileModal(){
   if(!_profile){ toast('请先登录','err'); return; }
-  openModal('<button class="modal-close" onclick="closeModal()">✕</button><h3>👤 个人资料</h3>'+
+  openModal('<button class="modal-close" data-act-click="closeModal">✕</button><h3>👤 个人资料</h3>'+
     '<div class="form-row"><label>显示名称</label><input id="pf-name" value="'+esc(_profile.display_name||'')+'"></div>'+
     '<div class="form-row"><label>头像颜色</label><div class="color-picker" id="pf-colors"></div><input type="hidden" id="pf-color" value="'+escAttr(_profile.avatar_color||'#6366f1')+'"></div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button><button class="btn btn-primary" onclick="saveProfile()">保存</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">取消</button><button class="btn btn-primary" data-act-click="saveProfile">保存</button></div>');
   setTimeout(function(){
     var colors=['#6366f1','#e11d48','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#0891b2','#ca8a04'];
     var el=document.getElementById('pf-colors');
-    if(el) el.innerHTML=colors.map(function(c){return '<span style="background:'+c+'" data-color="'+c+'" onclick="var p=this.parentElement;p.querySelectorAll(&apos;span&apos;).forEach(function(s){s.classList.remove(&apos;sel&apos;)});this.classList.add(&apos;sel&apos;);document.getElementById(&apos;pf-color&apos;).value=&apos;'+c+'&apos;"></span>';}).join('');
+    if(el) el.innerHTML=colors.map(function(c){return '<span style="background:'+c+'" data-color="'+c+'" data-act-click="pickColor" data-target="pf-color" data-arg=&apos;'+c+'&apos;"></span>';}).join('');
   },10);
 }
 async function saveProfile(){
@@ -970,34 +970,34 @@ function renderMine(){
         <div style="font-size:17px;font-weight:700">${nm}</div>
         <div style="font-size:13px;color:var(--text-3)">${em}</div>
       </div>
-      <button class="btn btn-ghost" onclick="openProfileModal()">✏️ 编辑资料</button>
+      <button class="btn btn-ghost" data-act-click="openProfileModal">✏️ 编辑资料</button>
     </div>
     <div class="panel">
       <div class="panel-title">🔑 账号安全</div>
-      <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" onclick="openAccountModal()">🔒 修改密码 / 修改邮箱</button>
+      <button class="btn btn-ghost" style="justify-content:flex-start;width:100%" data-act-click="openAccountModal">🔒 修改密码 / 修改邮箱</button>
     </div>
     <div class="panel">
       <div class="panel-title">🎛 偏好设置</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
-        <button class="btn btn-ghost" onclick="toggleEngine()" id="engine-btn">🧠 记忆引擎：${engineMode()==='fsrs'?'FSRS 自适应':'经典艾宾浩斯'}</button>
-        <button class="btn btn-ghost" onclick="cycleRetention()" id="retention-btn">🎯 记忆目标：${Math.round(fsrsRetention()*100)}%</button>
-        <button class="btn btn-ghost" onclick="openAiCardModal()">🤖 AI 建卡</button>
-        <button class="btn btn-ghost" onclick="openAiSettings()">⚙️ AI 设置${aiConfigured()?'（已启用）':''}</button>
-        <button class="btn btn-ghost" onclick="openGoalSetter()">🎯 每日复习目标</button>
-        <button class="btn btn-ghost" onclick="openExamDatePicker()">📅 考研日期</button>
-        <button class="btn btn-ghost" onclick="openHotkeyHelp()">⌨️ 快捷键</button>
+        <button class="btn btn-ghost" data-act-click="toggleEngine" id="engine-btn">🧠 记忆引擎：${engineMode()==='fsrs'?'FSRS 自适应':'经典艾宾浩斯'}</button>
+        <button class="btn btn-ghost" data-act-click="cycleRetention" id="retention-btn">🎯 记忆目标：${Math.round(fsrsRetention()*100)}%</button>
+        <button class="btn btn-ghost" data-act-click="openAiCardModal">🤖 AI 建卡</button>
+        <button class="btn btn-ghost" data-act-click="openAiSettings">⚙️ AI 设置${aiConfigured()?'（已启用）':''}</button>
+        <button class="btn btn-ghost" data-act-click="openGoalSetter">🎯 每日复习目标</button>
+        <button class="btn btn-ghost" data-act-click="openExamDatePicker">📅 考研日期</button>
+        <button class="btn btn-ghost" data-act-click="openHotkeyHelp">⌨️ 快捷键</button>
       </div>
     </div>
     <div class="panel">
       <div class="panel-title">💾 数据管理</div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
-        <button class="btn btn-ghost" onclick="exportData()">⬇ 导出数据</button>
-        <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">⬆ 恢复备份</button>
-        <button class="btn btn-ghost" onclick="cycleTheme()">🌓 切换主题</button>
+        <button class="btn btn-ghost" data-act-click="exportData">⬇ 导出数据</button>
+        <button class="btn btn-ghost" data-act-click="pickFile" data-arg="import-file">⬆ 恢复备份</button>
+        <button class="btn btn-ghost" data-act-click="cycleTheme">🌓 切换主题</button>
       </div>
     </div>
     <div style="text-align:center;margin-top:10px">
-      <button class="btn" style="background:rgba(239,68,68,.12);color:var(--danger)" onclick="signOut()">退出登录</button>
+      <button class="btn" style="background:rgba(239,68,68,.12);color:var(--danger)" data-act-click="signOut">退出登录</button>
     </div>
     <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text-3)">研学库 <b>${APP_VERSION}</b> · 数据格式 v${DATA_VERSION}</div>`;
 }
@@ -1147,7 +1147,7 @@ function _pubLibFetch(done, silent, withProgress){
       var el = document.getElementById('view-public-library');
       if(el && curView === 'public-library' && !_pubLibSubject){
         el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载失败</h3><p>请检查网络后重试</p>'+
-          '<button class="btn btn-primary" style="margin-top:14px" onclick="renderPublicLibrary()">重试</button></div>';
+          '<button class="btn btn-primary" style="margin-top:14px" data-act-click="renderPublicLibrary">重试</button></div>';
       }
     }
   };
@@ -1157,7 +1157,7 @@ function _pubLibFetch(done, silent, withProgress){
     var el = document.getElementById('view-public-library');
     if(el && curView === 'public-library' && !_pubLibSubject){
       el.innerHTML = '<div class="empty-state"><div class="big">🏛️</div><h3>课程库加载失败</h3><p>请检查网络后重试</p>'+
-        '<button class="btn btn-primary" style="margin-top:14px" onclick="renderPublicLibrary()">重试</button></div>';
+        '<button class="btn btn-primary" style="margin-top:14px" data-act-click="renderPublicLibrary">重试</button></div>';
     }
   };
   xhr.send();
@@ -1210,7 +1210,7 @@ function renderPublicLibrary(){
     lib.subjects.forEach(function(s){
       var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
       var importedTag = appSubj ? '<span style="font-size:11px;color:var(--success);font-weight:600">✅ 已导入</span>' : '';
-      html += '<div class="plib-subject-card" onclick="_pubLibSubject=\''+s.id+'\';renderPublicLibrary()">' +
+      html += '<div class="plib-subject-card" data-act-click="plibSubject" data-arg="' + s.id + '">' +
         '<div class="plib-subject-header">' +
           '<div class="plib-subject-icon" style="background:'+s.color+'">'+s.icon+'</div>' +
           '<div><h3 style="font-size:15px;margin-bottom:2px">'+esc(s.name)+'</h3>' +
@@ -1222,8 +1222,8 @@ function renderPublicLibrary(){
           '<span>📝 '+esc(s.exam)+'</span>' +
         '</div>' +
         '<div class="plib-subject-footer">' +
-          '<button class="plib-preview-btn" onclick="event.stopPropagation();_pubLibSubject=\''+s.id+'\';renderPublicLibrary()">👁 预览卡片</button>' +
-          '<button class="plib-import-btn" onclick="event.stopPropagation();importPubLibSubject(\''+s.id+'\')">📥 导入我的科目</button>' +
+          '<button class="plib-preview-btn" data-act-click="plibSubject" data-arg="' + s.id + '">👁 预览卡片</button>' +
+          '<button class="plib-import-btn" data-act-click="importPubLibSubject" data-arg="' + s.id + '">📥 导入我的科目</button>' +
         '</div>' +
       '</div>';
     });
@@ -1240,7 +1240,7 @@ function renderPubLibDetail(subjectId){
 
     // 卡片按需加载：先出骨架，数据到位后再渲染（用户可能已返回列表，重渲染前需再次确认停留在本科目）
     if(!_plibCards[s.id]){
-      el.innerHTML = '<div class="plib-detail-back" onclick="_pubLibSubject=null;renderPublicLibrary()">← 返回课程列表</div>'+
+      el.innerHTML = '<div class="plib-detail-back" data-act-click="plibBack">← 返回课程列表</div>'+
         '<div class="plib-header"><h2>'+esc(s.name)+'</h2></div>'+
         '<div style="text-align:center;font-size:12.5px;color:var(--text-3);margin:12px 0" id="plib-cards-progress">正在加载该科目卡片…</div>'+
         '<div class="plib-kw-list"><div class="skel-card"></div><div class="skel-card"></div><div class="skel-card"></div></div>';
@@ -1261,13 +1261,13 @@ function renderPubLibDetail(subjectId){
 
     var appSubj = db.subjects.find(function(x){ return x.name === s.name; });
 
-    var html = '<div class="plib-detail-back" onclick="_pubLibSubject=null;renderPublicLibrary()">← 返回课程列表</div>';
+    var html = '<div class="plib-detail-back" data-act-click="plibBack">← 返回课程列表</div>';
     html += '<div class="plib-header">' +
       '<div class="plib-subject-icon" style="background:'+s.color+';width:48px;height:48px;border-radius:14px;font-size:22px">'+s.icon+'</div>' +
       '<div><h2>'+esc(s.name)+'</h2><div style="font-size:13px;color:var(--text-3)">'+esc(s.exam)+' · '+s.cardCount+' 张卡片 · '+s.chapters.length+' 章</div></div>' +
       '</div>' +
       '<div style="display:flex;gap:10px;margin-bottom:20px">' +
-        '<button class="plib-import-btn" style="padding:12px 24px;font-size:14px" onclick="importPubLibSubject(\''+s.id+'\')">📥 一键导入到「'+esc(s.name)+'」</button>' +
+        '<button class="plib-import-btn" style="padding:12px 24px;font-size:14px" data-act-click="importPubLibSubject" data-arg="' + s.id + '">📥 一键导入到「'+esc(s.name)+'」</button>' +
         (appSubj ? '<span class="btn btn-ghost" style="cursor:default">✅ 科目已存在（导入将新增不重复卡片）</span>' : '') +
       '</div>';
 
@@ -1279,7 +1279,7 @@ function renderPubLibDetail(subjectId){
       html += '<div class="plib-kw-list">';
       cards.forEach(function(c){
         var tagHTML = (c.tags||[]).map(function(t){ return '<span class="tag tag-blue" style="font-size:10.5px;padding:2px 8px">'+esc(t)+'</span>'; }).join('');
-        html += '<div class="plib-kw-item" data-preview-title="'+escAttr(c.title)+'" data-preview-content="'+escAttr(c.content)+'" onclick="showPubLibKwPreview(this)">' +
+        html += '<div class="plib-kw-item" data-preview-title="'+escAttr(c.title)+'" data-preview-content="'+escAttr(c.content)+'" data-act-click="showPubLibKwPreview">' +
           '<div class="title">'+esc(c.title)+'</div>' +
           '<div style="font-size:12px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px">'+esc(c.content.slice(0,60))+'…</div>' +
           (tagHTML ? '<div class="tags">'+tagHTML+'</div>' : '') +
@@ -1297,7 +1297,7 @@ function showPubLibKwPreview(el){
   var title = el.getAttribute('data-preview-title') || '';
   var content = el.getAttribute('data-preview-content') || '';
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>' +
+    '<button class="modal-close" data-act-click="closeModal">✕</button>' +
     '<div class="plib-kw-preview">' +
       '<h4>'+esc(title)+'</h4>' +
       '<div class="content">'+md(content)+'</div>' +
@@ -1377,7 +1377,7 @@ if(typeof kwCard === 'function'){
   const _origKC = kwCard;
   kwCard = function(k){
     var on = isStarred(k.id);
-    var star = '<button class="kw-star' + (on?' on':'') + '" onclick="toggleStar(\'' + k.id + '\',event)" title="收藏">' + (on?'⭐':'☆') + '</button>';
+    var star = '<button class="kw-star' + (on?' on':'') + '" data-act-click="toggleStar" data-arg="' + k.id + '" title="收藏">' + (on?'⭐':'☆') + '</button>';
     return _origKC(k).replace('>', '>' + star);
   };
 }
@@ -1386,7 +1386,7 @@ if(typeof kwCard === 'function'){
 function openAiSettings(){
   var c = aiCfg();
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<h3>⚙️ AI 能力设置</h3>'+
     '<div style="font-size:12px;color:var(--text-3);line-height:1.7;margin-bottom:12px">'+
     '连接任意 OpenAI 兼容接口（DeepSeek / 智谱 / Kimi / OpenAI 等）。密钥仅保存在本机浏览器 localStorage，'+
@@ -1395,9 +1395,9 @@ function openAiSettings(){
     '<div class="form-row"><label>模型</label><input id="ai-model" placeholder="如：deepseek-chat / glm-4-flash" value="'+esc(c.model)+'"></div>'+
     '<div class="form-row"><label>API Key</label><input id="ai-key" type="password" placeholder="sk-…" value="'+esc(c.key)+'"></div>'+
     '<div class="modal-actions">'+
-      '<button class="btn btn-ghost" id="ai-test-btn" onclick="aiTestConnectionBtn(this)">测试连接</button>'+
-      '<button class="btn btn-ghost" onclick="closeModal()">取消</button>'+
-      '<button class="btn btn-primary" onclick="saveAiSettings()">保存</button>'+
+      '<button class="btn btn-ghost" id="ai-test-btn" data-act-click="aiTestConnectionBtn">测试连接</button>'+
+      '<button class="btn btn-ghost" data-act-click="closeModal">取消</button>'+
+      '<button class="btn btn-primary" data-act-click="saveAiSettings">保存</button>'+
     '</div>');
 }
 function saveAiSettings(){
@@ -1430,15 +1430,15 @@ function openAiCardModal(){
       body: '<div style="color:var(--text-2);line-height:1.9;font-size:13px">AI 建卡需要先配置一个 OpenAI 兼容接口'+
             '（DeepSeek / 智谱 / Kimi / OpenAI 等）。密钥仅保存在本机浏览器，直连提供商。</div>',
       actions: [
-        { text:'去配置', class:'btn btn-primary', onclick:'closeModal(); openAiSettings();' },
-        { text:'取消', class:'btn btn-ghost', onclick:'closeModal();' }
+        { text:'去配置', class:'btn btn-primary', action:'closeModalOpenAiSettings' },
+        { text:'取消', class:'btn btn-ghost', action:'closeModal' }
       ]
     });
     return;
   }
   var opts = db.subjects.map(function(s){ return '<option value="'+s.id+'">'+esc(s.name)+'</option>'; }).join('');
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<h3>🤖 AI 建卡</h3>'+
     '<div class="form-2col">'+
       '<div class="form-row"><label>导入科目</label><select id="ai-subject">'+opts+'</select></div>'+
@@ -1446,8 +1446,8 @@ function openAiCardModal(){
     '</div>'+
     '<div class="form-row"><label>素材（粘贴教材 / 讲义 / 笔记片段，至少 50 字）</label>'+
     '<textarea id="ai-source" rows="9" placeholder="把教材段落粘贴到这里，AI 会整理成结构化知识卡片，预览后可勾选导入…"></textarea></div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">取消</button>'+
-    '<button class="btn btn-primary" id="ai-gen-btn" onclick="aiGenerateCardsBtn(this)">开始生成</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModal">取消</button>'+
+    '<button class="btn btn-primary" id="ai-gen-btn" data-act-click="aiGenerateCardsBtn">开始生成</button></div>');
 }
 async function aiGenerateCardsBtn(btn){
   var srcText = document.getElementById('ai-source').value.trim();
@@ -1475,11 +1475,11 @@ function renderAiCardPreview(cards){
       '<div style="font-size:12px;color:var(--text-2);margin-top:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(String(c.content).slice(0,150))+'</div></span></label>';
   }).join('');
   openModal(
-    '<button class="modal-close" onclick="closeModal()">✕</button>'+
+    '<button class="modal-close" data-act-click="closeModal">✕</button>'+
     '<h3>🤖 生成预览（'+cards.length+' 张，勾选后导入）</h3>'+
     '<div style="max-height:46vh;overflow-y:auto">'+list+'</div>'+
-    '<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal(); _aiPendingCards=null;">取消</button>'+
-    '<button class="btn btn-primary" onclick="aiImportSelected()">导入选中卡片</button></div>');
+    '<div class="modal-actions"><button class="btn btn-ghost" data-act-click="closeModalClearAI">取消</button>'+
+    '<button class="btn btn-primary" data-act-click="aiImportSelected">导入选中卡片</button></div>');
 }
 function aiImportSelected(){
   var boxes = document.querySelectorAll('.ai-pick');

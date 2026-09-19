@@ -18,11 +18,14 @@
 ## 仓库结构
 
 ```
-index.html            入口（含运行时配置注入）
+index.html            入口（静态标记 + 资源加载清单）
+config.js             运行时配置（Supabase / Turnstile 公开凭据，已入库）
+boot.js               启动引导（框架逃逸 / 版本跳变强刷 / gate.css 异步加载）
 core.js               数据层 / 认证 / FSRS 引擎 / 仪表盘（经典脚本主文件）
 views.js              渲染层：知识库 / 复习 / 统计 / 排行榜 / 认证 UI / 公共课程库
 quiz.js + quiz_analyzer.js   刷题引擎与题库智能分析
 ai.js                AI 能力层（建卡生成 / 语义批改 / 连接管理）
+actions.js            事件委托层（data-act-* 标记 → ACTIONS 注册表查名执行，CSP 无 unsafe-inline）
 styles.css            应用样式（扁平高级感设计语言）
 gate.css              登录页样式
 sw.js                 Service Worker（导航 network-first，静态资源 stale-while-revalidate）
@@ -31,7 +34,7 @@ plib/<subjectId>.json       单个科目的卡片，下钻/导入时按需加载
 public-library.json   公共课程库数据源（16 科 1591 卡，仅 tools/ 构建用，运行时不加载）
 tools/                数据构建脚本与历史补丁（运行时不需要）
 UPGRADE_SQL.sql       Supabase 建表 / 视图 / 防刷触发器
-config.template.js    配置模板 → 复制为 config.js（本地开发用）
+config.template.js    配置模板（自托管部署时参考 config.js 改值）
 ```
 
 ## 本地运行
@@ -39,11 +42,10 @@ config.template.js    配置模板 → 复制为 config.js（本地开发用）
 ```bash
 git clone https://github.com/luckyboom1/yanxueku.git
 cd yanxueku
-cp config.template.js config.js   # 填入 Supabase 与 Turnstile 配置
 python -m http.server 8080
 ```
 
-线上（GitHub Pages）的配置直接内联在 `index.html` 中，与 `config.js` 需同步维护（anon key 属公开凭据）。
+运行时配置在 `config.js`（Supabase anon key / Turnstile site key，属公开客户端凭据，由 RLS 兜底）。自托管部署按 `config.template.js` 说明改值即可。
 
 ## Supabase 后端配置
 
@@ -58,6 +60,7 @@ python -m http.server 8080
 - 导入数据（备份/卡包）经结构校验、长度限制、id 字符集白名单消毒
 - AI 功能使用用户自配的第三方接口：CSP connect-src 已放行 https 出站；API Key 仅存本机 localStorage，不经过研学库服务器
 - Supabase SDK 锁定精确版本（`@2.112.4`，jsdelivr 版本化路径不可变）+ fastly 官方镜像回退，规避浮动 `@2` 的供应链风险；未使用 SRI 是因为该 UMD 文件由 jsdelivr 动态生成（官方明确不建议）
+- CSP `script-src` 无 `unsafe-inline`：全部交互走 `actions.js` 事件委托（`data-act-*` 标记查名执行），内联事件注入面整体关闭
 - 内置防点击劫持 framebuster；外链均带 `rel="noopener"`
 - 导入映射键（如 quizStats）拒绝 `__proto__`/`constructor`/`prototype` 保留键，读取侧有 hasOwnProperty 守卫
 - 登录失败连续 5 次触发 30 秒客户端冷却（服务端另有 Supabase 速率限制兜底）
@@ -65,7 +68,6 @@ python -m http.server 8080
 ## 已知技术债
 
 - **单行 JSONB**：用户数据整包存于 `app_state.data`，全量 upsert；结构化拆表是多人大功能的前提
-- **内联 onclick**：事件处理器以字符串拼接为主（id 已做白名单加固），长期应迁移事件委托
 
 ## 贡献
 

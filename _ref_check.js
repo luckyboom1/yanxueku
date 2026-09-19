@@ -1,25 +1,17 @@
 #!/usr/bin/env node
-/* 研学库 内联事件引用完整性检查（CODE_REVIEW §2.2 自审项之一）
+/* 研学库 事件引用完整性检查（CODE_REVIEW §2.2 自审项之一）
  * 用法：node _ref_check.js
- * 检查 1：所有内联事件处理器（onclick / onkeydown / onchange / oninput …）
- *         调用的函数都已在仓库中定义（历史教训：id 拼接 + 内联处理器是注入主战场）
- * 检查 2：getElementById 引用的 id 均存在于静态标记或 JS 生成的标记
- * 退出码：0 = 通过；1 = 发现问题
- * 说明：与 CI/本地自审共用；新增内联处理器或动态 id 时若误报，请把该函数/id 的
- *       定义方式改为可被本脚本识别的常规形式，而不是加白名单。 */
+ * 检查 1：所有 data-act-* 动作名都已登记在 actions.js 的 ACTIONS 注册表
+ *         （事件委托层的契约：标记值永远不会变成可执行代码）
+ * 检查 2：残留内联事件处理器（onclick/onkeydown/onchange/oninput … 属性）
+ *         一律视为回归——beta.25 起禁止新增，发现即失败
+ * 检查 3：getElementById 引用的 id 均存在于静态标记或 JS 生成的标记
+ * 退出码：0 = 通过；1 = 发现问题 */
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-const FILES = ['core.js','views.js','quiz.js','quiz_analyzer.js','ai.js','sw.js','index.html'];
-const BUILTINS = new Set(('setTimeout clearTimeout setInterval clearInterval requestAnimationFrame cancelAnimationFrame ' +
-  'fetch parseInt parseFloat String Number Boolean Object Array JSON Math Date RegExp Promise Error isNaN isFinite ' +
-  'alert confirm prompt encodeURIComponent decodeURIComponent console document window navigator location history ' +
-  'localStorage sessionStorage URL URLSearchParams Blob FileReader XMLHttpRequest IntersectionObserver ' +
-  'getComputedStyle matchMedia addEventListener removeEventListener scrollIntoView focus blur click querySelector ' +
-  'querySelectorAll getElementById createElement closest matches forEach map filter find some every reduce slice ' +
-  'splice push join split replace trim charAt charCodeAt indexOf includes hasOwnProperty test exec toString valueOf ' +
-  'if else return new typeof this event function requestIdleCallback structuredClone Set Map WeakMap Symbol').split(/\s+/));
+const FILES = ['core.js','views.js','quiz.js','quiz_analyzer.js','ai.js','actions.js','boot.js','config.js','sw.js','index.html'];
 
 const src = {};
 for (const f of FILES) {
@@ -27,27 +19,48 @@ for (const f of FILES) {
   if (!fs.existsSync(p)) { console.error('✗ 缺少文件：' + f); process.exit(1); }
   src[f] = fs.readFileSync(p, 'utf8');
 }
-const allJs = FILES.filter(f => f.endsWith('.js')).map(f => src[f]).join('\n');
 const all = FILES.map(f => src[f]).join('\n');
 
-/* ---- 已定义的函数名（函数声明 / 变量函数表达式 / 后置包装重赋值） ---- */
-const defined = new Set();
-for (const m of allJs.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(m[1]);
-for (const m of allJs.matchAll(/(?:^|\n)\s*(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:function|\(|async)/g)) defined.add(m[1]);
-for (const m of allJs.matchAll(/^([A-Za-z_$][\w$]*)\s*=\s*function/gm)) defined.add(m[1]);
+/* ---- ACTIONS 注册表：解析 actions.js 中 var ACTIONS = { ... } 的顶层键 ---- */
+const actSrc = src['actions.js'];
+const blockStart = actSrc.indexOf('var ACTIONS = {');
+const blockEnd = actSrc.indexOf('\n};', blockStart);
+if (blockStart < 0 || blockEnd < 0) { console.error('✗ actions.js 中找不到 ACTIONS 注册表'); process.exit(1); }
+const registry = new Set();
+for (const m of actSrc.slice(blockStart, blockEnd).matchAll(/^\s{2}([A-Za-z_$][\w$]*)\s*:/gm)) registry.add(m[1]);
 
-/* ---- 检查 1：内联事件处理器调用点 ---- */
-const attrVals = [];
-for (const m of all.matchAll(/on(?:click|keydown|keyup|change|input)\s*=\s*"([^"]*)"/g)) attrVals.push(m[1]);
-for (const m of all.matchAll(/on(?:click|keydown|keyup|change|input)\s*=\s*\\"((?:[^"\\]|\\\\.)*)\\"/g)) attrVals.push(m[1]);
-const calls = new Set();
-for (const v of attrVals) {
-  const un = v.replace(/\\"/g, '"').replace(/\\'/g, "'");
-  for (const m of un.matchAll(/(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) calls.add(m[1]);
+/* ---- 检查 1：data-act-* 引用点 ---- */
+const actRefs = new Set();
+// 字面量值：data-act-click="name"
+for (const m of all.matchAll(/data-act-(?:click|input|change|keydown)\s*=\s*\\?"([A-Za-z_$][\w$]*)\\?"/g)) actRefs.add(m[1]);
+// 动态值：data-act-click="'+(cond?'a':'b')+'" —— 抽取内部所有单引号字符串
+for (const m of all.matchAll(/data-act-(?:click|input|change|keydown)\s*=\s*\\?"'\+([^\\]*?)\+'\\?"/g)) {
+  for (const q of m[1].matchAll(/'([A-Za-z_$][\w$]*)'/g)) actRefs.add(q[1]);
 }
-const missingCalls = [...calls].filter(c => !defined.has(c) && !BUILTINS.has(c)).sort();
+// 对象契约：openModal({actions:[{action:'name'}]}) 调点
+for (const m of all.matchAll(/\baction\s*:\s*'([A-Za-z_$][\w$]*)'/g)) actRefs.add(m[1]);
+const missingActs = [...actRefs].filter(a => !registry.has(a)).sort();
+// 反向：注册表中从未被静态引用的条目（可能是纯动态调用，也可能已死——列出提示，不判失败）
+const unusedActs = [...registry].filter(a => !actRefs.has(a)).sort();
 
-/* ---- 检查 2：getElementById 引用 vs 已定义 id ---- */
+/* ---- 检查 2：残留内联事件处理器（回归检测） ---- */
+const inlineResidual = [];
+for (const f of FILES) {
+  for (const m of src[f].matchAll(/on(?:click|keydown|keyup|change|input|focus|blur|submit|load|error)\s*=\s*["']/g)) {
+    // .onX = 的 JS 属性赋值合法（动态元素/FileReader/XHR），只拦属性形式 on...="
+    const tail = src[f].slice(m.index + m[0].length - 1, m.index + m[0].length + 60);
+    inlineResidual.push(f + ' @' + m.index + ': ' + m[0] + tail.slice(0, 50).replace(/\n/g, ' '));
+  }
+}
+// JS 赋值型（obj.onclick = fn）不含 =" 紧跟引号，上面的正则已只匹配 on*="<引号>
+// 但属性值在 JS 字符串里可能写成 on*=\" —— 也纳入
+for (const f of FILES) {
+  for (const m of src[f].matchAll(/on(?:click|keydown|keyup|change|input|focus|blur|submit)\s*=\s*\\"/g)) {
+    inlineResidual.push(f + ' @' + m.index + ': (escaped) ' + m[0]);
+  }
+}
+
+/* ---- 检查 3：getElementById 引用 vs 已定义 id ---- */
 const refs = new Set();
 for (const m of all.matchAll(/getElementById\(\s*['"]([^'"]+)['"]\s*\)/g)) refs.add(m[1]);
 const dyn = new Set();   // 拼接型 id（如 'wq-'+qid）：按前缀放行
@@ -60,8 +73,11 @@ const missingIds = [...refs].filter(r => !ids.has(r) && ![...dyn].some(d => r.st
 
 /* ---- 报告 ---- */
 let bad = false;
-console.log('内联处理器调用点：' + calls.size + ' 个，函数引用缺失：' + (missingCalls.length || '无'));
-if (missingCalls.length) { bad = true; missingCalls.forEach(c => console.log('  ✗ 未定义的处理器函数：' + c)); }
+console.log('ACTIONS 注册表：' + registry.size + ' 个动作；data-act 引用：' + actRefs.size + ' 个，缺失登记：' + (missingActs.length || '无'));
+if (missingActs.length) { bad = true; missingActs.forEach(a => console.log('  ✗ 未登记的动作名：' + a)); }
+if (unusedActs.length) console.log('  ℹ 未被静态引用的注册动作（动态调用或冗余）：' + unusedActs.join(', '));
+console.log('内联事件处理器残留：' + (inlineResidual.length || '无'));
+if (inlineResidual.length) { bad = true; inlineResidual.slice(0, 20).forEach(r => console.log('  ✗ ' + r)); }
 console.log('getElementById 引用：' + refs.size + ' 个，元素 id 缺失：' + (missingIds.length || '无'));
 if (missingIds.length) { bad = true; missingIds.forEach(r => console.log('  ✗ 找不到定义的 id：#' + r)); }
 console.log(bad ? '_ref_check: FAIL' : '_ref_check: PASS ✓');
